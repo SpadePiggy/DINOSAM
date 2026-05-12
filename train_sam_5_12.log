@@ -1,0 +1,12 @@
+nohup: ignoring input
+/home/LXT/.conda/envs/dinov3-sam/lib/python3.10/runpy.py:126: RuntimeWarning: 'dinosam.train.trainer' found in sys.modules after import of package 'dinosam.train', but prior to execution of 'dinosam.train.trainer'; this may result in unpredictable behaviour
+  warn(RuntimeWarning(msg))
+Initialized depth branch from SAM inner weights (depth_prediction_head random)
+Train samples: 880  Val samples: 220
+
+============================================================
+PHASE 1: Mask-only training (dice + iou loss)
+============================================================
+Phase 1: Total params: 97,379,069  Trainable: 4,064,560
+
+=== Phase1 Epoch 0/49 ===
