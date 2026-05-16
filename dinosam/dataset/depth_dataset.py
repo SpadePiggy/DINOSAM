@@ -134,7 +134,7 @@ def collate_fn(batch):
         pad_size = max_points - n
         if pad_size > 0:
             pc = torch.cat([b["point_coords"], torch.zeros(pad_size, 2)])
-            pl = torch.cat([b["point_labels"], torch.zeros(pad_size, dtype=torch.int64)])
+            pl = torch.cat([b["point_labels"], torch.full((pad_size,), -1, dtype=torch.int64)])
         else:
             pc = b["point_coords"]
             pl = b["point_labels"]

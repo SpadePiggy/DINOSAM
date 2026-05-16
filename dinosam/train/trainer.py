@@ -476,7 +476,7 @@ def main():
     parser.add_argument("--sam_checkpoint", type=str, default=None, help="Path to SAM vit_b checkpoint")
     parser.add_argument("--output_dir", type=str, default="/data3/LXT/DINOv3-SAM/model_sam/5_1")
     parser.add_argument("--log_dir", type=str, default="./logs")
-    parser.add_argument("--batch_size", type=int, default=2)
+    parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--lr", type=float, default=1e-5)
     parser.add_argument("--depth_loss_weight", type=float, default=1.0)
