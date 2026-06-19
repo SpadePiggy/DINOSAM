@@ -20,10 +20,11 @@ class DepthSam(nn.Module):
       image_embeddings + outer embeddings → depth_decoder → depth prediction
     """
 
-    def __init__(self, sam: Sam, encoder_type: str = "sam", dinov3_checkpoint: str = None):
+    def __init__(self, sam: Sam, encoder_type: str = "sam", dinov3_checkpoint: str = None, adapter_type: str = "mona"):
         super().__init__()
         self.sam = sam
         self.encoder_type = encoder_type
+        self.adapter_type = adapter_type
         self.img_size = sam.image_encoder.img_size
         self.transform = ResizeLongestSide(self.img_size)
 
@@ -39,6 +40,7 @@ class DepthSam(nn.Module):
                 img_size=image_size,
                 embed_dim=768,
                 out_dim=256,
+                adapter_type=adapter_type,
             )
         else:
             self.dinov3_encoder = None
