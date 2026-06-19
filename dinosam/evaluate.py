@@ -252,9 +252,12 @@ def plot_depth_scatter(metrics, save_dir, prefix=""):
 
 def _load_model_state_dict(model, checkpoint_path, device):
     ckpt = torch.load(checkpoint_path, map_location=device)
+    from dinosam.model.adapters import _remap_legacy_state_dict
     if isinstance(ckpt, dict) and "model_state_dict" in ckpt:
+        ckpt["model_state_dict"] = _remap_legacy_state_dict(ckpt["model_state_dict"])
         model.load_state_dict(ckpt["model_state_dict"])
     else:
+        ckpt = _remap_legacy_state_dict(ckpt)
         model.load_state_dict(ckpt)
 
 

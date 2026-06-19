@@ -337,6 +337,9 @@ def _save_checkpoint(path, model, optimizer, scheduler, epoch, best_val_loss):
 
 def _load_checkpoint(path, model, optimizer, scheduler, device):
     ckpt = torch.load(path, map_location=device)
+    # Remap legacy mona1/mona2 -> adapter1/adapter2 keys
+    from dinosam.model.adapters import _remap_legacy_state_dict
+    ckpt["model_state_dict"] = _remap_legacy_state_dict(ckpt["model_state_dict"])
     model.load_state_dict(ckpt["model_state_dict"])
     optimizer.load_state_dict(ckpt["optimizer_state_dict"])
     scheduler.load_state_dict(ckpt["scheduler_state_dict"])
