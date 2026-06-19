@@ -277,9 +277,15 @@ def main():
                         help="Directory to save per-depth-class first sample pred/gt masks and scatter plots")
     parser.add_argument("--encoder", type=str, default="sam", choices=["sam", "dinov3"],
                         help="Image encoder type: 'sam' (default) or 'dinov3' (DINOv3+Mona)")
+    parser.add_argument("--adapter_type", type=str, default="mona",
+                        choices=["mona", "fc", "dual_attn"],
+                        help="Feature adapter type for DINOv3 encoder (default: mona)")
     parser.add_argument("--dinov3_checkpoint", type=str, default=None,
                         help="Path to DINOv3 ViT-B/16 checkpoint (required when --encoder dinov3)")
     args = parser.parse_args()
+
+    if args.encoder == "sam" and args.adapter_type != "mona":
+        print(f"Warning: --adapter_type '{args.adapter_type}' is ignored when --encoder sam")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -292,7 +298,8 @@ def main():
     if os.path.exists(args.phase1_checkpoint):
         print(f"\nLoading Phase 1 model: {args.phase1_checkpoint}")
         sam = sam_model_registry["vit_b"](checkpoint=args.sam_checkpoint)
-        model = DepthSam(sam, encoder_type=args.encoder, dinov3_checkpoint=args.dinov3_checkpoint)
+        model = DepthSam(sam, encoder_type=args.encoder, dinov3_checkpoint=args.dinov3_checkpoint,
+                         adapter_type=args.adapter_type)
         _load_model_state_dict(model, args.phase1_checkpoint, device)
         model.freeze_image_encoder()
         model.to(device)
@@ -315,7 +322,8 @@ def main():
     if os.path.exists(args.phase2_checkpoint):
         print(f"\nLoading Phase 2 model: {args.phase2_checkpoint}")
         sam = sam_model_registry["vit_b"](checkpoint=args.sam_checkpoint)
-        model = DepthSam(sam, encoder_type=args.encoder, dinov3_checkpoint=args.dinov3_checkpoint)
+        model = DepthSam(sam, encoder_type=args.encoder, dinov3_checkpoint=args.dinov3_checkpoint,
+                         adapter_type=args.adapter_type)
         _load_model_state_dict(model, args.phase2_checkpoint, device)
         model.freeze_image_encoder()
         model.to(device)
