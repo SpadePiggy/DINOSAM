@@ -34,10 +34,9 @@ DINOv3 ViT-B/16 (frozen) → Mona × 2 → Linear Projection (768→256) → SAM
 dinosam/model/
 ├── adapters/
 │   ├── __init__.py              # get_adapter() 工厂函数
-│   ├── mona_adapter.py          # Mona 适配器（薄包装）
 │   ├── fc_adapter.py            # 全连接层适配器
 │   └── dual_attn_adapter.py     # 双重注意力适配器（内联 PAM + CAM 实现）
-├── mona.py                      # 保留不动，向后兼容
+├── mona.py                      # 保留不动，mona 适配器直接复用
 ├── dinov3_encoder.py            # 改为工厂创建适配器
 ├── depth_sam.py                 # 传递 adapter_type 参数
 └── ...
@@ -65,7 +64,8 @@ class XxxAdapter(nn.Module):
 # adapters/__init__.py
 def get_adapter(name: str, in_dim: int, factor: int = 8) -> nn.Module:
     if name == "mona":
-        return MonaAdapter(in_dim, factor)
+        from ..mona import Mona
+        return Mona(in_dim, factor)
     elif name == "fc":
         return FCAdapter(in_dim, factor)
     elif name == "dual_attn":
@@ -78,18 +78,14 @@ def get_adapter(name: str, in_dim: int, factor: int = 8) -> nn.Module:
 
 ## 4. 各适配器详细设计
 
-### 4.1 MonaAdapter
+### 4.1 Mona（直接复用）
 
-现有 `Mona` 类的薄包装，行为完全不变。
+工厂对 `"mona"` 类型**直接返回 `Mona` 实例**，不做包装。`Mona` 类签名已符合统一接口，无需适配层。
 
 ```python
-class MonaAdapter(nn.Module):
-    def __init__(self, in_dim, factor=8):
-        super().__init__()
-        self.mona = Mona(in_dim, factor)  # 复用 dinosam/model/mona.py
-
-    def forward(self, x, hw_shapes=None):
-        return self.mona(x, hw_shapes)
+# 工厂中：
+if name == "mona":
+    return Mona(in_dim, factor)  # 直接返回，不包装
 ```
 
 内部结构（来自现有 `Mona`）：
@@ -275,14 +271,22 @@ model = DepthSam(
 
 ## 6. Checkpoint 兼容性
 
-**Key 名变更**：旧代码使用 `mona1.*` / `mona2.*`，新代码统一使用 `adapter1.*` / `adapter2.*`。
+**Key 名变更**：旧代码使用 `mona1.*` / `mona2.*`，新代码统一使用 `adapter1.*` / `adapter2.*`。由于 `"mona"` 类型直接返回 `Mona` 实例（无包装），state_dict key 结构保持一致，仅有前缀不同。
 
-**影响**：已有 branch 上训练的 checkpoint（如 `phase1_best.pt`、`phase2_best.pt`）**无法直接加载**，因为 state_dict key 名不匹配。
+| 旧 key | 新 key |
+|--------|--------|
+| `mona1.project1.weight` | `adapter1.project1.weight` |
+| `mona1.adapter_conv.conv1.weight` | `adapter1.adapter_conv.conv1.weight` |
+| `mona1.gamma` | `adapter1.gamma` |
+| `mona2.*` | `adapter2.*` |
+
+**影响**：已有 branch 上训练的 checkpoint **无法直接加载**，需要简单的 key 前缀 remap。
 
 **迁移路径**：
-- 如果加载旧 checkpoint，需要手动 remap key：将 `mona1.*` → `adapter1.*`，`mona2.*` → `adapter2.*`
+- 加载旧 checkpoint 前，对 `model_state_dict` 做 `mona1.` → `adapter1.`、`mona2.` → `adapter2.` 的字符串替换
+- 仅 remap `model_state_dict`，不动 `optimizer_state_dict` / `scheduler_state_dict`
 - 跨 adapter 类型的 checkpoint 不兼容（如 `mona` 的权重无法加载到 `fc` 模型）
-- 建议：在 DINO 分支上从头训练各 adapter 类型
+- 建议：在 DINO 分支上从头训练各 adapter 类型；remap 仅用于加载已有 `mona` checkpoint 做对比验证
 
 **设计说明**：刻意统一为 `adapter1/adapter2` 命名，而非保留 `mona1/mona2`。语义上更清晰——属性名反映了角色（第一个/第二个适配器）而非类型（Mona）。
 
@@ -321,4 +325,5 @@ python -m dinosam.train.trainer ... --encoder dinov3 --adapter_type dual_attn
 1. `--adapter_type mona` 训练结果与当前 DINO 分支完全一致（向后兼容验证）
 2. `--adapter_type fc` 可正常训练和评估
 3. `--adapter_type dual_attn` 可正常训练和评估
-4. 所有三种 adapter 的 checkpoint 可正常加载和推理
+4. 所有三种 adapter 的 checkpoint 可正常保存和加载（round-trip）
+5. 旧 `mona1/mona2` 格式的 checkpoint 经 remap 后可正常加载
