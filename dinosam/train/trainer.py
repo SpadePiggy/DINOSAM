@@ -210,7 +210,7 @@ def train_one_epoch_phase2(model, dataloader, optimizer, device, epoch, writer, 
             optimizer.step()
 
             loss_val = loss.item()
-            mask_val = mask_loss.item()
+            mask_val = inner_mask_loss.item()
             depth_val = depth_loss.item()
 
         total_loss += loss_val

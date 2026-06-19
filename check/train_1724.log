@@ -1,0 +1,2650 @@
+nohup: ignoring input
+/home/LXT/.conda/envs/dinov3-sam/lib/python3.10/runpy.py:126: RuntimeWarning: 'dinosam.train.trainer' found in sys.modules after import of package 'dinosam.train', but prior to execution of 'dinosam.train.trainer'; this may result in unpredictable behaviour
+  warn(RuntimeWarning(msg))
+Initialized depth branch from SAM inner weights (depth_prediction_head random)
+Train samples: 880  Val samples: 220
+
+============================================================
+PHASE 1: Mask-only training (dice + iou loss)
+============================================================
+Phase 1: Total params: 97,379,069  Trainable: 4,064,560
+
+=== Phase1 Epoch 0/49 ===
+  Epoch 0 [10/220] loss=1.2473 mask=0.9319 iou=0.3155
+  Epoch 0 [20/220] loss=1.1306 mask=0.9214 iou=0.2091
+  Epoch 0 [30/220] loss=1.0594 mask=0.9067 iou=0.1527
+  Epoch 0 [40/220] loss=0.9982 mask=0.8707 iou=0.1275
+  Epoch 0 [50/220] loss=0.8998 mask=0.7832 iou=0.1166
+  Epoch 0 [60/220] loss=0.8159 mask=0.7097 iou=0.1061
+  Epoch 0 [70/220] loss=0.7456 mask=0.6465 iou=0.0991
+  Epoch 0 [80/220] loss=0.6875 mask=0.5951 iou=0.0924
+  Epoch 0 [90/220] loss=0.6416 mask=0.5550 iou=0.0866
+  Epoch 0 [100/220] loss=0.6054 mask=0.5235 iou=0.0819
+  Epoch 0 [110/220] loss=0.5781 mask=0.4990 iou=0.0791
+  Epoch 0 [120/220] loss=0.5560 mask=0.4797 iou=0.0762
+  Epoch 0 [130/220] loss=0.5381 mask=0.4641 iou=0.0740
+  Epoch 0 [140/220] loss=0.5194 mask=0.4479 iou=0.0715
+  Epoch 0 [150/220] loss=0.5020 mask=0.4329 iou=0.0691
+  Epoch 0 [160/220] loss=0.4820 mask=0.4158 iou=0.0662
+  Epoch 0 [170/220] loss=0.4693 mask=0.4036 iou=0.0657
+  Epoch 0 [180/220] loss=0.4546 mask=0.3912 iou=0.0634
+  Epoch 0 [190/220] loss=0.4430 mask=0.3809 iou=0.0621
+  Epoch 0 [200/220] loss=0.4338 mask=0.3734 iou=0.0604
+  Epoch 0 [210/220] loss=0.4228 mask=0.3636 iou=0.0592
+  Epoch 0 [220/220] loss=0.4101 mask=0.3525 iou=0.0577
+  Train: loss=0.4101 mask=0.3525 iou=0.0577 time=229.1s
+  Val epoch 0: loss=0.2562
+  Saved best phase1 model (val_loss=0.2562)
+
+=== Phase1 Epoch 1/49 ===
+  Epoch 1 [10/220] loss=0.2139 mask=0.1880 iou=0.0259
+  Epoch 1 [20/220] loss=0.1880 mask=0.1664 iou=0.0216
+  Epoch 1 [30/220] loss=0.1731 mask=0.1531 iou=0.0200
+  Epoch 1 [40/220] loss=0.1770 mask=0.1564 iou=0.0206
+  Epoch 1 [50/220] loss=0.1824 mask=0.1612 iou=0.0213
+  Epoch 1 [60/220] loss=0.1789 mask=0.1581 iou=0.0208
+  Epoch 1 [70/220] loss=0.1774 mask=0.1560 iou=0.0214
+  Epoch 1 [80/220] loss=0.1719 mask=0.1511 iou=0.0207
+  Epoch 1 [90/220] loss=0.1790 mask=0.1562 iou=0.0228
+  Epoch 1 [100/220] loss=0.1838 mask=0.1591 iou=0.0247
+  Epoch 1 [110/220] loss=0.1848 mask=0.1602 iou=0.0246
+  Epoch 1 [120/220] loss=0.1811 mask=0.1568 iou=0.0243
+  Epoch 1 [130/220] loss=0.1857 mask=0.1594 iou=0.0263
+  Epoch 1 [140/220] loss=0.1866 mask=0.1605 iou=0.0261
+  Epoch 1 [150/220] loss=0.1859 mask=0.1599 iou=0.0260
+  Epoch 1 [160/220] loss=0.1859 mask=0.1596 iou=0.0263
+  Epoch 1 [170/220] loss=0.1898 mask=0.1635 iou=0.0264
+  Epoch 1 [180/220] loss=0.1872 mask=0.1611 iou=0.0261
+  Epoch 1 [190/220] loss=0.1859 mask=0.1600 iou=0.0259
+  Epoch 1 [200/220] loss=0.1833 mask=0.1579 iou=0.0254
+  Epoch 1 [210/220] loss=0.1808 mask=0.1560 iou=0.0248
+  Epoch 1 [220/220] loss=0.1791 mask=0.1546 iou=0.0245
+  Train: loss=0.1791 mask=0.1546 iou=0.0245 time=219.7s
+  Val epoch 1: loss=0.2211
+  Saved best phase1 model (val_loss=0.2211)
+
+=== Phase1 Epoch 2/49 ===
+  Epoch 2 [10/220] loss=0.1654 mask=0.1447 iou=0.0206
+  Epoch 2 [20/220] loss=0.1996 mask=0.1728 iou=0.0267
+  Epoch 2 [30/220] loss=0.2023 mask=0.1746 iou=0.0278
+  Epoch 2 [40/220] loss=0.1778 mask=0.1541 iou=0.0237
+  Epoch 2 [50/220] loss=0.1645 mask=0.1433 iou=0.0212
+  Epoch 2 [60/220] loss=0.1615 mask=0.1414 iou=0.0200
+  Epoch 2 [70/220] loss=0.1623 mask=0.1411 iou=0.0213
+  Epoch 2 [80/220] loss=0.1635 mask=0.1421 iou=0.0214
+  Epoch 2 [90/220] loss=0.1629 mask=0.1411 iou=0.0218
+  Epoch 2 [100/220] loss=0.1646 mask=0.1418 iou=0.0227
+  Epoch 2 [110/220] loss=0.1625 mask=0.1397 iou=0.0228
+  Epoch 2 [120/220] loss=0.1662 mask=0.1429 iou=0.0233
+  Epoch 2 [130/220] loss=0.1641 mask=0.1413 iou=0.0228
+  Epoch 2 [140/220] loss=0.1649 mask=0.1417 iou=0.0232
+  Epoch 2 [150/220] loss=0.1656 mask=0.1429 iou=0.0227
+  Epoch 2 [160/220] loss=0.1625 mask=0.1403 iou=0.0222
+  Epoch 2 [170/220] loss=0.1625 mask=0.1406 iou=0.0219
+  Epoch 2 [180/220] loss=0.1596 mask=0.1384 iou=0.0212
+  Epoch 2 [190/220] loss=0.1592 mask=0.1377 iou=0.0215
+  Epoch 2 [200/220] loss=0.1581 mask=0.1371 iou=0.0210
+  Epoch 2 [210/220] loss=0.1563 mask=0.1355 iou=0.0208
+  Epoch 2 [220/220] loss=0.1556 mask=0.1352 iou=0.0204
+  Train: loss=0.1556 mask=0.1352 iou=0.0204 time=220.3s
+  Val epoch 2: loss=0.2007
+  Saved best phase1 model (val_loss=0.2007)
+
+=== Phase1 Epoch 3/49 ===
+  Epoch 3 [10/220] loss=0.1393 mask=0.1188 iou=0.0205
+  Epoch 3 [20/220] loss=0.1279 mask=0.1107 iou=0.0171
+  Epoch 3 [30/220] loss=0.1285 mask=0.1140 iou=0.0145
+  Epoch 3 [40/220] loss=0.1269 mask=0.1135 iou=0.0134
+  Epoch 3 [50/220] loss=0.1233 mask=0.1095 iou=0.0139
+  Epoch 3 [60/220] loss=0.1312 mask=0.1159 iou=0.0152
+  Epoch 3 [70/220] loss=0.1304 mask=0.1153 iou=0.0151
+  Epoch 3 [80/220] loss=0.1349 mask=0.1185 iou=0.0164
+  Epoch 3 [90/220] loss=0.1390 mask=0.1213 iou=0.0177
+  Epoch 3 [100/220] loss=0.1422 mask=0.1245 iou=0.0178
+  Epoch 3 [110/220] loss=0.1448 mask=0.1266 iou=0.0181
+  Epoch 3 [120/220] loss=0.1455 mask=0.1267 iou=0.0189
+  Epoch 3 [130/220] loss=0.1444 mask=0.1257 iou=0.0187
+  Epoch 3 [140/220] loss=0.1453 mask=0.1260 iou=0.0193
+  Epoch 3 [150/220] loss=0.1457 mask=0.1261 iou=0.0195
+  Epoch 3 [160/220] loss=0.1454 mask=0.1258 iou=0.0196
+  Epoch 3 [170/220] loss=0.1431 mask=0.1241 iou=0.0190
+  Epoch 3 [180/220] loss=0.1437 mask=0.1245 iou=0.0193
+  Epoch 3 [190/220] loss=0.1416 mask=0.1229 iou=0.0188
+  Epoch 3 [200/220] loss=0.1425 mask=0.1237 iou=0.0188
+  Epoch 3 [210/220] loss=0.1409 mask=0.1225 iou=0.0184
+  Epoch 3 [220/220] loss=0.1422 mask=0.1234 iou=0.0188
+  Train: loss=0.1422 mask=0.1234 iou=0.0188 time=206.6s
+  Val epoch 3: loss=0.1757
+  Saved best phase1 model (val_loss=0.1757)
+
+=== Phase1 Epoch 4/49 ===
+  Epoch 4 [10/220] loss=0.1216 mask=0.1140 iou=0.0076
+  Epoch 4 [20/220] loss=0.1178 mask=0.1100 iou=0.0078
+  Epoch 4 [30/220] loss=0.1180 mask=0.1084 iou=0.0095
+  Epoch 4 [40/220] loss=0.1165 mask=0.1064 iou=0.0101
+  Epoch 4 [50/220] loss=0.1201 mask=0.1082 iou=0.0119
+  Epoch 4 [60/220] loss=0.1166 mask=0.1046 iou=0.0120
+  Epoch 4 [70/220] loss=0.1175 mask=0.1047 iou=0.0128
+  Epoch 4 [80/220] loss=0.1222 mask=0.1089 iou=0.0133
+  Epoch 4 [90/220] loss=0.1246 mask=0.1114 iou=0.0132
+  Epoch 4 [100/220] loss=0.1252 mask=0.1114 iou=0.0138
+  Epoch 4 [110/220] loss=0.1272 mask=0.1129 iou=0.0143
+  Epoch 4 [120/220] loss=0.1270 mask=0.1129 iou=0.0141
+  Epoch 4 [130/220] loss=0.1278 mask=0.1132 iou=0.0146
+  Epoch 4 [140/220] loss=0.1276 mask=0.1130 iou=0.0145
+  Epoch 4 [150/220] loss=0.1273 mask=0.1129 iou=0.0144
+  Epoch 4 [160/220] loss=0.1292 mask=0.1143 iou=0.0149
+  Epoch 4 [170/220] loss=0.1290 mask=0.1143 iou=0.0147
+  Epoch 4 [180/220] loss=0.1271 mask=0.1128 iou=0.0143
+  Epoch 4 [190/220] loss=0.1277 mask=0.1131 iou=0.0146
+  Epoch 4 [200/220] loss=0.1272 mask=0.1127 iou=0.0144
+  Epoch 4 [210/220] loss=0.1268 mask=0.1125 iou=0.0143
+  Epoch 4 [220/220] loss=0.1281 mask=0.1130 iou=0.0151
+  Train: loss=0.1281 mask=0.1130 iou=0.0151 time=208.5s
+  Val epoch 4: loss=0.1645
+  Saved best phase1 model (val_loss=0.1645)
+
+=== Phase1 Epoch 5/49 ===
+  Epoch 5 [10/220] loss=0.1259 mask=0.1122 iou=0.0137
+  Epoch 5 [20/220] loss=0.1298 mask=0.1174 iou=0.0124
+  Epoch 5 [30/220] loss=0.1261 mask=0.1128 iou=0.0132
+  Epoch 5 [40/220] loss=0.1340 mask=0.1183 iou=0.0157
+  Epoch 5 [50/220] loss=0.1255 mask=0.1113 iou=0.0142
+  Epoch 5 [60/220] loss=0.1246 mask=0.1109 iou=0.0137
+  Epoch 5 [70/220] loss=0.1193 mask=0.1064 iou=0.0129
+  Epoch 5 [80/220] loss=0.1208 mask=0.1077 iou=0.0131
+  Epoch 5 [90/220] loss=0.1238 mask=0.1093 iou=0.0145
+  Epoch 5 [100/220] loss=0.1235 mask=0.1094 iou=0.0141
+  Epoch 5 [110/220] loss=0.1256 mask=0.1111 iou=0.0145
+  Epoch 5 [120/220] loss=0.1272 mask=0.1125 iou=0.0147
+  Epoch 5 [130/220] loss=0.1235 mask=0.1092 iou=0.0143
+  Epoch 5 [140/220] loss=0.1246 mask=0.1100 iou=0.0146
+  Epoch 5 [150/220] loss=0.1236 mask=0.1094 iou=0.0142
+  Epoch 5 [160/220] loss=0.1228 mask=0.1087 iou=0.0141
+  Epoch 5 [170/220] loss=0.1236 mask=0.1098 iou=0.0138
+  Epoch 5 [180/220] loss=0.1237 mask=0.1099 iou=0.0138
+  Epoch 5 [190/220] loss=0.1236 mask=0.1099 iou=0.0137
+  Epoch 5 [200/220] loss=0.1236 mask=0.1101 iou=0.0134
+  Epoch 5 [210/220] loss=0.1240 mask=0.1102 iou=0.0137
+  Epoch 5 [220/220] loss=0.1241 mask=0.1100 iou=0.0141
+  Train: loss=0.1241 mask=0.1100 iou=0.0141 time=218.6s
+  Val epoch 5: loss=0.1622
+  Saved best phase1 model (val_loss=0.1622)
+
+=== Phase1 Epoch 6/49 ===
+  Epoch 6 [10/220] loss=0.1225 mask=0.1085 iou=0.0140
+  Epoch 6 [20/220] loss=0.1198 mask=0.1083 iou=0.0115
+  Epoch 6 [30/220] loss=0.1147 mask=0.1050 iou=0.0097
+  Epoch 6 [40/220] loss=0.1140 mask=0.1038 iou=0.0101
+  Epoch 6 [50/220] loss=0.1132 mask=0.1028 iou=0.0103
+  Epoch 6 [60/220] loss=0.1136 mask=0.1036 iou=0.0100
+  Epoch 6 [70/220] loss=0.1167 mask=0.1051 iou=0.0116
+  Epoch 6 [80/220] loss=0.1184 mask=0.1059 iou=0.0125
+  Epoch 6 [90/220] loss=0.1176 mask=0.1053 iou=0.0123
+  Epoch 6 [100/220] loss=0.1159 mask=0.1037 iou=0.0122
+  Epoch 6 [110/220] loss=0.1133 mask=0.1016 iou=0.0117
+  Epoch 6 [120/220] loss=0.1134 mask=0.1017 iou=0.0116
+  Epoch 6 [130/220] loss=0.1137 mask=0.1017 iou=0.0119
+  Epoch 6 [140/220] loss=0.1140 mask=0.1022 iou=0.0118
+  Epoch 6 [150/220] loss=0.1158 mask=0.1036 iou=0.0122
+  Epoch 6 [160/220] loss=0.1164 mask=0.1038 iou=0.0125
+  Epoch 6 [170/220] loss=0.1158 mask=0.1033 iou=0.0124
+  Epoch 6 [180/220] loss=0.1167 mask=0.1040 iou=0.0126
+  Epoch 6 [190/220] loss=0.1166 mask=0.1040 iou=0.0126
+  Epoch 6 [200/220] loss=0.1178 mask=0.1049 iou=0.0129
+  Epoch 6 [210/220] loss=0.1176 mask=0.1044 iou=0.0133
+  Epoch 6 [220/220] loss=0.1165 mask=0.1033 iou=0.0131
+  Train: loss=0.1165 mask=0.1033 iou=0.0131 time=214.9s
+  Val epoch 6: loss=0.1441
+  Saved best phase1 model (val_loss=0.1441)
+
+=== Phase1 Epoch 7/49 ===
+  Epoch 7 [10/220] loss=0.1133 mask=0.0988 iou=0.0145
+  Epoch 7 [20/220] loss=0.1082 mask=0.0971 iou=0.0111
+  Epoch 7 [30/220] loss=0.1014 mask=0.0912 iou=0.0102
+  Epoch 7 [40/220] loss=0.1110 mask=0.0982 iou=0.0127
+  Epoch 7 [50/220] loss=0.1090 mask=0.0968 iou=0.0123
+  Epoch 7 [60/220] loss=0.1081 mask=0.0954 iou=0.0127
+  Epoch 7 [70/220] loss=0.1064 mask=0.0939 iou=0.0125
+  Epoch 7 [80/220] loss=0.1202 mask=0.1046 iou=0.0155
+  Epoch 7 [90/220] loss=0.1197 mask=0.1047 iou=0.0150
+  Epoch 7 [100/220] loss=0.1236 mask=0.1081 iou=0.0154
+  Epoch 7 [110/220] loss=0.1205 mask=0.1056 iou=0.0149
+  Epoch 7 [120/220] loss=0.1189 mask=0.1042 iou=0.0146
+  Epoch 7 [130/220] loss=0.1180 mask=0.1037 iou=0.0143
+  Epoch 7 [140/220] loss=0.1191 mask=0.1044 iou=0.0147
+  Epoch 7 [150/220] loss=0.1156 mask=0.1014 iou=0.0142
+  Epoch 7 [160/220] loss=0.1141 mask=0.1002 iou=0.0139
+  Epoch 7 [170/220] loss=0.1126 mask=0.0989 iou=0.0136
+  Epoch 7 [180/220] loss=0.1128 mask=0.0994 iou=0.0134
+  Epoch 7 [190/220] loss=0.1133 mask=0.0999 iou=0.0134
+  Epoch 7 [200/220] loss=0.1136 mask=0.1004 iou=0.0133
+  Epoch 7 [210/220] loss=0.1153 mask=0.1018 iou=0.0135
+  Epoch 7 [220/220] loss=0.1151 mask=0.1017 iou=0.0133
+  Train: loss=0.1151 mask=0.1017 iou=0.0133 time=216.3s
+  Val epoch 7: loss=0.1394
+  Saved best phase1 model (val_loss=0.1394)
+
+=== Phase1 Epoch 8/49 ===
+  Epoch 8 [10/220] loss=0.0817 mask=0.0736 iou=0.0081
+  Epoch 8 [20/220] loss=0.1066 mask=0.0921 iou=0.0145
+  Epoch 8 [30/220] loss=0.1021 mask=0.0901 iou=0.0120
+  Epoch 8 [40/220] loss=0.1054 mask=0.0929 iou=0.0125
+  Epoch 8 [50/220] loss=0.1086 mask=0.0957 iou=0.0129
+  Epoch 8 [60/220] loss=0.1109 mask=0.0973 iou=0.0136
+  Epoch 8 [70/220] loss=0.1083 mask=0.0951 iou=0.0133
+  Epoch 8 [80/220] loss=0.1072 mask=0.0948 iou=0.0124
+  Epoch 8 [90/220] loss=0.1061 mask=0.0940 iou=0.0121
+  Epoch 8 [100/220] loss=0.1074 mask=0.0950 iou=0.0124
+  Epoch 8 [110/220] loss=0.1095 mask=0.0966 iou=0.0129
+  Epoch 8 [120/220] loss=0.1099 mask=0.0973 iou=0.0127
+  Epoch 8 [130/220] loss=0.1079 mask=0.0959 iou=0.0121
+  Epoch 8 [140/220] loss=0.1071 mask=0.0954 iou=0.0117
+  Epoch 8 [150/220] loss=0.1069 mask=0.0955 iou=0.0115
+  Epoch 8 [160/220] loss=0.1072 mask=0.0957 iou=0.0115
+  Epoch 8 [170/220] loss=0.1064 mask=0.0952 iou=0.0112
+  Epoch 8 [180/220] loss=0.1080 mask=0.0964 iou=0.0116
+  Epoch 8 [190/220] loss=0.1106 mask=0.0986 iou=0.0120
+  Epoch 8 [200/220] loss=0.1104 mask=0.0980 iou=0.0124
+  Epoch 8 [210/220] loss=0.1111 mask=0.0985 iou=0.0125
+  Epoch 8 [220/220] loss=0.1111 mask=0.0985 iou=0.0126
+  Train: loss=0.1111 mask=0.0985 iou=0.0126 time=225.3s
+  Val epoch 8: loss=0.1408
+
+=== Phase1 Epoch 9/49 ===
+  Epoch 9 [10/220] loss=0.0952 mask=0.0847 iou=0.0105
+  Epoch 9 [20/220] loss=0.0967 mask=0.0868 iou=0.0099
+  Epoch 9 [30/220] loss=0.0966 mask=0.0875 iou=0.0091
+  Epoch 9 [40/220] loss=0.1036 mask=0.0930 iou=0.0106
+  Epoch 9 [50/220] loss=0.0987 mask=0.0890 iou=0.0097
+  Epoch 9 [60/220] loss=0.0999 mask=0.0903 iou=0.0095
+  Epoch 9 [70/220] loss=0.1021 mask=0.0922 iou=0.0099
+  Epoch 9 [80/220] loss=0.1034 mask=0.0937 iou=0.0097
+  Epoch 9 [90/220] loss=0.1005 mask=0.0912 iou=0.0093
+  Epoch 9 [100/220] loss=0.1007 mask=0.0914 iou=0.0093
+  Epoch 9 [110/220] loss=0.1013 mask=0.0921 iou=0.0093
+  Epoch 9 [120/220] loss=0.1012 mask=0.0920 iou=0.0092
+  Epoch 9 [130/220] loss=0.1021 mask=0.0929 iou=0.0092
+  Epoch 9 [140/220] loss=0.0998 mask=0.0908 iou=0.0090
+  Epoch 9 [150/220] loss=0.1027 mask=0.0929 iou=0.0098
+  Epoch 9 [160/220] loss=0.1041 mask=0.0938 iou=0.0103
+  Epoch 9 [170/220] loss=0.1046 mask=0.0942 iou=0.0104
+  Epoch 9 [180/220] loss=0.1057 mask=0.0950 iou=0.0107
+  Epoch 9 [190/220] loss=0.1047 mask=0.0943 iou=0.0105
+  Epoch 9 [200/220] loss=0.1041 mask=0.0938 iou=0.0102
+  Epoch 9 [210/220] loss=0.1034 mask=0.0933 iou=0.0101
+  Epoch 9 [220/220] loss=0.1027 mask=0.0927 iou=0.0100
+  Train: loss=0.1027 mask=0.0927 iou=0.0100 time=212.7s
+  Val epoch 9: loss=0.1441
+
+=== Phase1 Epoch 10/49 ===
+  Epoch 10 [10/220] loss=0.1040 mask=0.0908 iou=0.0132
+  Epoch 10 [20/220] loss=0.0981 mask=0.0871 iou=0.0111
+  Epoch 10 [30/220] loss=0.1058 mask=0.0948 iou=0.0110
+  Epoch 10 [40/220] loss=0.1036 mask=0.0934 iou=0.0102
+  Epoch 10 [50/220] loss=0.0999 mask=0.0902 iou=0.0097
+  Epoch 10 [60/220] loss=0.1026 mask=0.0924 iou=0.0103
+  Epoch 10 [70/220] loss=0.1000 mask=0.0906 iou=0.0095
+  Epoch 10 [80/220] loss=0.0984 mask=0.0896 iou=0.0088
+  Epoch 10 [90/220] loss=0.0968 mask=0.0881 iou=0.0087
+  Epoch 10 [100/220] loss=0.0986 mask=0.0895 iou=0.0091
+  Epoch 10 [110/220] loss=0.0980 mask=0.0889 iou=0.0091
+  Epoch 10 [120/220] loss=0.0993 mask=0.0900 iou=0.0093
+  Epoch 10 [130/220] loss=0.0991 mask=0.0901 iou=0.0090
+  Epoch 10 [140/220] loss=0.0973 mask=0.0886 iou=0.0088
+  Epoch 10 [150/220] loss=0.0957 mask=0.0873 iou=0.0084
+  Epoch 10 [160/220] loss=0.0970 mask=0.0882 iou=0.0088
+  Epoch 10 [170/220] loss=0.0986 mask=0.0896 iou=0.0089
+  Epoch 10 [180/220] loss=0.0981 mask=0.0893 iou=0.0088
+  Epoch 10 [190/220] loss=0.0970 mask=0.0883 iou=0.0088
+  Epoch 10 [200/220] loss=0.0970 mask=0.0880 iou=0.0090
+  Epoch 10 [210/220] loss=0.0979 mask=0.0888 iou=0.0091
+  Epoch 10 [220/220] loss=0.0978 mask=0.0887 iou=0.0091
+  Train: loss=0.0978 mask=0.0887 iou=0.0091 time=220.7s
+  Val epoch 10: loss=0.1348
+  Saved best phase1 model (val_loss=0.1348)
+
+=== Phase1 Epoch 11/49 ===
+  Epoch 11 [10/220] loss=0.1073 mask=0.0980 iou=0.0094
+  Epoch 11 [20/220] loss=0.0932 mask=0.0864 iou=0.0068
+  Epoch 11 [30/220] loss=0.0950 mask=0.0876 iou=0.0073
+  Epoch 11 [40/220] loss=0.0907 mask=0.0839 iou=0.0068
+  Epoch 11 [50/220] loss=0.0884 mask=0.0819 iou=0.0065
+  Epoch 11 [60/220] loss=0.0853 mask=0.0792 iou=0.0061
+  Epoch 11 [70/220] loss=0.0896 mask=0.0822 iou=0.0074
+  Epoch 11 [80/220] loss=0.0860 mask=0.0791 iou=0.0069
+  Epoch 11 [90/220] loss=0.0873 mask=0.0801 iou=0.0072
+  Epoch 11 [100/220] loss=0.0888 mask=0.0815 iou=0.0073
+  Epoch 11 [110/220] loss=0.0901 mask=0.0825 iou=0.0076
+  Epoch 11 [120/220] loss=0.0903 mask=0.0828 iou=0.0075
+  Epoch 11 [130/220] loss=0.0906 mask=0.0830 iou=0.0075
+  Epoch 11 [140/220] loss=0.0902 mask=0.0828 iou=0.0074
+  Epoch 11 [150/220] loss=0.0907 mask=0.0834 iou=0.0073
+  Epoch 11 [160/220] loss=0.0914 mask=0.0839 iou=0.0076
+  Epoch 11 [170/220] loss=0.0912 mask=0.0838 iou=0.0074
+  Epoch 11 [180/220] loss=0.0916 mask=0.0843 iou=0.0073
+  Epoch 11 [190/220] loss=0.0925 mask=0.0850 iou=0.0075
+  Epoch 11 [200/220] loss=0.0926 mask=0.0852 iou=0.0074
+  Epoch 11 [210/220] loss=0.0935 mask=0.0860 iou=0.0074
+  Epoch 11 [220/220] loss=0.0938 mask=0.0861 iou=0.0077
+  Train: loss=0.0938 mask=0.0861 iou=0.0077 time=221.8s
+  Val epoch 11: loss=0.1296
+  Saved best phase1 model (val_loss=0.1296)
+
+=== Phase1 Epoch 12/49 ===
+  Epoch 12 [10/220] loss=0.0760 mask=0.0709 iou=0.0051
+  Epoch 12 [20/220] loss=0.0730 mask=0.0682 iou=0.0048
+  Epoch 12 [30/220] loss=0.0766 mask=0.0702 iou=0.0064
+  Epoch 12 [40/220] loss=0.0796 mask=0.0726 iou=0.0069
+  Epoch 12 [50/220] loss=0.0802 mask=0.0733 iou=0.0068
+  Epoch 12 [60/220] loss=0.0819 mask=0.0754 iou=0.0065
+  Epoch 12 [70/220] loss=0.0856 mask=0.0785 iou=0.0072
+  Epoch 12 [80/220] loss=0.0842 mask=0.0772 iou=0.0069
+  Epoch 12 [90/220] loss=0.0879 mask=0.0800 iou=0.0079
+  Epoch 12 [100/220] loss=0.0894 mask=0.0810 iou=0.0084
+  Epoch 12 [110/220] loss=0.0901 mask=0.0817 iou=0.0084
+  Epoch 12 [120/220] loss=0.0896 mask=0.0814 iou=0.0082
+  Epoch 12 [130/220] loss=0.0898 mask=0.0816 iou=0.0082
+  Epoch 12 [140/220] loss=0.0896 mask=0.0816 iou=0.0080
+  Epoch 12 [150/220] loss=0.0890 mask=0.0812 iou=0.0078
+  Epoch 12 [160/220] loss=0.0890 mask=0.0811 iou=0.0079
+  Epoch 12 [170/220] loss=0.0916 mask=0.0833 iou=0.0083
+  Epoch 12 [180/220] loss=0.0935 mask=0.0851 iou=0.0085
+  Epoch 12 [190/220] loss=0.0934 mask=0.0852 iou=0.0083
+  Epoch 12 [200/220] loss=0.0936 mask=0.0854 iou=0.0082
+  Epoch 12 [210/220] loss=0.0936 mask=0.0854 iou=0.0082
+  Epoch 12 [220/220] loss=0.0934 mask=0.0854 iou=0.0080
+  Train: loss=0.0934 mask=0.0854 iou=0.0080 time=222.4s
+  Val epoch 12: loss=0.1305
+
+=== Phase1 Epoch 13/49 ===
+  Epoch 13 [10/220] loss=0.0814 mask=0.0750 iou=0.0064
+  Epoch 13 [20/220] loss=0.1157 mask=0.1032 iou=0.0125
+  Epoch 13 [30/220] loss=0.1035 mask=0.0929 iou=0.0105
+  Epoch 13 [40/220] loss=0.0976 mask=0.0881 iou=0.0095
+  Epoch 13 [50/220] loss=0.0958 mask=0.0867 iou=0.0091
+  Epoch 13 [60/220] loss=0.0950 mask=0.0860 iou=0.0089
+  Epoch 13 [70/220] loss=0.0987 mask=0.0896 iou=0.0092
+  Epoch 13 [80/220] loss=0.0953 mask=0.0869 iou=0.0084
+  Epoch 13 [90/220] loss=0.0931 mask=0.0848 iou=0.0083
+  Epoch 13 [100/220] loss=0.0922 mask=0.0840 iou=0.0082
+  Epoch 13 [110/220] loss=0.0914 mask=0.0834 iou=0.0081
+  Epoch 13 [120/220] loss=0.0912 mask=0.0832 iou=0.0079
+  Epoch 13 [130/220] loss=0.0893 mask=0.0817 iou=0.0076
+  Epoch 13 [140/220] loss=0.0895 mask=0.0819 iou=0.0076
+  Epoch 13 [150/220] loss=0.0906 mask=0.0831 iou=0.0076
+  Epoch 13 [160/220] loss=0.0896 mask=0.0822 iou=0.0074
+  Epoch 13 [170/220] loss=0.0889 mask=0.0815 iou=0.0074
+  Epoch 13 [180/220] loss=0.0891 mask=0.0818 iou=0.0073
+  Epoch 13 [190/220] loss=0.0889 mask=0.0816 iou=0.0073
+  Epoch 13 [200/220] loss=0.0883 mask=0.0812 iou=0.0071
+  Epoch 13 [210/220] loss=0.0893 mask=0.0821 iou=0.0072
+  Epoch 13 [220/220] loss=0.0899 mask=0.0825 iou=0.0074
+  Train: loss=0.0899 mask=0.0825 iou=0.0074 time=214.9s
+  Val epoch 13: loss=0.1289
+  Saved best phase1 model (val_loss=0.1289)
+
+=== Phase1 Epoch 14/49 ===
+  Epoch 14 [10/220] loss=0.1303 mask=0.1156 iou=0.0147
+  Epoch 14 [20/220] loss=0.1039 mask=0.0942 iou=0.0097
+  Epoch 14 [30/220] loss=0.0966 mask=0.0879 iou=0.0087
+  Epoch 14 [40/220] loss=0.0961 mask=0.0877 iou=0.0084
+  Epoch 14 [50/220] loss=0.0939 mask=0.0865 iou=0.0074
+  Epoch 14 [60/220] loss=0.0908 mask=0.0839 iou=0.0069
+  Epoch 14 [70/220] loss=0.0897 mask=0.0826 iou=0.0071
+  Epoch 14 [80/220] loss=0.0879 mask=0.0813 iou=0.0066
+  Epoch 14 [90/220] loss=0.0888 mask=0.0819 iou=0.0069
+  Epoch 14 [100/220] loss=0.0861 mask=0.0796 iou=0.0065
+  Epoch 14 [110/220] loss=0.0865 mask=0.0801 iou=0.0064
+  Epoch 14 [120/220] loss=0.0849 mask=0.0787 iou=0.0062
+  Epoch 14 [130/220] loss=0.0847 mask=0.0787 iou=0.0060
+  Epoch 14 [140/220] loss=0.0847 mask=0.0787 iou=0.0060
+  Epoch 14 [150/220] loss=0.0853 mask=0.0792 iou=0.0061
+  Epoch 14 [160/220] loss=0.0865 mask=0.0802 iou=0.0062
+  Epoch 14 [170/220] loss=0.0874 mask=0.0810 iou=0.0064
+  Epoch 14 [180/220] loss=0.0864 mask=0.0801 iou=0.0063
+  Epoch 14 [190/220] loss=0.0857 mask=0.0795 iou=0.0063
+  Epoch 14 [200/220] loss=0.0863 mask=0.0799 iou=0.0064
+  Epoch 14 [210/220] loss=0.0867 mask=0.0804 iou=0.0063
+  Epoch 14 [220/220] loss=0.0871 mask=0.0808 iou=0.0062
+  Train: loss=0.0871 mask=0.0808 iou=0.0062 time=214.6s
+  Val epoch 14: loss=0.1270
+  Saved best phase1 model (val_loss=0.1270)
+
+=== Phase1 Epoch 15/49 ===
+  Epoch 15 [10/220] loss=0.0710 mask=0.0677 iou=0.0034
+  Epoch 15 [20/220] loss=0.0648 mask=0.0615 iou=0.0033
+  Epoch 15 [30/220] loss=0.0743 mask=0.0699 iou=0.0044
+  Epoch 15 [40/220] loss=0.0796 mask=0.0742 iou=0.0055
+  Epoch 15 [50/220] loss=0.0805 mask=0.0754 iou=0.0052
+  Epoch 15 [60/220] loss=0.0851 mask=0.0788 iou=0.0062
+  Epoch 15 [70/220] loss=0.0850 mask=0.0786 iou=0.0064
+  Epoch 15 [80/220] loss=0.0866 mask=0.0802 iou=0.0065
+  Epoch 15 [90/220] loss=0.0868 mask=0.0804 iou=0.0063
+  Epoch 15 [100/220] loss=0.0852 mask=0.0789 iou=0.0063
+  Epoch 15 [110/220] loss=0.0843 mask=0.0782 iou=0.0061
+  Epoch 15 [120/220] loss=0.0825 mask=0.0767 iou=0.0058
+  Epoch 15 [130/220] loss=0.0819 mask=0.0762 iou=0.0057
+  Epoch 15 [140/220] loss=0.0820 mask=0.0763 iou=0.0057
+  Epoch 15 [150/220] loss=0.0834 mask=0.0776 iou=0.0058
+  Epoch 15 [160/220] loss=0.0840 mask=0.0781 iou=0.0059
+  Epoch 15 [170/220] loss=0.0836 mask=0.0777 iou=0.0059
+  Epoch 15 [180/220] loss=0.0851 mask=0.0789 iou=0.0062
+  Epoch 15 [190/220] loss=0.0854 mask=0.0793 iou=0.0061
+  Epoch 15 [200/220] loss=0.0850 mask=0.0790 iou=0.0060
+  Epoch 15 [210/220] loss=0.0846 mask=0.0786 iou=0.0059
+  Epoch 15 [220/220] loss=0.0849 mask=0.0788 iou=0.0060
+  Train: loss=0.0849 mask=0.0788 iou=0.0060 time=223.4s
+  Val epoch 15: loss=0.1220
+  Saved best phase1 model (val_loss=0.1220)
+
+=== Phase1 Epoch 16/49 ===
+  Epoch 16 [10/220] loss=0.0791 mask=0.0733 iou=0.0057
+  Epoch 16 [20/220] loss=0.0839 mask=0.0781 iou=0.0058
+  Epoch 16 [30/220] loss=0.0895 mask=0.0831 iou=0.0064
+  Epoch 16 [40/220] loss=0.0879 mask=0.0817 iou=0.0062
+  Epoch 16 [50/220] loss=0.0872 mask=0.0812 iou=0.0060
+  Epoch 16 [60/220] loss=0.0869 mask=0.0807 iou=0.0061
+  Epoch 16 [70/220] loss=0.0872 mask=0.0811 iou=0.0061
+  Epoch 16 [80/220] loss=0.0852 mask=0.0794 iou=0.0058
+  Epoch 16 [90/220] loss=0.0888 mask=0.0828 iou=0.0060
+  Epoch 16 [100/220] loss=0.0882 mask=0.0820 iou=0.0062
+  Epoch 16 [110/220] loss=0.0874 mask=0.0813 iou=0.0062
+  Epoch 16 [120/220] loss=0.0886 mask=0.0825 iou=0.0061
+  Epoch 16 [130/220] loss=0.0878 mask=0.0817 iou=0.0061
+  Epoch 16 [140/220] loss=0.0863 mask=0.0805 iou=0.0059
+  Epoch 16 [150/220] loss=0.0858 mask=0.0801 iou=0.0057
+  Epoch 16 [160/220] loss=0.0863 mask=0.0804 iou=0.0058
+  Epoch 16 [170/220] loss=0.0877 mask=0.0814 iou=0.0063
+  Epoch 16 [180/220] loss=0.0871 mask=0.0809 iou=0.0062
+  Epoch 16 [190/220] loss=0.0875 mask=0.0812 iou=0.0063
+  Epoch 16 [200/220] loss=0.0873 mask=0.0810 iou=0.0063
+  Epoch 16 [210/220] loss=0.0876 mask=0.0812 iou=0.0065
+  Epoch 16 [220/220] loss=0.0864 mask=0.0801 iou=0.0063
+  Train: loss=0.0864 mask=0.0801 iou=0.0063 time=223.8s
+  Val epoch 16: loss=0.1300
+
+=== Phase1 Epoch 17/49 ===
+  Epoch 17 [10/220] loss=0.0802 mask=0.0763 iou=0.0040
+  Epoch 17 [20/220] loss=0.0718 mask=0.0686 iou=0.0032
+  Epoch 17 [30/220] loss=0.0719 mask=0.0687 iou=0.0032
+  Epoch 17 [40/220] loss=0.0739 mask=0.0699 iou=0.0040
+  Epoch 17 [50/220] loss=0.0769 mask=0.0724 iou=0.0046
+  Epoch 17 [60/220] loss=0.0758 mask=0.0713 iou=0.0046
+  Epoch 17 [70/220] loss=0.0756 mask=0.0708 iou=0.0048
+  Epoch 17 [80/220] loss=0.0796 mask=0.0738 iou=0.0058
+  Epoch 17 [90/220] loss=0.0815 mask=0.0755 iou=0.0060
+  Epoch 17 [100/220] loss=0.0823 mask=0.0763 iou=0.0060
+  Epoch 17 [110/220] loss=0.0841 mask=0.0781 iou=0.0060
+  Epoch 17 [120/220] loss=0.0853 mask=0.0793 iou=0.0061
+  Epoch 17 [130/220] loss=0.0841 mask=0.0780 iou=0.0061
+  Epoch 17 [140/220] loss=0.0830 mask=0.0772 iou=0.0059
+  Epoch 17 [150/220] loss=0.0844 mask=0.0783 iou=0.0060
+  Epoch 17 [160/220] loss=0.0838 mask=0.0778 iou=0.0060
+  Epoch 17 [170/220] loss=0.0828 mask=0.0769 iou=0.0059
+  Epoch 17 [180/220] loss=0.0816 mask=0.0759 iou=0.0057
+  Epoch 17 [190/220] loss=0.0817 mask=0.0760 iou=0.0057
+  Epoch 17 [200/220] loss=0.0833 mask=0.0775 iou=0.0059
+  Epoch 17 [210/220] loss=0.0836 mask=0.0778 iou=0.0058
+  Epoch 17 [220/220] loss=0.0832 mask=0.0775 iou=0.0057
+  Train: loss=0.0832 mask=0.0775 iou=0.0057 time=224.8s
+  Val epoch 17: loss=0.1247
+
+=== Phase1 Epoch 18/49 ===
+  Epoch 18 [10/220] loss=0.0728 mask=0.0687 iou=0.0041
+  Epoch 18 [20/220] loss=0.0749 mask=0.0714 iou=0.0035
+  Epoch 18 [30/220] loss=0.0749 mask=0.0711 iou=0.0038
+  Epoch 18 [40/220] loss=0.0744 mask=0.0707 iou=0.0037
+  Epoch 18 [50/220] loss=0.0786 mask=0.0745 iou=0.0041
+  Epoch 18 [60/220] loss=0.0784 mask=0.0743 iou=0.0042
+  Epoch 18 [70/220] loss=0.0818 mask=0.0770 iou=0.0048
+  Epoch 18 [80/220] loss=0.0853 mask=0.0799 iou=0.0054
+  Epoch 18 [90/220] loss=0.0835 mask=0.0783 iou=0.0052
+  Epoch 18 [100/220] loss=0.0839 mask=0.0787 iou=0.0052
+  Epoch 18 [110/220] loss=0.0825 mask=0.0772 iou=0.0052
+  Epoch 18 [120/220] loss=0.0834 mask=0.0776 iou=0.0058
+  Epoch 18 [130/220] loss=0.0833 mask=0.0775 iou=0.0058
+  Epoch 18 [140/220] loss=0.0831 mask=0.0772 iou=0.0058
+  Epoch 18 [150/220] loss=0.0842 mask=0.0781 iou=0.0061
+  Epoch 18 [160/220] loss=0.0826 mask=0.0767 iou=0.0059
+  Epoch 18 [170/220] loss=0.0819 mask=0.0760 iou=0.0058
+  Epoch 18 [180/220] loss=0.0818 mask=0.0760 iou=0.0057
+  Epoch 18 [190/220] loss=0.0826 mask=0.0769 iou=0.0058
+  Epoch 18 [200/220] loss=0.0822 mask=0.0765 iou=0.0056
+  Epoch 18 [210/220] loss=0.0825 mask=0.0769 iou=0.0056
+  Epoch 18 [220/220] loss=0.0829 mask=0.0773 iou=0.0056
+  Train: loss=0.0829 mask=0.0773 iou=0.0056 time=215.5s
+  Val epoch 18: loss=0.1216
+  Saved best phase1 model (val_loss=0.1216)
+
+=== Phase1 Epoch 19/49 ===
+  Epoch 19 [10/220] loss=0.0937 mask=0.0884 iou=0.0053
+  Epoch 19 [20/220] loss=0.0866 mask=0.0789 iou=0.0077
+  Epoch 19 [30/220] loss=0.0859 mask=0.0791 iou=0.0068
+  Epoch 19 [40/220] loss=0.0838 mask=0.0779 iou=0.0059
+  Epoch 19 [50/220] loss=0.0845 mask=0.0789 iou=0.0056
+  Epoch 19 [60/220] loss=0.0889 mask=0.0828 iou=0.0061
+  Epoch 19 [70/220] loss=0.0860 mask=0.0803 iou=0.0058
+  Epoch 19 [80/220] loss=0.0850 mask=0.0793 iou=0.0057
+  Epoch 19 [90/220] loss=0.0863 mask=0.0802 iou=0.0061
+  Epoch 19 [100/220] loss=0.0857 mask=0.0795 iou=0.0063
+  Epoch 19 [110/220] loss=0.0840 mask=0.0779 iou=0.0060
+  Epoch 19 [120/220] loss=0.0829 mask=0.0769 iou=0.0059
+  Epoch 19 [130/220] loss=0.0826 mask=0.0768 iou=0.0058
+  Epoch 19 [140/220] loss=0.0830 mask=0.0771 iou=0.0060
+  Epoch 19 [150/220] loss=0.0825 mask=0.0767 iou=0.0058
+  Epoch 19 [160/220] loss=0.0819 mask=0.0762 iou=0.0057
+  Epoch 19 [170/220] loss=0.0811 mask=0.0754 iou=0.0056
+  Epoch 19 [180/220] loss=0.0813 mask=0.0757 iou=0.0056
+  Epoch 19 [190/220] loss=0.0813 mask=0.0757 iou=0.0055
+  Epoch 19 [200/220] loss=0.0814 mask=0.0760 iou=0.0054
+  Epoch 19 [210/220] loss=0.0809 mask=0.0756 iou=0.0053
+  Epoch 19 [220/220] loss=0.0807 mask=0.0753 iou=0.0054
+  Train: loss=0.0807 mask=0.0753 iou=0.0054 time=221.5s
+  Val epoch 19: loss=0.1168
+  Saved best phase1 model (val_loss=0.1168)
+
+=== Phase1 Epoch 20/49 ===
+  Epoch 20 [10/220] loss=0.0697 mask=0.0658 iou=0.0039
+  Epoch 20 [20/220] loss=0.0678 mask=0.0635 iou=0.0043
+  Epoch 20 [30/220] loss=0.0694 mask=0.0655 iou=0.0039
+  Epoch 20 [40/220] loss=0.0691 mask=0.0652 iou=0.0039
+  Epoch 20 [50/220] loss=0.0715 mask=0.0678 iou=0.0037
+  Epoch 20 [60/220] loss=0.0754 mask=0.0713 iou=0.0041
+  Epoch 20 [70/220] loss=0.0748 mask=0.0705 iou=0.0043
+  Epoch 20 [80/220] loss=0.0758 mask=0.0716 iou=0.0042
+  Epoch 20 [90/220] loss=0.0763 mask=0.0720 iou=0.0043
+  Epoch 20 [100/220] loss=0.0776 mask=0.0733 iou=0.0043
+  Epoch 20 [110/220] loss=0.0787 mask=0.0740 iou=0.0047
+  Epoch 20 [120/220] loss=0.0775 mask=0.0730 iou=0.0045
+  Epoch 20 [130/220] loss=0.0782 mask=0.0737 iou=0.0045
+  Epoch 20 [140/220] loss=0.0768 mask=0.0724 iou=0.0045
+  Epoch 20 [150/220] loss=0.0764 mask=0.0720 iou=0.0044
+  Epoch 20 [160/220] loss=0.0765 mask=0.0721 iou=0.0044
+  Epoch 20 [170/220] loss=0.0770 mask=0.0725 iou=0.0045
+  Epoch 20 [180/220] loss=0.0771 mask=0.0726 iou=0.0045
+  Epoch 20 [190/220] loss=0.0774 mask=0.0729 iou=0.0045
+  Epoch 20 [200/220] loss=0.0767 mask=0.0723 iou=0.0044
+  Epoch 20 [210/220] loss=0.0762 mask=0.0719 iou=0.0043
+  Epoch 20 [220/220] loss=0.0769 mask=0.0725 iou=0.0044
+  Train: loss=0.0769 mask=0.0725 iou=0.0044 time=215.8s
+  Val epoch 20: loss=0.1155
+  Saved best phase1 model (val_loss=0.1155)
+
+=== Phase1 Epoch 21/49 ===
+  Epoch 21 [10/220] loss=0.0896 mask=0.0870 iou=0.0026
+  Epoch 21 [20/220] loss=0.0766 mask=0.0737 iou=0.0028
+  Epoch 21 [30/220] loss=0.0873 mask=0.0839 iou=0.0034
+  Epoch 21 [40/220] loss=0.0825 mask=0.0789 iou=0.0036
+  Epoch 21 [50/220] loss=0.0819 mask=0.0776 iou=0.0042
+  Epoch 21 [60/220] loss=0.0816 mask=0.0772 iou=0.0045
+  Epoch 21 [70/220] loss=0.0797 mask=0.0754 iou=0.0043
+  Epoch 21 [80/220] loss=0.0792 mask=0.0748 iou=0.0044
+  Epoch 21 [90/220] loss=0.0779 mask=0.0735 iou=0.0044
+  Epoch 21 [100/220] loss=0.0773 mask=0.0730 iou=0.0043
+  Epoch 21 [110/220] loss=0.0766 mask=0.0722 iou=0.0043
+  Epoch 21 [120/220] loss=0.0776 mask=0.0730 iou=0.0045
+  Epoch 21 [130/220] loss=0.0783 mask=0.0738 iou=0.0045
+  Epoch 21 [140/220] loss=0.0790 mask=0.0745 iou=0.0045
+  Epoch 21 [150/220] loss=0.0787 mask=0.0742 iou=0.0045
+  Epoch 21 [160/220] loss=0.0781 mask=0.0736 iou=0.0045
+  Epoch 21 [170/220] loss=0.0777 mask=0.0733 iou=0.0045
+  Epoch 21 [180/220] loss=0.0776 mask=0.0732 iou=0.0044
+  Epoch 21 [190/220] loss=0.0779 mask=0.0734 iou=0.0045
+  Epoch 21 [200/220] loss=0.0778 mask=0.0733 iou=0.0045
+  Epoch 21 [210/220] loss=0.0778 mask=0.0733 iou=0.0044
+  Epoch 21 [220/220] loss=0.0778 mask=0.0733 iou=0.0045
+  Train: loss=0.0778 mask=0.0733 iou=0.0045 time=226.0s
+  Val epoch 21: loss=0.1128
+  Saved best phase1 model (val_loss=0.1128)
+
+=== Phase1 Epoch 22/49 ===
+  Epoch 22 [10/220] loss=0.0876 mask=0.0834 iou=0.0042
+  Epoch 22 [20/220] loss=0.0890 mask=0.0847 iou=0.0042
+  Epoch 22 [30/220] loss=0.0923 mask=0.0866 iou=0.0057
+  Epoch 22 [40/220] loss=0.0861 mask=0.0807 iou=0.0054
+  Epoch 22 [50/220] loss=0.0834 mask=0.0782 iou=0.0053
+  Epoch 22 [60/220] loss=0.0837 mask=0.0788 iou=0.0049
+  Epoch 22 [70/220] loss=0.0791 mask=0.0746 iou=0.0045
+  Epoch 22 [80/220] loss=0.0784 mask=0.0742 iou=0.0043
+  Epoch 22 [90/220] loss=0.0774 mask=0.0732 iou=0.0042
+  Epoch 22 [100/220] loss=0.0767 mask=0.0725 iou=0.0041
+  Epoch 22 [110/220] loss=0.0769 mask=0.0726 iou=0.0043
+  Epoch 22 [120/220] loss=0.0752 mask=0.0710 iou=0.0042
+  Epoch 22 [130/220] loss=0.0750 mask=0.0709 iou=0.0041
+  Epoch 22 [140/220] loss=0.0745 mask=0.0704 iou=0.0041
+  Epoch 22 [150/220] loss=0.0761 mask=0.0718 iou=0.0044
+  Epoch 22 [160/220] loss=0.0768 mask=0.0724 iou=0.0044
+  Epoch 22 [170/220] loss=0.0767 mask=0.0722 iou=0.0044
+  Epoch 22 [180/220] loss=0.0778 mask=0.0733 iou=0.0045
+  Epoch 22 [190/220] loss=0.0773 mask=0.0728 iou=0.0044
+  Epoch 22 [200/220] loss=0.0773 mask=0.0729 iou=0.0044
+  Epoch 22 [210/220] loss=0.0767 mask=0.0724 iou=0.0043
+  Epoch 22 [220/220] loss=0.0764 mask=0.0721 iou=0.0043
+  Train: loss=0.0764 mask=0.0721 iou=0.0043 time=227.9s
+  Val epoch 22: loss=0.1128
+
+=== Phase1 Epoch 23/49 ===
+  Epoch 23 [10/220] loss=0.0571 mask=0.0549 iou=0.0022
+  Epoch 23 [20/220] loss=0.0665 mask=0.0631 iou=0.0035
+  Epoch 23 [30/220] loss=0.0723 mask=0.0688 iou=0.0035
+  Epoch 23 [40/220] loss=0.0753 mask=0.0717 iou=0.0036
+  Epoch 23 [50/220] loss=0.0788 mask=0.0750 iou=0.0038
+  Epoch 23 [60/220] loss=0.0765 mask=0.0728 iou=0.0038
+  Epoch 23 [70/220] loss=0.0777 mask=0.0735 iou=0.0042
+  Epoch 23 [80/220] loss=0.0798 mask=0.0755 iou=0.0043
+  Epoch 23 [90/220] loss=0.0783 mask=0.0741 iou=0.0042
+  Epoch 23 [100/220] loss=0.0776 mask=0.0733 iou=0.0043
+  Epoch 23 [110/220] loss=0.0768 mask=0.0727 iou=0.0041
+  Epoch 23 [120/220] loss=0.0756 mask=0.0716 iou=0.0040
+  Epoch 23 [130/220] loss=0.0752 mask=0.0713 iou=0.0038
+  Epoch 23 [140/220] loss=0.0770 mask=0.0729 iou=0.0041
+  Epoch 23 [150/220] loss=0.0760 mask=0.0721 iou=0.0040
+  Epoch 23 [160/220] loss=0.0757 mask=0.0717 iou=0.0040
+  Epoch 23 [170/220] loss=0.0752 mask=0.0713 iou=0.0040
+  Epoch 23 [180/220] loss=0.0746 mask=0.0707 iou=0.0039
+  Epoch 23 [190/220] loss=0.0747 mask=0.0707 iou=0.0040
+  Epoch 23 [200/220] loss=0.0743 mask=0.0704 iou=0.0039
+  Epoch 23 [210/220] loss=0.0739 mask=0.0700 iou=0.0039
+  Epoch 23 [220/220] loss=0.0747 mask=0.0707 iou=0.0039
+  Train: loss=0.0747 mask=0.0707 iou=0.0039 time=225.1s
+  Val epoch 23: loss=0.1159
+
+=== Phase1 Epoch 24/49 ===
+  Epoch 24 [10/220] loss=0.0868 mask=0.0795 iou=0.0073
+  Epoch 24 [20/220] loss=0.0780 mask=0.0722 iou=0.0057
+  Epoch 24 [30/220] loss=0.0724 mask=0.0675 iou=0.0049
+  Epoch 24 [40/220] loss=0.0743 mask=0.0692 iou=0.0050
+  Epoch 24 [50/220] loss=0.0746 mask=0.0698 iou=0.0049
+  Epoch 24 [60/220] loss=0.0754 mask=0.0707 iou=0.0047
+  Epoch 24 [70/220] loss=0.0749 mask=0.0703 iou=0.0046
+  Epoch 24 [80/220] loss=0.0732 mask=0.0689 iou=0.0044
+  Epoch 24 [90/220] loss=0.0739 mask=0.0695 iou=0.0043
+  Epoch 24 [100/220] loss=0.0758 mask=0.0713 iou=0.0045
+  Epoch 24 [110/220] loss=0.0778 mask=0.0731 iou=0.0047
+  Epoch 24 [120/220] loss=0.0775 mask=0.0730 iou=0.0045
+  Epoch 24 [130/220] loss=0.0787 mask=0.0743 iou=0.0045
+  Epoch 24 [140/220] loss=0.0778 mask=0.0736 iou=0.0043
+  Epoch 24 [150/220] loss=0.0768 mask=0.0726 iou=0.0042
+  Epoch 24 [160/220] loss=0.0763 mask=0.0721 iou=0.0041
+  Epoch 24 [170/220] loss=0.0753 mask=0.0712 iou=0.0041
+  Epoch 24 [180/220] loss=0.0748 mask=0.0708 iou=0.0040
+  Epoch 24 [190/220] loss=0.0748 mask=0.0708 iou=0.0040
+  Epoch 24 [200/220] loss=0.0748 mask=0.0708 iou=0.0040
+  Epoch 24 [210/220] loss=0.0749 mask=0.0709 iou=0.0040
+  Epoch 24 [220/220] loss=0.0747 mask=0.0708 iou=0.0039
+  Train: loss=0.0747 mask=0.0708 iou=0.0039 time=225.5s
+  Val epoch 24: loss=0.1154
+
+=== Phase1 Epoch 25/49 ===
+  Epoch 25 [10/220] loss=0.0843 mask=0.0783 iou=0.0061
+  Epoch 25 [20/220] loss=0.0837 mask=0.0779 iou=0.0057
+  Epoch 25 [30/220] loss=0.0808 mask=0.0764 iou=0.0045
+  Epoch 25 [40/220] loss=0.0805 mask=0.0762 iou=0.0043
+  Epoch 25 [50/220] loss=0.0795 mask=0.0753 iou=0.0042
+  Epoch 25 [60/220] loss=0.0766 mask=0.0726 iou=0.0040
+  Epoch 25 [70/220] loss=0.0756 mask=0.0716 iou=0.0040
+  Epoch 25 [80/220] loss=0.0749 mask=0.0709 iou=0.0040
+  Epoch 25 [90/220] loss=0.0755 mask=0.0715 iou=0.0041
+  Epoch 25 [100/220] loss=0.0757 mask=0.0716 iou=0.0041
+  Epoch 25 [110/220] loss=0.0764 mask=0.0724 iou=0.0040
+  Epoch 25 [120/220] loss=0.0772 mask=0.0729 iou=0.0043
+  Epoch 25 [130/220] loss=0.0764 mask=0.0721 iou=0.0042
+  Epoch 25 [140/220] loss=0.0758 mask=0.0716 iou=0.0042
+  Epoch 25 [150/220] loss=0.0759 mask=0.0718 iou=0.0041
+  Epoch 25 [160/220] loss=0.0756 mask=0.0715 iou=0.0041
+  Epoch 25 [170/220] loss=0.0760 mask=0.0720 iou=0.0040
+  Epoch 25 [180/220] loss=0.0755 mask=0.0715 iou=0.0040
+  Epoch 25 [190/220] loss=0.0754 mask=0.0715 iou=0.0039
+  Epoch 25 [200/220] loss=0.0757 mask=0.0718 iou=0.0039
+  Epoch 25 [210/220] loss=0.0753 mask=0.0713 iou=0.0039
+  Epoch 25 [220/220] loss=0.0749 mask=0.0710 iou=0.0039
+  Train: loss=0.0749 mask=0.0710 iou=0.0039 time=225.2s
+  Val epoch 25: loss=0.1140
+
+=== Phase1 Epoch 26/49 ===
+  Epoch 26 [10/220] loss=0.0688 mask=0.0646 iou=0.0042
+  Epoch 26 [20/220] loss=0.0677 mask=0.0640 iou=0.0038
+  Epoch 26 [30/220] loss=0.0678 mask=0.0645 iou=0.0033
+  Epoch 26 [40/220] loss=0.0689 mask=0.0659 iou=0.0030
+  Epoch 26 [50/220] loss=0.0744 mask=0.0714 iou=0.0030
+  Epoch 26 [60/220] loss=0.0747 mask=0.0714 iou=0.0033
+  Epoch 26 [70/220] loss=0.0777 mask=0.0742 iou=0.0036
+  Epoch 26 [80/220] loss=0.0751 mask=0.0715 iou=0.0035
+  Epoch 26 [90/220] loss=0.0743 mask=0.0707 iou=0.0035
+  Epoch 26 [100/220] loss=0.0752 mask=0.0716 iou=0.0036
+  Epoch 26 [110/220] loss=0.0747 mask=0.0709 iou=0.0038
+  Epoch 26 [120/220] loss=0.0737 mask=0.0700 iou=0.0037
+  Epoch 26 [130/220] loss=0.0746 mask=0.0706 iou=0.0040
+  Epoch 26 [140/220] loss=0.0755 mask=0.0715 iou=0.0041
+  Epoch 26 [150/220] loss=0.0744 mask=0.0705 iou=0.0039
+  Epoch 26 [160/220] loss=0.0747 mask=0.0709 iou=0.0039
+  Epoch 26 [170/220] loss=0.0739 mask=0.0701 iou=0.0038
+  Epoch 26 [180/220] loss=0.0734 mask=0.0698 iou=0.0037
+  Epoch 26 [190/220] loss=0.0731 mask=0.0695 iou=0.0036
+  Epoch 26 [200/220] loss=0.0726 mask=0.0690 iou=0.0036
+  Epoch 26 [210/220] loss=0.0736 mask=0.0697 iou=0.0039
+  Epoch 26 [220/220] loss=0.0744 mask=0.0704 iou=0.0040
+  Train: loss=0.0744 mask=0.0704 iou=0.0040 time=222.0s
+  Val epoch 26: loss=0.1115
+  Saved best phase1 model (val_loss=0.1115)
+
+=== Phase1 Epoch 27/49 ===
+  Epoch 27 [10/220] loss=0.0717 mask=0.0677 iou=0.0040
+  Epoch 27 [20/220] loss=0.0768 mask=0.0720 iou=0.0048
+  Epoch 27 [30/220] loss=0.0745 mask=0.0704 iou=0.0041
+  Epoch 27 [40/220] loss=0.0703 mask=0.0667 iou=0.0036
+  Epoch 27 [50/220] loss=0.0756 mask=0.0715 iou=0.0041
+  Epoch 27 [60/220] loss=0.0752 mask=0.0713 iou=0.0039
+  Epoch 27 [70/220] loss=0.0746 mask=0.0707 iou=0.0039
+  Epoch 27 [80/220] loss=0.0732 mask=0.0693 iou=0.0039
+  Epoch 27 [90/220] loss=0.0720 mask=0.0679 iou=0.0040
+  Epoch 27 [100/220] loss=0.0718 mask=0.0678 iou=0.0040
+  Epoch 27 [110/220] loss=0.0737 mask=0.0697 iou=0.0040
+  Epoch 27 [120/220] loss=0.0736 mask=0.0697 iou=0.0039
+  Epoch 27 [130/220] loss=0.0723 mask=0.0684 iou=0.0038
+  Epoch 27 [140/220] loss=0.0721 mask=0.0681 iou=0.0040
+  Epoch 27 [150/220] loss=0.0712 mask=0.0674 iou=0.0038
+  Epoch 27 [160/220] loss=0.0727 mask=0.0689 iou=0.0039
+  Epoch 27 [170/220] loss=0.0739 mask=0.0700 iou=0.0039
+  Epoch 27 [180/220] loss=0.0734 mask=0.0696 iou=0.0038
+  Epoch 27 [190/220] loss=0.0746 mask=0.0707 iou=0.0039
+  Epoch 27 [200/220] loss=0.0744 mask=0.0706 iou=0.0038
+  Epoch 27 [210/220] loss=0.0739 mask=0.0701 iou=0.0037
+  Epoch 27 [220/220] loss=0.0732 mask=0.0696 iou=0.0036
+  Train: loss=0.0732 mask=0.0696 iou=0.0036 time=224.0s
+  Val epoch 27: loss=0.1199
+
+=== Phase1 Epoch 28/49 ===
+  Epoch 28 [10/220] loss=0.0769 mask=0.0717 iou=0.0052
+  Epoch 28 [20/220] loss=0.0875 mask=0.0813 iou=0.0062
+  Epoch 28 [30/220] loss=0.0860 mask=0.0808 iou=0.0052
+  Epoch 28 [40/220] loss=0.0797 mask=0.0751 iou=0.0046
+  Epoch 28 [50/220] loss=0.0780 mask=0.0737 iou=0.0043
+  Epoch 28 [60/220] loss=0.0736 mask=0.0697 iou=0.0039
+  Epoch 28 [70/220] loss=0.0727 mask=0.0690 iou=0.0037
+  Epoch 28 [80/220] loss=0.0726 mask=0.0690 iou=0.0037
+  Epoch 28 [90/220] loss=0.0741 mask=0.0703 iou=0.0038
+  Epoch 28 [100/220] loss=0.0740 mask=0.0703 iou=0.0037
+  Epoch 28 [110/220] loss=0.0742 mask=0.0705 iou=0.0037
+  Epoch 28 [120/220] loss=0.0742 mask=0.0706 iou=0.0036
+  Epoch 28 [130/220] loss=0.0746 mask=0.0711 iou=0.0036
+  Epoch 28 [140/220] loss=0.0750 mask=0.0713 iou=0.0037
+  Epoch 28 [150/220] loss=0.0739 mask=0.0704 iou=0.0036
+  Epoch 28 [160/220] loss=0.0748 mask=0.0713 iou=0.0035
+  Epoch 28 [170/220] loss=0.0742 mask=0.0707 iou=0.0035
+  Epoch 28 [180/220] loss=0.0748 mask=0.0712 iou=0.0036
+  Epoch 28 [190/220] loss=0.0748 mask=0.0713 iou=0.0035
+  Epoch 28 [200/220] loss=0.0740 mask=0.0705 iou=0.0035
+  Epoch 28 [210/220] loss=0.0736 mask=0.0702 iou=0.0035
+  Epoch 28 [220/220] loss=0.0727 mask=0.0692 iou=0.0034
+  Train: loss=0.0727 mask=0.0692 iou=0.0034 time=221.0s
+  Val epoch 28: loss=0.1169
+
+=== Phase1 Epoch 29/49 ===
+  Epoch 29 [10/220] loss=0.0753 mask=0.0725 iou=0.0029
+  Epoch 29 [20/220] loss=0.0745 mask=0.0710 iou=0.0035
+  Epoch 29 [30/220] loss=0.0740 mask=0.0702 iou=0.0038
+  Epoch 29 [40/220] loss=0.0749 mask=0.0712 iou=0.0037
+  Epoch 29 [50/220] loss=0.0725 mask=0.0687 iou=0.0038
+  Epoch 29 [60/220] loss=0.0681 mask=0.0647 iou=0.0033
+  Epoch 29 [70/220] loss=0.0654 mask=0.0623 iou=0.0031
+  Epoch 29 [80/220] loss=0.0651 mask=0.0619 iou=0.0032
+  Epoch 29 [90/220] loss=0.0669 mask=0.0637 iou=0.0032
+  Epoch 29 [100/220] loss=0.0695 mask=0.0662 iou=0.0033
+  Epoch 29 [110/220] loss=0.0700 mask=0.0668 iou=0.0032
+  Epoch 29 [120/220] loss=0.0702 mask=0.0670 iou=0.0032
+  Epoch 29 [130/220] loss=0.0691 mask=0.0661 iou=0.0030
+  Epoch 29 [140/220] loss=0.0688 mask=0.0656 iou=0.0032
+  Epoch 29 [150/220] loss=0.0699 mask=0.0668 iou=0.0032
+  Epoch 29 [160/220] loss=0.0701 mask=0.0670 iou=0.0031
+  Epoch 29 [170/220] loss=0.0698 mask=0.0667 iou=0.0031
+  Epoch 29 [180/220] loss=0.0710 mask=0.0677 iou=0.0033
+  Epoch 29 [190/220] loss=0.0707 mask=0.0674 iou=0.0033
+  Epoch 29 [200/220] loss=0.0718 mask=0.0685 iou=0.0033
+  Epoch 29 [210/220] loss=0.0720 mask=0.0688 iou=0.0033
+  Epoch 29 [220/220] loss=0.0714 mask=0.0681 iou=0.0033
+  Train: loss=0.0714 mask=0.0681 iou=0.0033 time=225.2s
+  Val epoch 29: loss=0.1133
+
+=== Phase1 Epoch 30/49 ===
+  Epoch 30 [10/220] loss=0.0575 mask=0.0548 iou=0.0027
+  Epoch 30 [20/220] loss=0.0622 mask=0.0599 iou=0.0023
+  Epoch 30 [30/220] loss=0.0633 mask=0.0602 iou=0.0030
+  Epoch 30 [40/220] loss=0.0613 mask=0.0586 iou=0.0027
+  Epoch 30 [50/220] loss=0.0620 mask=0.0594 iou=0.0026
+  Epoch 30 [60/220] loss=0.0657 mask=0.0630 iou=0.0027
+  Epoch 30 [70/220] loss=0.0662 mask=0.0634 iou=0.0029
+  Epoch 30 [80/220] loss=0.0677 mask=0.0646 iou=0.0031
+  Epoch 30 [90/220] loss=0.0687 mask=0.0655 iou=0.0032
+  Epoch 30 [100/220] loss=0.0699 mask=0.0666 iou=0.0033
+  Epoch 30 [110/220] loss=0.0697 mask=0.0665 iou=0.0032
+  Epoch 30 [120/220] loss=0.0721 mask=0.0684 iou=0.0037
+  Epoch 30 [130/220] loss=0.0725 mask=0.0689 iou=0.0036
+  Epoch 30 [140/220] loss=0.0728 mask=0.0692 iou=0.0036
+  Epoch 30 [150/220] loss=0.0723 mask=0.0688 iou=0.0036
+  Epoch 30 [160/220] loss=0.0728 mask=0.0691 iou=0.0036
+  Epoch 30 [170/220] loss=0.0731 mask=0.0694 iou=0.0037
+  Epoch 30 [180/220] loss=0.0736 mask=0.0698 iou=0.0037
+  Epoch 30 [190/220] loss=0.0731 mask=0.0694 iou=0.0037
+  Epoch 30 [200/220] loss=0.0730 mask=0.0693 iou=0.0037
+  Epoch 30 [210/220] loss=0.0727 mask=0.0690 iou=0.0037
+  Epoch 30 [220/220] loss=0.0723 mask=0.0687 iou=0.0036
+  Train: loss=0.0723 mask=0.0687 iou=0.0036 time=224.0s
+  Val epoch 30: loss=0.1111
+  Saved best phase1 model (val_loss=0.1111)
+
+=== Phase1 Epoch 31/49 ===
+  Epoch 31 [10/220] loss=0.0579 mask=0.0557 iou=0.0022
+  Epoch 31 [20/220] loss=0.0609 mask=0.0590 iou=0.0020
+  Epoch 31 [30/220] loss=0.0646 mask=0.0623 iou=0.0023
+  Epoch 31 [40/220] loss=0.0623 mask=0.0602 iou=0.0021
+  Epoch 31 [50/220] loss=0.0632 mask=0.0612 iou=0.0019
+  Epoch 31 [60/220] loss=0.0641 mask=0.0621 iou=0.0020
+  Epoch 31 [70/220] loss=0.0655 mask=0.0632 iou=0.0024
+  Epoch 31 [80/220] loss=0.0649 mask=0.0626 iou=0.0023
+  Epoch 31 [90/220] loss=0.0645 mask=0.0622 iou=0.0023
+  Epoch 31 [100/220] loss=0.0651 mask=0.0628 iou=0.0023
+  Epoch 31 [110/220] loss=0.0650 mask=0.0626 iou=0.0024
+  Epoch 31 [120/220] loss=0.0648 mask=0.0624 iou=0.0024
+  Epoch 31 [130/220] loss=0.0649 mask=0.0624 iou=0.0025
+  Epoch 31 [140/220] loss=0.0652 mask=0.0628 iou=0.0024
+  Epoch 31 [150/220] loss=0.0647 mask=0.0622 iou=0.0024
+  Epoch 31 [160/220] loss=0.0647 mask=0.0622 iou=0.0025
+  Epoch 31 [170/220] loss=0.0653 mask=0.0627 iou=0.0026
+  Epoch 31 [180/220] loss=0.0662 mask=0.0635 iou=0.0027
+  Epoch 31 [190/220] loss=0.0677 mask=0.0650 iou=0.0027
+  Epoch 31 [200/220] loss=0.0683 mask=0.0655 iou=0.0028
+  Epoch 31 [210/220] loss=0.0695 mask=0.0665 iou=0.0030
+  Epoch 31 [220/220] loss=0.0704 mask=0.0673 iou=0.0031
+  Train: loss=0.0704 mask=0.0673 iou=0.0031 time=219.1s
+  Val epoch 31: loss=0.1163
+
+=== Phase1 Epoch 32/49 ===
+  Epoch 32 [10/220] loss=0.0613 mask=0.0592 iou=0.0021
+  Epoch 32 [20/220] loss=0.0669 mask=0.0647 iou=0.0023
+  Epoch 32 [30/220] loss=0.0725 mask=0.0700 iou=0.0025
+  Epoch 32 [40/220] loss=0.0698 mask=0.0673 iou=0.0025
+  Epoch 32 [50/220] loss=0.0722 mask=0.0698 iou=0.0024
+  Epoch 32 [60/220] loss=0.0728 mask=0.0702 iou=0.0025
+  Epoch 32 [70/220] loss=0.0694 mask=0.0671 iou=0.0024
+  Epoch 32 [80/220] loss=0.0707 mask=0.0682 iou=0.0025
+  Epoch 32 [90/220] loss=0.0712 mask=0.0684 iou=0.0029
+  Epoch 32 [100/220] loss=0.0717 mask=0.0688 iou=0.0029
+  Epoch 32 [110/220] loss=0.0710 mask=0.0682 iou=0.0029
+  Epoch 32 [120/220] loss=0.0718 mask=0.0688 iou=0.0030
+  Epoch 32 [130/220] loss=0.0723 mask=0.0693 iou=0.0030
+  Epoch 32 [140/220] loss=0.0716 mask=0.0686 iou=0.0030
+  Epoch 32 [150/220] loss=0.0726 mask=0.0695 iou=0.0031
+  Epoch 32 [160/220] loss=0.0727 mask=0.0697 iou=0.0031
+  Epoch 32 [170/220] loss=0.0726 mask=0.0695 iou=0.0031
+  Epoch 32 [180/220] loss=0.0723 mask=0.0692 iou=0.0031
+  Epoch 32 [190/220] loss=0.0711 mask=0.0681 iou=0.0030
+  Epoch 32 [200/220] loss=0.0710 mask=0.0680 iou=0.0030
+  Epoch 32 [210/220] loss=0.0706 mask=0.0676 iou=0.0030
+  Epoch 32 [220/220] loss=0.0702 mask=0.0672 iou=0.0030
+  Train: loss=0.0702 mask=0.0672 iou=0.0030 time=208.6s
+  Val epoch 32: loss=0.1136
+
+=== Phase1 Epoch 33/49 ===
+  Epoch 33 [10/220] loss=0.0688 mask=0.0666 iou=0.0022
+  Epoch 33 [20/220] loss=0.0737 mask=0.0708 iou=0.0029
+  Epoch 33 [30/220] loss=0.0708 mask=0.0680 iou=0.0028
+  Epoch 33 [40/220] loss=0.0729 mask=0.0699 iou=0.0031
+  Epoch 33 [50/220] loss=0.0730 mask=0.0699 iou=0.0031
+  Epoch 33 [60/220] loss=0.0711 mask=0.0680 iou=0.0031
+  Epoch 33 [70/220] loss=0.0716 mask=0.0686 iou=0.0030
+  Epoch 33 [80/220] loss=0.0693 mask=0.0664 iou=0.0029
+  Epoch 33 [90/220] loss=0.0687 mask=0.0658 iou=0.0029
+  Epoch 33 [100/220] loss=0.0689 mask=0.0661 iou=0.0029
+  Epoch 33 [110/220] loss=0.0688 mask=0.0659 iou=0.0029
+  Epoch 33 [120/220] loss=0.0707 mask=0.0678 iou=0.0030
+  Epoch 33 [130/220] loss=0.0705 mask=0.0675 iou=0.0029
+  Epoch 33 [140/220] loss=0.0700 mask=0.0672 iou=0.0029
+  Epoch 33 [150/220] loss=0.0692 mask=0.0663 iou=0.0029
+  Epoch 33 [160/220] loss=0.0703 mask=0.0672 iou=0.0031
+  Epoch 33 [170/220] loss=0.0694 mask=0.0663 iou=0.0030
+  Epoch 33 [180/220] loss=0.0689 mask=0.0658 iou=0.0030
+  Epoch 33 [190/220] loss=0.0700 mask=0.0667 iou=0.0032
+  Epoch 33 [200/220] loss=0.0707 mask=0.0675 iou=0.0033
+  Epoch 33 [210/220] loss=0.0704 mask=0.0672 iou=0.0032
+  Epoch 33 [220/220] loss=0.0703 mask=0.0671 iou=0.0032
+  Train: loss=0.0703 mask=0.0671 iou=0.0032 time=212.9s
+  Val epoch 33: loss=0.1124
+
+=== Phase1 Epoch 34/49 ===
+  Epoch 34 [10/220] loss=0.0771 mask=0.0732 iou=0.0039
+  Epoch 34 [20/220] loss=0.0732 mask=0.0695 iou=0.0037
+  Epoch 34 [30/220] loss=0.0796 mask=0.0754 iou=0.0042
+  Epoch 34 [40/220] loss=0.0779 mask=0.0736 iou=0.0042
+  Epoch 34 [50/220] loss=0.0758 mask=0.0718 iou=0.0041
+  Epoch 34 [60/220] loss=0.0742 mask=0.0704 iou=0.0039
+  Epoch 34 [70/220] loss=0.0723 mask=0.0686 iou=0.0037
+  Epoch 34 [80/220] loss=0.0744 mask=0.0706 iou=0.0037
+  Epoch 34 [90/220] loss=0.0737 mask=0.0701 iou=0.0037
+  Epoch 34 [100/220] loss=0.0734 mask=0.0698 iou=0.0036
+  Epoch 34 [110/220] loss=0.0725 mask=0.0690 iou=0.0035
+  Epoch 34 [120/220] loss=0.0722 mask=0.0687 iou=0.0035
+  Epoch 34 [130/220] loss=0.0720 mask=0.0686 iou=0.0035
+  Epoch 34 [140/220] loss=0.0715 mask=0.0681 iou=0.0034
+  Epoch 34 [150/220] loss=0.0708 mask=0.0674 iou=0.0034
+  Epoch 34 [160/220] loss=0.0701 mask=0.0668 iou=0.0033
+  Epoch 34 [170/220] loss=0.0695 mask=0.0663 iou=0.0032
+  Epoch 34 [180/220] loss=0.0693 mask=0.0662 iou=0.0031
+  Epoch 34 [190/220] loss=0.0688 mask=0.0658 iou=0.0031
+  Epoch 34 [200/220] loss=0.0683 mask=0.0653 iou=0.0030
+  Epoch 34 [210/220] loss=0.0691 mask=0.0661 iou=0.0030
+  Epoch 34 [220/220] loss=0.0695 mask=0.0665 iou=0.0031
+  Train: loss=0.0695 mask=0.0665 iou=0.0031 time=225.5s
+  Val epoch 34: loss=0.1122
+
+=== Phase1 Epoch 35/49 ===
+  Epoch 35 [10/220] loss=0.0673 mask=0.0635 iou=0.0037
+  Epoch 35 [20/220] loss=0.0713 mask=0.0675 iou=0.0037
+  Epoch 35 [30/220] loss=0.0715 mask=0.0680 iou=0.0035
+  Epoch 35 [40/220] loss=0.0712 mask=0.0675 iou=0.0038
+  Epoch 35 [50/220] loss=0.0700 mask=0.0666 iou=0.0034
+  Epoch 35 [60/220] loss=0.0717 mask=0.0682 iou=0.0035
+  Epoch 35 [70/220] loss=0.0695 mask=0.0662 iou=0.0034
+  Epoch 35 [80/220] loss=0.0711 mask=0.0679 iou=0.0033
+  Epoch 35 [90/220] loss=0.0716 mask=0.0683 iou=0.0033
+  Epoch 35 [100/220] loss=0.0698 mask=0.0667 iou=0.0031
+  Epoch 35 [110/220] loss=0.0694 mask=0.0662 iou=0.0032
+  Epoch 35 [120/220] loss=0.0707 mask=0.0675 iou=0.0032
+  Epoch 35 [130/220] loss=0.0713 mask=0.0681 iou=0.0032
+  Epoch 35 [140/220] loss=0.0709 mask=0.0677 iou=0.0032
+  Epoch 35 [150/220] loss=0.0712 mask=0.0681 iou=0.0031
+  Epoch 35 [160/220] loss=0.0712 mask=0.0681 iou=0.0031
+  Epoch 35 [170/220] loss=0.0705 mask=0.0673 iou=0.0031
+  Epoch 35 [180/220] loss=0.0709 mask=0.0678 iou=0.0031
+  Epoch 35 [190/220] loss=0.0710 mask=0.0679 iou=0.0030
+  Epoch 35 [200/220] loss=0.0704 mask=0.0675 iou=0.0030
+  Epoch 35 [210/220] loss=0.0695 mask=0.0666 iou=0.0029
+  Epoch 35 [220/220] loss=0.0686 mask=0.0657 iou=0.0029
+  Train: loss=0.0686 mask=0.0657 iou=0.0029 time=241.7s
+  Val epoch 35: loss=0.1136
+
+=== Phase1 Epoch 36/49 ===
+  Epoch 36 [10/220] loss=0.0720 mask=0.0695 iou=0.0025
+  Epoch 36 [20/220] loss=0.0742 mask=0.0712 iou=0.0030
+  Epoch 36 [30/220] loss=0.0692 mask=0.0665 iou=0.0027
+  Epoch 36 [40/220] loss=0.0707 mask=0.0681 iou=0.0027
+  Epoch 36 [50/220] loss=0.0682 mask=0.0655 iou=0.0027
+  Epoch 36 [60/220] loss=0.0675 mask=0.0648 iou=0.0027
+  Epoch 36 [70/220] loss=0.0701 mask=0.0670 iou=0.0031
+  Epoch 36 [80/220] loss=0.0697 mask=0.0666 iou=0.0031
+  Epoch 36 [90/220] loss=0.0688 mask=0.0657 iou=0.0030
+  Epoch 36 [100/220] loss=0.0690 mask=0.0657 iou=0.0033
+  Epoch 36 [110/220] loss=0.0686 mask=0.0654 iou=0.0032
+  Epoch 36 [120/220] loss=0.0681 mask=0.0650 iou=0.0031
+  Epoch 36 [130/220] loss=0.0698 mask=0.0667 iou=0.0031
+  Epoch 36 [140/220] loss=0.0698 mask=0.0668 iou=0.0031
+  Epoch 36 [150/220] loss=0.0696 mask=0.0665 iou=0.0031
+  Epoch 36 [160/220] loss=0.0695 mask=0.0664 iou=0.0031
+  Epoch 36 [170/220] loss=0.0697 mask=0.0666 iou=0.0031
+  Epoch 36 [180/220] loss=0.0692 mask=0.0661 iou=0.0030
+  Epoch 36 [190/220] loss=0.0681 mask=0.0652 iou=0.0030
+  Epoch 36 [200/220] loss=0.0683 mask=0.0653 iou=0.0030
+  Epoch 36 [210/220] loss=0.0686 mask=0.0656 iou=0.0030
+  Epoch 36 [220/220] loss=0.0689 mask=0.0659 iou=0.0030
+  Train: loss=0.0689 mask=0.0659 iou=0.0030 time=244.7s
+  Val epoch 36: loss=0.1137
+
+=== Phase1 Epoch 37/49 ===
+  Epoch 37 [10/220] loss=0.0632 mask=0.0605 iou=0.0027
+  Epoch 37 [20/220] loss=0.0638 mask=0.0610 iou=0.0029
+  Epoch 37 [30/220] loss=0.0622 mask=0.0595 iou=0.0027
+  Epoch 37 [40/220] loss=0.0688 mask=0.0656 iou=0.0032
+  Epoch 37 [50/220] loss=0.0700 mask=0.0666 iou=0.0034
+  Epoch 37 [60/220] loss=0.0716 mask=0.0680 iou=0.0036
+  Epoch 37 [70/220] loss=0.0711 mask=0.0677 iou=0.0034
+  Epoch 37 [80/220] loss=0.0694 mask=0.0661 iou=0.0033
+  Epoch 37 [90/220] loss=0.0695 mask=0.0664 iou=0.0031
+  Epoch 37 [100/220] loss=0.0686 mask=0.0656 iou=0.0030
+  Epoch 37 [110/220] loss=0.0695 mask=0.0664 iou=0.0031
+  Epoch 37 [120/220] loss=0.0696 mask=0.0666 iou=0.0030
+  Epoch 37 [130/220] loss=0.0699 mask=0.0667 iou=0.0032
+  Epoch 37 [140/220] loss=0.0700 mask=0.0668 iou=0.0032
+  Epoch 37 [150/220] loss=0.0697 mask=0.0665 iou=0.0032
+  Epoch 37 [160/220] loss=0.0694 mask=0.0663 iou=0.0031
+  Epoch 37 [170/220] loss=0.0697 mask=0.0666 iou=0.0031
+  Epoch 37 [180/220] loss=0.0696 mask=0.0666 iou=0.0031
+  Epoch 37 [190/220] loss=0.0693 mask=0.0663 iou=0.0030
+  Epoch 37 [200/220] loss=0.0687 mask=0.0657 iou=0.0030
+  Epoch 37 [210/220] loss=0.0685 mask=0.0656 iou=0.0029
+  Epoch 37 [220/220] loss=0.0683 mask=0.0654 iou=0.0029
+  Train: loss=0.0683 mask=0.0654 iou=0.0029 time=244.3s
+  Val epoch 37: loss=0.1138
+
+=== Phase1 Epoch 38/49 ===
+  Epoch 38 [10/220] loss=0.0682 mask=0.0653 iou=0.0029
+  Epoch 38 [20/220] loss=0.0617 mask=0.0592 iou=0.0024
+  Epoch 38 [30/220] loss=0.0670 mask=0.0643 iou=0.0027
+  Epoch 38 [40/220] loss=0.0664 mask=0.0634 iou=0.0031
+  Epoch 38 [50/220] loss=0.0661 mask=0.0632 iou=0.0029
+  Epoch 38 [60/220] loss=0.0667 mask=0.0638 iou=0.0028
+  Epoch 38 [70/220] loss=0.0667 mask=0.0639 iou=0.0028
+  Epoch 38 [80/220] loss=0.0681 mask=0.0654 iou=0.0027
+  Epoch 38 [90/220] loss=0.0693 mask=0.0668 iou=0.0026
+  Epoch 38 [100/220] loss=0.0686 mask=0.0661 iou=0.0025
+  Epoch 38 [110/220] loss=0.0695 mask=0.0669 iou=0.0026
+  Epoch 38 [120/220] loss=0.0678 mask=0.0652 iou=0.0025
+  Epoch 38 [130/220] loss=0.0684 mask=0.0656 iou=0.0028
+  Epoch 38 [140/220] loss=0.0681 mask=0.0653 iou=0.0028
+  Epoch 38 [150/220] loss=0.0679 mask=0.0651 iou=0.0028
+  Epoch 38 [160/220] loss=0.0688 mask=0.0661 iou=0.0028
+  Epoch 38 [170/220] loss=0.0686 mask=0.0658 iou=0.0028
+  Epoch 38 [180/220] loss=0.0679 mask=0.0652 iou=0.0027
+  Epoch 38 [190/220] loss=0.0679 mask=0.0652 iou=0.0027
+  Epoch 38 [200/220] loss=0.0672 mask=0.0645 iou=0.0028
+  Epoch 38 [210/220] loss=0.0680 mask=0.0652 iou=0.0029
+  Epoch 38 [220/220] loss=0.0689 mask=0.0659 iou=0.0029
+  Train: loss=0.0689 mask=0.0659 iou=0.0029 time=238.1s
+  Val epoch 38: loss=0.1113
+
+=== Phase1 Epoch 39/49 ===
+  Epoch 39 [10/220] loss=0.0575 mask=0.0551 iou=0.0023
+  Epoch 39 [20/220] loss=0.0591 mask=0.0564 iou=0.0027
+  Epoch 39 [30/220] loss=0.0586 mask=0.0563 iou=0.0023
+  Epoch 39 [40/220] loss=0.0578 mask=0.0556 iou=0.0022
+  Epoch 39 [50/220] loss=0.0594 mask=0.0573 iou=0.0022
+  Epoch 39 [60/220] loss=0.0593 mask=0.0571 iou=0.0021
+  Epoch 39 [70/220] loss=0.0664 mask=0.0636 iou=0.0028
+  Epoch 39 [80/220] loss=0.0666 mask=0.0639 iou=0.0028
+  Epoch 39 [90/220] loss=0.0678 mask=0.0649 iou=0.0029
+  Epoch 39 [100/220] loss=0.0674 mask=0.0645 iou=0.0029
+  Epoch 39 [110/220] loss=0.0683 mask=0.0654 iou=0.0030
+  Epoch 39 [120/220] loss=0.0679 mask=0.0650 iou=0.0029
+  Epoch 39 [130/220] loss=0.0675 mask=0.0646 iou=0.0029
+  Epoch 39 [140/220] loss=0.0666 mask=0.0638 iou=0.0028
+  Epoch 39 [150/220] loss=0.0657 mask=0.0630 iou=0.0027
+  Epoch 39 [160/220] loss=0.0664 mask=0.0636 iou=0.0028
+  Epoch 39 [170/220] loss=0.0667 mask=0.0639 iou=0.0029
+  Epoch 39 [180/220] loss=0.0671 mask=0.0643 iou=0.0029
+  Epoch 39 [190/220] loss=0.0674 mask=0.0645 iou=0.0030
+  Epoch 39 [200/220] loss=0.0685 mask=0.0655 iou=0.0030
+  Epoch 39 [210/220] loss=0.0681 mask=0.0652 iou=0.0029
+  Epoch 39 [220/220] loss=0.0687 mask=0.0658 iou=0.0029
+  Train: loss=0.0687 mask=0.0658 iou=0.0029 time=248.7s
+  Val epoch 39: loss=0.1122
+
+=== Phase1 Epoch 40/49 ===
+  Epoch 40 [10/220] loss=0.0836 mask=0.0793 iou=0.0043
+  Epoch 40 [20/220] loss=0.0772 mask=0.0742 iou=0.0030
+  Epoch 40 [30/220] loss=0.0735 mask=0.0705 iou=0.0030
+  Epoch 40 [40/220] loss=0.0734 mask=0.0702 iou=0.0032
+  Epoch 40 [50/220] loss=0.0726 mask=0.0696 iou=0.0031
+  Epoch 40 [60/220] loss=0.0717 mask=0.0685 iou=0.0032
+  Epoch 40 [70/220] loss=0.0721 mask=0.0686 iou=0.0035
+  Epoch 40 [80/220] loss=0.0717 mask=0.0683 iou=0.0034
+  Epoch 40 [90/220] loss=0.0733 mask=0.0695 iou=0.0038
+  Epoch 40 [100/220] loss=0.0718 mask=0.0682 iou=0.0036
+  Epoch 40 [110/220] loss=0.0716 mask=0.0682 iou=0.0034
+  Epoch 40 [120/220] loss=0.0696 mask=0.0662 iou=0.0033
+  Epoch 40 [130/220] loss=0.0689 mask=0.0657 iou=0.0032
+  Epoch 40 [140/220] loss=0.0689 mask=0.0657 iou=0.0032
+  Epoch 40 [150/220] loss=0.0681 mask=0.0650 iou=0.0031
+  Epoch 40 [160/220] loss=0.0691 mask=0.0659 iou=0.0032
+  Epoch 40 [170/220] loss=0.0685 mask=0.0654 iou=0.0031
+  Epoch 40 [180/220] loss=0.0682 mask=0.0652 iou=0.0030
+  Epoch 40 [190/220] loss=0.0686 mask=0.0655 iou=0.0030
+  Epoch 40 [200/220] loss=0.0683 mask=0.0653 iou=0.0030
+  Epoch 40 [210/220] loss=0.0689 mask=0.0659 iou=0.0030
+  Epoch 40 [220/220] loss=0.0679 mask=0.0649 iou=0.0029
+  Train: loss=0.0679 mask=0.0649 iou=0.0029 time=245.4s
+  Val epoch 40: loss=0.1114
+
+=== Phase1 Epoch 41/49 ===
+  Epoch 41 [10/220] loss=0.0707 mask=0.0678 iou=0.0029
+  Epoch 41 [20/220] loss=0.0684 mask=0.0651 iou=0.0033
+  Epoch 41 [30/220] loss=0.0665 mask=0.0635 iou=0.0030
+  Epoch 41 [40/220] loss=0.0656 mask=0.0630 iou=0.0027
+  Epoch 41 [50/220] loss=0.0691 mask=0.0663 iou=0.0028
+  Epoch 41 [60/220] loss=0.0697 mask=0.0665 iou=0.0031
+  Epoch 41 [70/220] loss=0.0680 mask=0.0648 iou=0.0031
+  Epoch 41 [80/220] loss=0.0683 mask=0.0651 iou=0.0032
+  Epoch 41 [90/220] loss=0.0674 mask=0.0644 iou=0.0030
+  Epoch 41 [100/220] loss=0.0674 mask=0.0645 iou=0.0029
+  Epoch 41 [110/220] loss=0.0682 mask=0.0654 iou=0.0029
+  Epoch 41 [120/220] loss=0.0682 mask=0.0653 iou=0.0028
+  Epoch 41 [130/220] loss=0.0685 mask=0.0656 iou=0.0029
+  Epoch 41 [140/220] loss=0.0680 mask=0.0652 iou=0.0028
+  Epoch 41 [150/220] loss=0.0686 mask=0.0658 iou=0.0028
+  Epoch 41 [160/220] loss=0.0681 mask=0.0654 iou=0.0027
+  Epoch 41 [170/220] loss=0.0669 mask=0.0642 iou=0.0026
+  Epoch 41 [180/220] loss=0.0665 mask=0.0639 iou=0.0026
+  Epoch 41 [190/220] loss=0.0669 mask=0.0644 iou=0.0026
+  Epoch 41 [200/220] loss=0.0670 mask=0.0644 iou=0.0026
+  Epoch 41 [210/220] loss=0.0676 mask=0.0650 iou=0.0027
+  Epoch 41 [220/220] loss=0.0675 mask=0.0649 iou=0.0026
+  Train: loss=0.0675 mask=0.0649 iou=0.0026 time=247.1s
+  Val epoch 41: loss=0.1122
+
+=== Phase1 Epoch 42/49 ===
+  Epoch 42 [10/220] loss=0.0588 mask=0.0555 iou=0.0032
+  Epoch 42 [20/220] loss=0.0614 mask=0.0586 iou=0.0028
+  Epoch 42 [30/220] loss=0.0619 mask=0.0588 iou=0.0032
+  Epoch 42 [40/220] loss=0.0652 mask=0.0623 iou=0.0029
+  Epoch 42 [50/220] loss=0.0668 mask=0.0640 iou=0.0028
+  Epoch 42 [60/220] loss=0.0669 mask=0.0642 iou=0.0026
+  Epoch 42 [70/220] loss=0.0674 mask=0.0648 iou=0.0026
+  Epoch 42 [80/220] loss=0.0675 mask=0.0647 iou=0.0028
+  Epoch 42 [90/220] loss=0.0679 mask=0.0651 iou=0.0028
+  Epoch 42 [100/220] loss=0.0675 mask=0.0647 iou=0.0028
+  Epoch 42 [110/220] loss=0.0670 mask=0.0642 iou=0.0028
+  Epoch 42 [120/220] loss=0.0675 mask=0.0648 iou=0.0027
+  Epoch 42 [130/220] loss=0.0678 mask=0.0651 iou=0.0026
+  Epoch 42 [140/220] loss=0.0692 mask=0.0663 iou=0.0028
+  Epoch 42 [150/220] loss=0.0679 mask=0.0652 iou=0.0028
+  Epoch 42 [160/220] loss=0.0688 mask=0.0660 iou=0.0028
+  Epoch 42 [170/220] loss=0.0687 mask=0.0659 iou=0.0028
+  Epoch 42 [180/220] loss=0.0694 mask=0.0665 iou=0.0028
+  Epoch 42 [190/220] loss=0.0690 mask=0.0661 iou=0.0029
+  Epoch 42 [200/220] loss=0.0685 mask=0.0657 iou=0.0029
+  Epoch 42 [210/220] loss=0.0692 mask=0.0663 iou=0.0029
+  Epoch 42 [220/220] loss=0.0684 mask=0.0655 iou=0.0029
+  Train: loss=0.0684 mask=0.0655 iou=0.0029 time=247.4s
+  Val epoch 42: loss=0.1123
+
+=== Phase1 Epoch 43/49 ===
+  Epoch 43 [10/220] loss=0.0690 mask=0.0662 iou=0.0028
+  Epoch 43 [20/220] loss=0.0626 mask=0.0603 iou=0.0023
+  Epoch 43 [30/220] loss=0.0719 mask=0.0690 iou=0.0028
+  Epoch 43 [40/220] loss=0.0713 mask=0.0686 iou=0.0027
+  Epoch 43 [50/220] loss=0.0733 mask=0.0706 iou=0.0027
+  Epoch 43 [60/220] loss=0.0732 mask=0.0704 iou=0.0027
+  Epoch 43 [70/220] loss=0.0719 mask=0.0693 iou=0.0027
+  Epoch 43 [80/220] loss=0.0713 mask=0.0685 iou=0.0028
+  Epoch 43 [90/220] loss=0.0693 mask=0.0665 iou=0.0028
+  Epoch 43 [100/220] loss=0.0679 mask=0.0652 iou=0.0027
+  Epoch 43 [110/220] loss=0.0683 mask=0.0656 iou=0.0027
+  Epoch 43 [120/220] loss=0.0686 mask=0.0660 iou=0.0026
+  Epoch 43 [130/220] loss=0.0682 mask=0.0654 iou=0.0028
+  Epoch 43 [140/220] loss=0.0679 mask=0.0650 iou=0.0029
+  Epoch 43 [150/220] loss=0.0678 mask=0.0650 iou=0.0028
+  Epoch 43 [160/220] loss=0.0680 mask=0.0652 iou=0.0028
+  Epoch 43 [170/220] loss=0.0677 mask=0.0649 iou=0.0028
+  Epoch 43 [180/220] loss=0.0681 mask=0.0653 iou=0.0028
+  Epoch 43 [190/220] loss=0.0680 mask=0.0652 iou=0.0029
+  Epoch 43 [200/220] loss=0.0681 mask=0.0652 iou=0.0029
+  Epoch 43 [210/220] loss=0.0679 mask=0.0651 iou=0.0029
+  Epoch 43 [220/220] loss=0.0673 mask=0.0645 iou=0.0028
+  Train: loss=0.0673 mask=0.0645 iou=0.0028 time=246.4s
+  Val epoch 43: loss=0.1123
+
+=== Phase1 Epoch 44/49 ===
+  Epoch 44 [10/220] loss=0.0642 mask=0.0620 iou=0.0022
+  Epoch 44 [20/220] loss=0.0647 mask=0.0617 iou=0.0030
+  Epoch 44 [30/220] loss=0.0639 mask=0.0606 iou=0.0032
+  Epoch 44 [40/220] loss=0.0655 mask=0.0624 iou=0.0031
+  Epoch 44 [50/220] loss=0.0667 mask=0.0636 iou=0.0030
+  Epoch 44 [60/220] loss=0.0671 mask=0.0642 iou=0.0029
+  Epoch 44 [70/220] loss=0.0653 mask=0.0625 iou=0.0028
+  Epoch 44 [80/220] loss=0.0657 mask=0.0627 iou=0.0030
+  Epoch 44 [90/220] loss=0.0680 mask=0.0649 iou=0.0031
+  Epoch 44 [100/220] loss=0.0668 mask=0.0638 iou=0.0030
+  Epoch 44 [110/220] loss=0.0686 mask=0.0655 iou=0.0031
+  Epoch 44 [120/220] loss=0.0676 mask=0.0645 iou=0.0030
+  Epoch 44 [130/220] loss=0.0677 mask=0.0646 iou=0.0030
+  Epoch 44 [140/220] loss=0.0684 mask=0.0654 iou=0.0030
+  Epoch 44 [150/220] loss=0.0681 mask=0.0651 iou=0.0030
+  Epoch 44 [160/220] loss=0.0688 mask=0.0657 iou=0.0031
+  Epoch 44 [170/220] loss=0.0680 mask=0.0650 iou=0.0030
+  Epoch 44 [180/220] loss=0.0677 mask=0.0647 iou=0.0030
+  Epoch 44 [190/220] loss=0.0685 mask=0.0655 iou=0.0029
+  Epoch 44 [200/220] loss=0.0686 mask=0.0657 iou=0.0029
+  Epoch 44 [210/220] loss=0.0682 mask=0.0653 iou=0.0028
+  Epoch 44 [220/220] loss=0.0678 mask=0.0649 iou=0.0029
+  Train: loss=0.0678 mask=0.0649 iou=0.0029 time=249.2s
+  Val epoch 44: loss=0.1135
+
+=== Phase1 Epoch 45/49 ===
+  Epoch 45 [10/220] loss=0.0568 mask=0.0550 iou=0.0018
+  Epoch 45 [20/220] loss=0.0642 mask=0.0621 iou=0.0021
+  Epoch 45 [30/220] loss=0.0622 mask=0.0598 iou=0.0023
+  Epoch 45 [40/220] loss=0.0628 mask=0.0605 iou=0.0022
+  Epoch 45 [50/220] loss=0.0632 mask=0.0608 iou=0.0024
+  Epoch 45 [60/220] loss=0.0630 mask=0.0608 iou=0.0022
+  Epoch 45 [70/220] loss=0.0654 mask=0.0631 iou=0.0022
+  Epoch 45 [80/220] loss=0.0658 mask=0.0637 iou=0.0022
+  Epoch 45 [90/220] loss=0.0658 mask=0.0636 iou=0.0022
+  Epoch 45 [100/220] loss=0.0660 mask=0.0638 iou=0.0022
+  Epoch 45 [110/220] loss=0.0666 mask=0.0643 iou=0.0023
+  Epoch 45 [120/220] loss=0.0670 mask=0.0646 iou=0.0024
+  Epoch 45 [130/220] loss=0.0657 mask=0.0634 iou=0.0023
+  Epoch 45 [140/220] loss=0.0650 mask=0.0627 iou=0.0023
+  Epoch 45 [150/220] loss=0.0649 mask=0.0626 iou=0.0023
+  Epoch 45 [160/220] loss=0.0654 mask=0.0630 iou=0.0024
+  Epoch 45 [170/220] loss=0.0655 mask=0.0631 iou=0.0024
+  Epoch 45 [180/220] loss=0.0659 mask=0.0635 iou=0.0024
+  Epoch 45 [190/220] loss=0.0652 mask=0.0628 iou=0.0024
+  Epoch 45 [200/220] loss=0.0651 mask=0.0627 iou=0.0024
+  Epoch 45 [210/220] loss=0.0658 mask=0.0634 iou=0.0024
+  Epoch 45 [220/220] loss=0.0664 mask=0.0639 iou=0.0026
+  Train: loss=0.0664 mask=0.0639 iou=0.0026 time=248.3s
+  Val epoch 45: loss=0.1126
+
+=== Phase1 Epoch 46/49 ===
+  Epoch 46 [10/220] loss=0.0484 mask=0.0469 iou=0.0015
+  Epoch 46 [20/220] loss=0.0569 mask=0.0552 iou=0.0017
+  Epoch 46 [30/220] loss=0.0581 mask=0.0562 iou=0.0019
+  Epoch 46 [40/220] loss=0.0589 mask=0.0570 iou=0.0019
+  Epoch 46 [50/220] loss=0.0588 mask=0.0566 iou=0.0021
+  Epoch 46 [60/220] loss=0.0613 mask=0.0592 iou=0.0021
+  Epoch 46 [70/220] loss=0.0639 mask=0.0612 iou=0.0027
+  Epoch 46 [80/220] loss=0.0667 mask=0.0639 iou=0.0028
+  Epoch 46 [90/220] loss=0.0660 mask=0.0632 iou=0.0028
+  Epoch 46 [100/220] loss=0.0665 mask=0.0636 iou=0.0028
+  Epoch 46 [110/220] loss=0.0660 mask=0.0633 iou=0.0027
+  Epoch 46 [120/220] loss=0.0653 mask=0.0626 iou=0.0027
+  Epoch 46 [130/220] loss=0.0665 mask=0.0638 iou=0.0027
+  Epoch 46 [140/220] loss=0.0674 mask=0.0647 iou=0.0027
+  Epoch 46 [150/220] loss=0.0677 mask=0.0651 iou=0.0027
+  Epoch 46 [160/220] loss=0.0674 mask=0.0648 iou=0.0026
+  Epoch 46 [170/220] loss=0.0679 mask=0.0653 iou=0.0026
+  Epoch 46 [180/220] loss=0.0675 mask=0.0649 iou=0.0026
+  Epoch 46 [190/220] loss=0.0673 mask=0.0647 iou=0.0026
+  Epoch 46 [200/220] loss=0.0671 mask=0.0645 iou=0.0026
+  Epoch 46 [210/220] loss=0.0669 mask=0.0642 iou=0.0027
+  Epoch 46 [220/220] loss=0.0668 mask=0.0640 iou=0.0028
+  Train: loss=0.0668 mask=0.0640 iou=0.0028 time=249.0s
+  Val epoch 46: loss=0.1123
+
+=== Phase1 Epoch 47/49 ===
+  Epoch 47 [10/220] loss=0.0709 mask=0.0663 iou=0.0046
+  Epoch 47 [20/220] loss=0.0801 mask=0.0759 iou=0.0042
+  Epoch 47 [30/220] loss=0.0807 mask=0.0767 iou=0.0040
+  Epoch 47 [40/220] loss=0.0765 mask=0.0729 iou=0.0037
+  Epoch 47 [50/220] loss=0.0735 mask=0.0702 iou=0.0033
+  Epoch 47 [60/220] loss=0.0713 mask=0.0683 iou=0.0030
+  Epoch 47 [70/220] loss=0.0709 mask=0.0679 iou=0.0030
+  Epoch 47 [80/220] loss=0.0690 mask=0.0661 iou=0.0029
+  Epoch 47 [90/220] loss=0.0695 mask=0.0667 iou=0.0028
+  Epoch 47 [100/220] loss=0.0691 mask=0.0662 iou=0.0029
+  Epoch 47 [110/220] loss=0.0690 mask=0.0660 iou=0.0030
+  Epoch 47 [120/220] loss=0.0687 mask=0.0657 iou=0.0030
+  Epoch 47 [130/220] loss=0.0682 mask=0.0653 iou=0.0029
+  Epoch 47 [140/220] loss=0.0671 mask=0.0643 iou=0.0028
+  Epoch 47 [150/220] loss=0.0664 mask=0.0636 iou=0.0028
+  Epoch 47 [160/220] loss=0.0665 mask=0.0637 iou=0.0028
+  Epoch 47 [170/220] loss=0.0658 mask=0.0630 iou=0.0028
+  Epoch 47 [180/220] loss=0.0666 mask=0.0639 iou=0.0028
+  Epoch 47 [190/220] loss=0.0669 mask=0.0642 iou=0.0027
+  Epoch 47 [200/220] loss=0.0669 mask=0.0643 iou=0.0026
+  Epoch 47 [210/220] loss=0.0667 mask=0.0641 iou=0.0026
+  Epoch 47 [220/220] loss=0.0662 mask=0.0637 iou=0.0025
+  Train: loss=0.0662 mask=0.0637 iou=0.0025 time=228.7s
+  Val epoch 47: loss=0.1129
+
+=== Phase1 Epoch 48/49 ===
+  Epoch 48 [10/220] loss=0.0629 mask=0.0594 iou=0.0035
+  Epoch 48 [20/220] loss=0.0743 mask=0.0713 iou=0.0030
+  Epoch 48 [30/220] loss=0.0696 mask=0.0666 iou=0.0029
+  Epoch 48 [40/220] loss=0.0688 mask=0.0658 iou=0.0030
+  Epoch 48 [50/220] loss=0.0687 mask=0.0658 iou=0.0029
+  Epoch 48 [60/220] loss=0.0684 mask=0.0655 iou=0.0029
+  Epoch 48 [70/220] loss=0.0683 mask=0.0655 iou=0.0028
+  Epoch 48 [80/220] loss=0.0671 mask=0.0645 iou=0.0026
+  Epoch 48 [90/220] loss=0.0669 mask=0.0644 iou=0.0025
+  Epoch 48 [100/220] loss=0.0663 mask=0.0638 iou=0.0024
+  Epoch 48 [110/220] loss=0.0653 mask=0.0630 iou=0.0023
+  Epoch 48 [120/220] loss=0.0671 mask=0.0648 iou=0.0024
+  Epoch 48 [130/220] loss=0.0662 mask=0.0640 iou=0.0023
+  Epoch 48 [140/220] loss=0.0660 mask=0.0637 iou=0.0023
+  Epoch 48 [150/220] loss=0.0658 mask=0.0634 iou=0.0024
+  Epoch 48 [160/220] loss=0.0666 mask=0.0642 iou=0.0024
+  Epoch 48 [170/220] loss=0.0661 mask=0.0637 iou=0.0024
+  Epoch 48 [180/220] loss=0.0657 mask=0.0633 iou=0.0024
+  Epoch 48 [190/220] loss=0.0654 mask=0.0630 iou=0.0024
+  Epoch 48 [200/220] loss=0.0647 mask=0.0624 iou=0.0024
+  Epoch 48 [210/220] loss=0.0657 mask=0.0633 iou=0.0025
+  Epoch 48 [220/220] loss=0.0657 mask=0.0633 iou=0.0025
+  Train: loss=0.0657 mask=0.0633 iou=0.0025 time=217.5s
+  Val epoch 48: loss=0.1117
+
+=== Phase1 Epoch 49/49 ===
+  Epoch 49 [10/220] loss=0.0837 mask=0.0793 iou=0.0043
+  Epoch 49 [20/220] loss=0.0731 mask=0.0699 iou=0.0032
+  Epoch 49 [30/220] loss=0.0702 mask=0.0672 iou=0.0030
+  Epoch 49 [40/220] loss=0.0712 mask=0.0681 iou=0.0031
+  Epoch 49 [50/220] loss=0.0708 mask=0.0677 iou=0.0031
+  Epoch 49 [60/220] loss=0.0712 mask=0.0682 iou=0.0030
+  Epoch 49 [70/220] loss=0.0689 mask=0.0658 iou=0.0031
+  Epoch 49 [80/220] loss=0.0681 mask=0.0652 iou=0.0029
+  Epoch 49 [90/220] loss=0.0675 mask=0.0646 iou=0.0029
+  Epoch 49 [100/220] loss=0.0675 mask=0.0646 iou=0.0029
+  Epoch 49 [110/220] loss=0.0689 mask=0.0659 iou=0.0030
+  Epoch 49 [120/220] loss=0.0695 mask=0.0666 iou=0.0029
+  Epoch 49 [130/220] loss=0.0682 mask=0.0654 iou=0.0028
+  Epoch 49 [140/220] loss=0.0675 mask=0.0647 iou=0.0028
+  Epoch 49 [150/220] loss=0.0676 mask=0.0648 iou=0.0028
+  Epoch 49 [160/220] loss=0.0669 mask=0.0641 iou=0.0028
+  Epoch 49 [170/220] loss=0.0671 mask=0.0644 iou=0.0028
+  Epoch 49 [180/220] loss=0.0672 mask=0.0644 iou=0.0028
+  Epoch 49 [190/220] loss=0.0667 mask=0.0640 iou=0.0027
+  Epoch 49 [200/220] loss=0.0670 mask=0.0642 iou=0.0027
+  Epoch 49 [210/220] loss=0.0675 mask=0.0647 iou=0.0027
+  Epoch 49 [220/220] loss=0.0670 mask=0.0643 iou=0.0027
+  Train: loss=0.0670 mask=0.0643 iou=0.0027 time=223.9s
+  Val epoch 49: loss=0.1124
+
+Phase 1 complete. Best val loss: 0.1111
+
+============================================================
+PHASE 2: Depth training (depth loss, only depth branch trainable)
+============================================================
+Loading phase 1 checkpoint: /data3/LXT/DINOv3-SAM/model_sam/SAM_1724/phase1_best.pt
+Initialized depth branch from SAM inner weights (depth_prediction_head random)
+Phase 2: Total params: 97,379,069  Trainable: 3,643,597
+
+=== Phase2 Epoch 0/49 ===
+  Epoch 0 [10/220] loss=0.4691 mask=0.4254 depth=0.4691
+  Epoch 0 [20/220] loss=0.4293 mask=0.4070 depth=0.4293
+  Epoch 0 [30/220] loss=0.3737 mask=0.4005 depth=0.3737
+  Epoch 0 [40/220] loss=0.3520 mask=0.4231 depth=0.3520
+  Epoch 0 [50/220] loss=0.3442 mask=0.4205 depth=0.3442
+  Epoch 0 [60/220] loss=0.3409 mask=0.4303 depth=0.3409
+  Epoch 0 [70/220] loss=0.3442 mask=0.4395 depth=0.3442
+  Epoch 0 [80/220] loss=0.3421 mask=0.4348 depth=0.3421
+  Epoch 0 [90/220] loss=0.3471 mask=0.4394 depth=0.3471
+  Epoch 0 [100/220] loss=0.3494 mask=0.4498 depth=0.3494
+  Epoch 0 [110/220] loss=0.3532 mask=0.4545 depth=0.3532
+  Epoch 0 [120/220] loss=0.3464 mask=0.4534 depth=0.3464
+  Epoch 0 [130/220] loss=0.3475 mask=0.4538 depth=0.3475
+  Epoch 0 [140/220] loss=0.3435 mask=0.4540 depth=0.3435
+  Epoch 0 [150/220] loss=0.3367 mask=0.4563 depth=0.3367
+  Epoch 0 [160/220] loss=0.3312 mask=0.4511 depth=0.3312
+  Epoch 0 [170/220] loss=0.3367 mask=0.4490 depth=0.3367
+  Epoch 0 [180/220] loss=0.3313 mask=0.4449 depth=0.3313
+  Epoch 0 [190/220] loss=0.3277 mask=0.4398 depth=0.3277
+  Epoch 0 [200/220] loss=0.3316 mask=0.4353 depth=0.3316
+  Epoch 0 [210/220] loss=0.3289 mask=0.4254 depth=0.3289
+  Epoch 0 [220/220] loss=0.3258 mask=0.4192 depth=0.3258
+  Train: loss=0.3258 mask=0.4192 depth=0.3258 time=203.5s
+  Val epoch 0: loss=0.3362
+  Saved best phase2 model (val_loss=0.3362)
+
+=== Phase2 Epoch 1/49 ===
+  Epoch 1 [10/220] loss=0.2832 mask=0.2522 depth=0.2832
+  Epoch 1 [20/220] loss=0.2482 mask=0.2334 depth=0.2482
+  Epoch 1 [30/220] loss=0.2645 mask=0.2383 depth=0.2645
+  Epoch 1 [40/220] loss=0.2651 mask=0.2324 depth=0.2651
+  Epoch 1 [50/220] loss=0.2586 mask=0.2352 depth=0.2586
+  Epoch 1 [60/220] loss=0.2530 mask=0.2416 depth=0.2530
+  Epoch 1 [70/220] loss=0.2482 mask=0.2523 depth=0.2482
+  Epoch 1 [80/220] loss=0.2420 mask=0.2513 depth=0.2420
+  Epoch 1 [90/220] loss=0.2306 mask=0.2524 depth=0.2306
+  Epoch 1 [100/220] loss=0.2248 mask=0.2527 depth=0.2248
+  Epoch 1 [110/220] loss=0.2315 mask=0.2619 depth=0.2315
+  Epoch 1 [120/220] loss=0.2292 mask=0.2601 depth=0.2292
+  Epoch 1 [130/220] loss=0.2334 mask=0.2618 depth=0.2334
+  Epoch 1 [140/220] loss=0.2369 mask=0.2686 depth=0.2369
+  Epoch 1 [150/220] loss=0.2374 mask=0.2759 depth=0.2374
+  Epoch 1 [160/220] loss=0.2320 mask=0.2787 depth=0.2320
+  Epoch 1 [170/220] loss=0.2303 mask=0.2758 depth=0.2303
+  Epoch 1 [180/220] loss=0.2279 mask=0.2826 depth=0.2279
+  Epoch 1 [190/220] loss=0.2274 mask=0.2919 depth=0.2274
+  Epoch 1 [200/220] loss=0.2225 mask=0.2910 depth=0.2225
+  Epoch 1 [210/220] loss=0.2190 mask=0.2943 depth=0.2190
+  Epoch 1 [220/220] loss=0.2169 mask=0.3017 depth=0.2169
+  Train: loss=0.2169 mask=0.3017 depth=0.2169 time=202.7s
+  Val epoch 1: loss=0.2793
+  Saved best phase2 model (val_loss=0.2793)
+
+=== Phase2 Epoch 2/49 ===
+  Epoch 2 [10/220] loss=0.1736 mask=0.4275 depth=0.1736
+  Epoch 2 [20/220] loss=0.1738 mask=0.3924 depth=0.1738
+  Epoch 2 [30/220] loss=0.1581 mask=0.3815 depth=0.1581
+  Epoch 2 [40/220] loss=0.1531 mask=0.3649 depth=0.1531
+  Epoch 2 [50/220] loss=0.1359 mask=0.3542 depth=0.1359
+  Epoch 2 [60/220] loss=0.1437 mask=0.3557 depth=0.1437
+  Epoch 2 [70/220] loss=0.1382 mask=0.3568 depth=0.1382
+  Epoch 2 [80/220] loss=0.1355 mask=0.3591 depth=0.1355
+  Epoch 2 [90/220] loss=0.1384 mask=0.3602 depth=0.1384
+  Epoch 2 [100/220] loss=0.1456 mask=0.3584 depth=0.1456
+  Epoch 2 [110/220] loss=0.1392 mask=0.3578 depth=0.1392
+  Epoch 2 [120/220] loss=0.1412 mask=0.3565 depth=0.1412
+  Epoch 2 [130/220] loss=0.1397 mask=0.3555 depth=0.1397
+  Epoch 2 [140/220] loss=0.1356 mask=0.3639 depth=0.1356
+  Epoch 2 [150/220] loss=0.1355 mask=0.3625 depth=0.1355
+  Epoch 2 [160/220] loss=0.1351 mask=0.3577 depth=0.1351
+  Epoch 2 [170/220] loss=0.1355 mask=0.3618 depth=0.1355
+  Epoch 2 [180/220] loss=0.1375 mask=0.3569 depth=0.1375
+  Epoch 2 [190/220] loss=0.1358 mask=0.3511 depth=0.1358
+  Epoch 2 [200/220] loss=0.1349 mask=0.3513 depth=0.1349
+  Epoch 2 [210/220] loss=0.1345 mask=0.3492 depth=0.1345
+  Epoch 2 [220/220] loss=0.1325 mask=0.3453 depth=0.1325
+  Train: loss=0.1325 mask=0.3453 depth=0.1325 time=199.2s
+  Val epoch 2: loss=0.2717
+  Saved best phase2 model (val_loss=0.2717)
+
+=== Phase2 Epoch 3/49 ===
+  Epoch 3 [10/220] loss=0.0630 mask=0.2692 depth=0.0630
+  Epoch 3 [20/220] loss=0.0605 mask=0.2910 depth=0.0605
+  Epoch 3 [30/220] loss=0.0755 mask=0.2992 depth=0.0755
+  Epoch 3 [40/220] loss=0.0767 mask=0.3137 depth=0.0767
+  Epoch 3 [50/220] loss=0.0734 mask=0.3176 depth=0.0734
+  Epoch 3 [60/220] loss=0.0718 mask=0.3220 depth=0.0718
+  Epoch 3 [70/220] loss=0.0759 mask=0.3282 depth=0.0759
+  Epoch 3 [80/220] loss=0.0769 mask=0.3361 depth=0.0769
+  Epoch 3 [90/220] loss=0.0790 mask=0.3450 depth=0.0790
+  Epoch 3 [100/220] loss=0.0807 mask=0.3515 depth=0.0807
+  Epoch 3 [110/220] loss=0.0793 mask=0.3463 depth=0.0793
+  Epoch 3 [120/220] loss=0.0788 mask=0.3389 depth=0.0788
+  Epoch 3 [130/220] loss=0.0779 mask=0.3390 depth=0.0779
+  Epoch 3 [140/220] loss=0.0795 mask=0.3374 depth=0.0795
+  Epoch 3 [150/220] loss=0.0776 mask=0.3340 depth=0.0776
+  Epoch 3 [160/220] loss=0.0789 mask=0.3337 depth=0.0789
+  Epoch 3 [170/220] loss=0.0821 mask=0.3326 depth=0.0821
+  Epoch 3 [180/220] loss=0.0807 mask=0.3317 depth=0.0807
+  Epoch 3 [190/220] loss=0.0825 mask=0.3292 depth=0.0825
+  Epoch 3 [200/220] loss=0.0829 mask=0.3273 depth=0.0829
+  Epoch 3 [210/220] loss=0.0819 mask=0.3259 depth=0.0819
+  Epoch 3 [220/220] loss=0.0807 mask=0.3244 depth=0.0807
+  Train: loss=0.0807 mask=0.3244 depth=0.0807 time=192.2s
+  Val epoch 3: loss=0.2690
+  Saved best phase2 model (val_loss=0.2690)
+
+=== Phase2 Epoch 4/49 ===
+  Epoch 4 [10/220] loss=0.0628 mask=0.2774 depth=0.0628
+  Epoch 4 [20/220] loss=0.0848 mask=0.2595 depth=0.0848
+  Epoch 4 [30/220] loss=0.0669 mask=0.2610 depth=0.0669
+  Epoch 4 [40/220] loss=0.0604 mask=0.2797 depth=0.0604
+  Epoch 4 [50/220] loss=0.0553 mask=0.2946 depth=0.0553
+  Epoch 4 [60/220] loss=0.0542 mask=0.2856 depth=0.0542
+  Epoch 4 [70/220] loss=0.0546 mask=0.2803 depth=0.0546
+  Epoch 4 [80/220] loss=0.0530 mask=0.2939 depth=0.0530
+  Epoch 4 [90/220] loss=0.0506 mask=0.2856 depth=0.0506
+  Epoch 4 [100/220] loss=0.0503 mask=0.2862 depth=0.0503
+  Epoch 4 [110/220] loss=0.0504 mask=0.2890 depth=0.0504
+  Epoch 4 [120/220] loss=0.0516 mask=0.2924 depth=0.0516
+  Epoch 4 [130/220] loss=0.0502 mask=0.2952 depth=0.0502
+  Epoch 4 [140/220] loss=0.0536 mask=0.2920 depth=0.0536
+  Epoch 4 [150/220] loss=0.0538 mask=0.3003 depth=0.0538
+  Epoch 4 [160/220] loss=0.0527 mask=0.3002 depth=0.0527
+  Epoch 4 [170/220] loss=0.0525 mask=0.3002 depth=0.0525
+  Epoch 4 [180/220] loss=0.0525 mask=0.2981 depth=0.0525
+  Epoch 4 [190/220] loss=0.0526 mask=0.3005 depth=0.0526
+  Epoch 4 [200/220] loss=0.0513 mask=0.2984 depth=0.0513
+  Epoch 4 [210/220] loss=0.0520 mask=0.3019 depth=0.0520
+  Epoch 4 [220/220] loss=0.0517 mask=0.3064 depth=0.0517
+  Train: loss=0.0517 mask=0.3064 depth=0.0517 time=204.5s
+  Val epoch 4: loss=0.2536
+  Saved best phase2 model (val_loss=0.2536)
+
+=== Phase2 Epoch 5/49 ===
+  Epoch 5 [10/220] loss=0.0219 mask=0.3361 depth=0.0219
+  Epoch 5 [20/220] loss=0.0298 mask=0.3392 depth=0.0298
+  Epoch 5 [30/220] loss=0.0290 mask=0.3168 depth=0.0290
+  Epoch 5 [40/220] loss=0.0302 mask=0.3020 depth=0.0302
+  Epoch 5 [50/220] loss=0.0297 mask=0.3078 depth=0.0297
+  Epoch 5 [60/220] loss=0.0291 mask=0.3019 depth=0.0291
+  Epoch 5 [70/220] loss=0.0296 mask=0.3013 depth=0.0296
+  Epoch 5 [80/220] loss=0.0283 mask=0.3081 depth=0.0283
+  Epoch 5 [90/220] loss=0.0292 mask=0.3106 depth=0.0292
+  Epoch 5 [100/220] loss=0.0296 mask=0.3123 depth=0.0296
+  Epoch 5 [110/220] loss=0.0309 mask=0.3136 depth=0.0309
+  Epoch 5 [120/220] loss=0.0314 mask=0.3077 depth=0.0314
+  Epoch 5 [130/220] loss=0.0316 mask=0.3119 depth=0.0316
+  Epoch 5 [140/220] loss=0.0360 mask=0.3176 depth=0.0360
+  Epoch 5 [150/220] loss=0.0400 mask=0.3205 depth=0.0400
+  Epoch 5 [160/220] loss=0.0415 mask=0.3218 depth=0.0415
+  Epoch 5 [170/220] loss=0.0411 mask=0.3183 depth=0.0411
+  Epoch 5 [180/220] loss=0.0417 mask=0.3256 depth=0.0417
+  Epoch 5 [190/220] loss=0.0415 mask=0.3267 depth=0.0415
+  Epoch 5 [200/220] loss=0.0413 mask=0.3241 depth=0.0413
+  Epoch 5 [210/220] loss=0.0419 mask=0.3267 depth=0.0419
+  Epoch 5 [220/220] loss=0.0410 mask=0.3240 depth=0.0410
+  Train: loss=0.0410 mask=0.3240 depth=0.0410 time=202.0s
+  Val epoch 5: loss=0.2285
+  Saved best phase2 model (val_loss=0.2285)
+
+=== Phase2 Epoch 6/49 ===
+  Epoch 6 [10/220] loss=0.0154 mask=0.3482 depth=0.0154
+  Epoch 6 [20/220] loss=0.0206 mask=0.3665 depth=0.0206
+  Epoch 6 [30/220] loss=0.0277 mask=0.3679 depth=0.0277
+  Epoch 6 [40/220] loss=0.0260 mask=0.3616 depth=0.0260
+  Epoch 6 [50/220] loss=0.0252 mask=0.3514 depth=0.0252
+  Epoch 6 [60/220] loss=0.0252 mask=0.3640 depth=0.0252
+  Epoch 6 [70/220] loss=0.0234 mask=0.3552 depth=0.0234
+  Epoch 6 [80/220] loss=0.0240 mask=0.3524 depth=0.0240
+  Epoch 6 [90/220] loss=0.0245 mask=0.3470 depth=0.0245
+  Epoch 6 [100/220] loss=0.0256 mask=0.3457 depth=0.0256
+  Epoch 6 [110/220] loss=0.0253 mask=0.3427 depth=0.0253
+  Epoch 6 [120/220] loss=0.0253 mask=0.3339 depth=0.0253
+  Epoch 6 [130/220] loss=0.0254 mask=0.3336 depth=0.0254
+  Epoch 6 [140/220] loss=0.0255 mask=0.3320 depth=0.0255
+  Epoch 6 [150/220] loss=0.0251 mask=0.3306 depth=0.0251
+  Epoch 6 [160/220] loss=0.0251 mask=0.3321 depth=0.0251
+  Epoch 6 [170/220] loss=0.0246 mask=0.3324 depth=0.0246
+  Epoch 6 [180/220] loss=0.0244 mask=0.3274 depth=0.0244
+  Epoch 6 [190/220] loss=0.0243 mask=0.3272 depth=0.0243
+  Epoch 6 [200/220] loss=0.0246 mask=0.3297 depth=0.0246
+  Epoch 6 [210/220] loss=0.0243 mask=0.3301 depth=0.0243
+  Epoch 6 [220/220] loss=0.0243 mask=0.3291 depth=0.0243
+  Train: loss=0.0243 mask=0.3291 depth=0.0243 time=196.3s
+  Val epoch 6: loss=0.1966
+  Saved best phase2 model (val_loss=0.1966)
+
+=== Phase2 Epoch 7/49 ===
+  Epoch 7 [10/220] loss=0.0160 mask=0.3540 depth=0.0160
+  Epoch 7 [20/220] loss=0.0160 mask=0.3507 depth=0.0160
+  Epoch 7 [30/220] loss=0.0168 mask=0.3372 depth=0.0168
+  Epoch 7 [40/220] loss=0.0157 mask=0.3377 depth=0.0157
+  Epoch 7 [50/220] loss=0.0177 mask=0.3384 depth=0.0177
+  Epoch 7 [60/220] loss=0.0172 mask=0.3419 depth=0.0172
+  Epoch 7 [70/220] loss=0.0180 mask=0.3415 depth=0.0180
+  Epoch 7 [80/220] loss=0.0180 mask=0.3411 depth=0.0180
+  Epoch 7 [90/220] loss=0.0176 mask=0.3479 depth=0.0176
+  Epoch 7 [100/220] loss=0.0174 mask=0.3500 depth=0.0174
+  Epoch 7 [110/220] loss=0.0185 mask=0.3523 depth=0.0185
+  Epoch 7 [120/220] loss=0.0190 mask=0.3508 depth=0.0190
+  Epoch 7 [130/220] loss=0.0194 mask=0.3520 depth=0.0194
+  Epoch 7 [140/220] loss=0.0193 mask=0.3551 depth=0.0193
+  Epoch 7 [150/220] loss=0.0188 mask=0.3514 depth=0.0188
+  Epoch 7 [160/220] loss=0.0187 mask=0.3490 depth=0.0187
+  Epoch 7 [170/220] loss=0.0189 mask=0.3496 depth=0.0189
+  Epoch 7 [180/220] loss=0.0185 mask=0.3498 depth=0.0185
+  Epoch 7 [190/220] loss=0.0186 mask=0.3455 depth=0.0186
+  Epoch 7 [200/220] loss=0.0184 mask=0.3452 depth=0.0184
+  Epoch 7 [210/220] loss=0.0183 mask=0.3447 depth=0.0183
+  Epoch 7 [220/220] loss=0.0180 mask=0.3447 depth=0.0180
+  Train: loss=0.0180 mask=0.3447 depth=0.0180 time=195.0s
+  Val epoch 7: loss=0.1831
+  Saved best phase2 model (val_loss=0.1831)
+
+=== Phase2 Epoch 8/49 ===
+  Epoch 8 [10/220] loss=0.0125 mask=0.3944 depth=0.0125
+  Epoch 8 [20/220] loss=0.0122 mask=0.3854 depth=0.0122
+  Epoch 8 [30/220] loss=0.0150 mask=0.3698 depth=0.0150
+  Epoch 8 [40/220] loss=0.0150 mask=0.3796 depth=0.0150
+  Epoch 8 [50/220] loss=0.0147 mask=0.4011 depth=0.0147
+  Epoch 8 [60/220] loss=0.0147 mask=0.3924 depth=0.0147
+  Epoch 8 [70/220] loss=0.0149 mask=0.3852 depth=0.0149
+  Epoch 8 [80/220] loss=0.0158 mask=0.3829 depth=0.0158
+  Epoch 8 [90/220] loss=0.0156 mask=0.3778 depth=0.0156
+  Epoch 8 [100/220] loss=0.0149 mask=0.3631 depth=0.0149
+  Epoch 8 [110/220] loss=0.0148 mask=0.3640 depth=0.0148
+  Epoch 8 [120/220] loss=0.0144 mask=0.3590 depth=0.0144
+  Epoch 8 [130/220] loss=0.0143 mask=0.3549 depth=0.0143
+  Epoch 8 [140/220] loss=0.0143 mask=0.3554 depth=0.0143
+  Epoch 8 [150/220] loss=0.0150 mask=0.3533 depth=0.0150
+  Epoch 8 [160/220] loss=0.0151 mask=0.3545 depth=0.0151
+  Epoch 8 [170/220] loss=0.0149 mask=0.3542 depth=0.0149
+  Epoch 8 [180/220] loss=0.0151 mask=0.3517 depth=0.0151
+  Epoch 8 [190/220] loss=0.0150 mask=0.3511 depth=0.0150
+  Epoch 8 [200/220] loss=0.0149 mask=0.3466 depth=0.0149
+  Epoch 8 [210/220] loss=0.0157 mask=0.3462 depth=0.0157
+  Epoch 8 [220/220] loss=0.0156 mask=0.3443 depth=0.0156
+  Train: loss=0.0156 mask=0.3443 depth=0.0156 time=198.5s
+  Val epoch 8: loss=0.1742
+  Saved best phase2 model (val_loss=0.1742)
+
+=== Phase2 Epoch 9/49 ===
+  Epoch 9 [10/220] loss=0.0097 mask=0.2743 depth=0.0097
+  Epoch 9 [20/220] loss=0.0088 mask=0.2724 depth=0.0088
+  Epoch 9 [30/220] loss=0.0111 mask=0.3039 depth=0.0111
+  Epoch 9 [40/220] loss=0.0109 mask=0.3127 depth=0.0109
+  Epoch 9 [50/220] loss=0.0113 mask=0.3313 depth=0.0113
+  Epoch 9 [60/220] loss=0.0125 mask=0.3448 depth=0.0125
+  Epoch 9 [70/220] loss=0.0126 mask=0.3503 depth=0.0126
+  Epoch 9 [80/220] loss=0.0129 mask=0.3474 depth=0.0129
+  Epoch 9 [90/220] loss=0.0129 mask=0.3442 depth=0.0129
+  Epoch 9 [100/220] loss=0.0126 mask=0.3455 depth=0.0126
+  Epoch 9 [110/220] loss=0.0129 mask=0.3478 depth=0.0129
+  Epoch 9 [120/220] loss=0.0126 mask=0.3468 depth=0.0126
+  Epoch 9 [130/220] loss=0.0134 mask=0.3449 depth=0.0134
+  Epoch 9 [140/220] loss=0.0134 mask=0.3491 depth=0.0134
+  Epoch 9 [150/220] loss=0.0133 mask=0.3480 depth=0.0133
+  Epoch 9 [160/220] loss=0.0132 mask=0.3433 depth=0.0132
+  Epoch 9 [170/220] loss=0.0131 mask=0.3410 depth=0.0131
+  Epoch 9 [180/220] loss=0.0130 mask=0.3409 depth=0.0130
+  Epoch 9 [190/220] loss=0.0127 mask=0.3390 depth=0.0127
+  Epoch 9 [200/220] loss=0.0128 mask=0.3373 depth=0.0128
+  Epoch 9 [210/220] loss=0.0131 mask=0.3386 depth=0.0131
+  Epoch 9 [220/220] loss=0.0133 mask=0.3404 depth=0.0133
+  Train: loss=0.0133 mask=0.3404 depth=0.0133 time=199.8s
+  Val epoch 9: loss=0.1879
+
+=== Phase2 Epoch 10/49 ===
+  Epoch 10 [10/220] loss=0.0112 mask=0.3887 depth=0.0112
+  Epoch 10 [20/220] loss=0.0097 mask=0.3505 depth=0.0097
+  Epoch 10 [30/220] loss=0.0087 mask=0.3231 depth=0.0087
+  Epoch 10 [40/220] loss=0.0082 mask=0.3097 depth=0.0082
+  Epoch 10 [50/220] loss=0.0081 mask=0.3047 depth=0.0081
+  Epoch 10 [60/220] loss=0.0085 mask=0.3137 depth=0.0085
+  Epoch 10 [70/220] loss=0.0099 mask=0.3123 depth=0.0099
+  Epoch 10 [80/220] loss=0.0098 mask=0.3175 depth=0.0098
+  Epoch 10 [90/220] loss=0.0097 mask=0.3239 depth=0.0097
+  Epoch 10 [100/220] loss=0.0095 mask=0.3295 depth=0.0095
+  Epoch 10 [110/220] loss=0.0099 mask=0.3305 depth=0.0099
+  Epoch 10 [120/220] loss=0.0100 mask=0.3278 depth=0.0100
+  Epoch 10 [130/220] loss=0.0100 mask=0.3340 depth=0.0100
+  Epoch 10 [140/220] loss=0.0098 mask=0.3376 depth=0.0098
+  Epoch 10 [150/220] loss=0.0099 mask=0.3439 depth=0.0099
+  Epoch 10 [160/220] loss=0.0097 mask=0.3401 depth=0.0097
+  Epoch 10 [170/220] loss=0.0099 mask=0.3399 depth=0.0099
+  Epoch 10 [180/220] loss=0.0099 mask=0.3356 depth=0.0099
+  Epoch 10 [190/220] loss=0.0098 mask=0.3364 depth=0.0098
+  Epoch 10 [200/220] loss=0.0102 mask=0.3367 depth=0.0102
+  Epoch 10 [210/220] loss=0.0103 mask=0.3374 depth=0.0103
+  Epoch 10 [220/220] loss=0.0102 mask=0.3391 depth=0.0102
+  Train: loss=0.0102 mask=0.3391 depth=0.0102 time=200.5s
+  Val epoch 10: loss=0.1884
+
+=== Phase2 Epoch 11/49 ===
+  Epoch 11 [10/220] loss=0.0091 mask=0.3905 depth=0.0091
+  Epoch 11 [20/220] loss=0.0088 mask=0.3773 depth=0.0088
+  Epoch 11 [30/220] loss=0.0083 mask=0.3365 depth=0.0083
+  Epoch 11 [40/220] loss=0.0080 mask=0.3468 depth=0.0080
+  Epoch 11 [50/220] loss=0.0092 mask=0.3352 depth=0.0092
+  Epoch 11 [60/220] loss=0.0090 mask=0.3351 depth=0.0090
+  Epoch 11 [70/220] loss=0.0089 mask=0.3423 depth=0.0089
+  Epoch 11 [80/220] loss=0.0087 mask=0.3420 depth=0.0087
+  Epoch 11 [90/220] loss=0.0087 mask=0.3413 depth=0.0087
+  Epoch 11 [100/220] loss=0.0087 mask=0.3367 depth=0.0087
+  Epoch 11 [110/220] loss=0.0085 mask=0.3390 depth=0.0085
+  Epoch 11 [120/220] loss=0.0083 mask=0.3440 depth=0.0083
+  Epoch 11 [130/220] loss=0.0083 mask=0.3433 depth=0.0083
+  Epoch 11 [140/220] loss=0.0085 mask=0.3459 depth=0.0085
+  Epoch 11 [150/220] loss=0.0086 mask=0.3424 depth=0.0086
+  Epoch 11 [160/220] loss=0.0085 mask=0.3414 depth=0.0085
+  Epoch 11 [170/220] loss=0.0085 mask=0.3448 depth=0.0085
+  Epoch 11 [180/220] loss=0.0087 mask=0.3425 depth=0.0087
+  Epoch 11 [190/220] loss=0.0087 mask=0.3385 depth=0.0087
+  Epoch 11 [200/220] loss=0.0086 mask=0.3378 depth=0.0086
+  Epoch 11 [210/220] loss=0.0089 mask=0.3386 depth=0.0089
+  Epoch 11 [220/220] loss=0.0089 mask=0.3399 depth=0.0089
+  Train: loss=0.0089 mask=0.3399 depth=0.0089 time=202.4s
+  Val epoch 11: loss=0.2282
+
+=== Phase2 Epoch 12/49 ===
+  Epoch 12 [10/220] loss=0.0085 mask=0.3024 depth=0.0085
+  Epoch 12 [20/220] loss=0.0100 mask=0.3533 depth=0.0100
+  Epoch 12 [30/220] loss=0.0094 mask=0.3531 depth=0.0094
+  Epoch 12 [40/220] loss=0.0093 mask=0.3431 depth=0.0093
+  Epoch 12 [50/220] loss=0.0092 mask=0.3360 depth=0.0092
+  Epoch 12 [60/220] loss=0.0090 mask=0.3235 depth=0.0090
+  Epoch 12 [70/220] loss=0.0089 mask=0.3241 depth=0.0089
+  Epoch 12 [80/220] loss=0.0085 mask=0.3190 depth=0.0085
+  Epoch 12 [90/220] loss=0.0088 mask=0.3165 depth=0.0088
+  Epoch 12 [100/220] loss=0.0088 mask=0.3249 depth=0.0088
+  Epoch 12 [110/220] loss=0.0087 mask=0.3238 depth=0.0087
+  Epoch 12 [120/220] loss=0.0086 mask=0.3328 depth=0.0086
+  Epoch 12 [130/220] loss=0.0088 mask=0.3409 depth=0.0088
+  Epoch 12 [140/220] loss=0.0087 mask=0.3415 depth=0.0087
+  Epoch 12 [150/220] loss=0.0088 mask=0.3397 depth=0.0088
+  Epoch 12 [160/220] loss=0.0086 mask=0.3373 depth=0.0086
+  Epoch 12 [170/220] loss=0.0085 mask=0.3344 depth=0.0085
+  Epoch 12 [180/220] loss=0.0086 mask=0.3337 depth=0.0086
+  Epoch 12 [190/220] loss=0.0085 mask=0.3312 depth=0.0085
+  Epoch 12 [200/220] loss=0.0084 mask=0.3371 depth=0.0084
+  Epoch 12 [210/220] loss=0.0083 mask=0.3351 depth=0.0083
+  Epoch 12 [220/220] loss=0.0082 mask=0.3367 depth=0.0082
+  Train: loss=0.0082 mask=0.3367 depth=0.0082 time=201.3s
+  Val epoch 12: loss=0.2004
+
+=== Phase2 Epoch 13/49 ===
+  Epoch 13 [10/220] loss=0.0087 mask=0.3342 depth=0.0087
+  Epoch 13 [20/220] loss=0.0088 mask=0.3767 depth=0.0088
+  Epoch 13 [30/220] loss=0.0075 mask=0.3583 depth=0.0075
+  Epoch 13 [40/220] loss=0.0082 mask=0.3401 depth=0.0082
+  Epoch 13 [50/220] loss=0.0079 mask=0.3413 depth=0.0079
+  Epoch 13 [60/220] loss=0.0079 mask=0.3202 depth=0.0079
+  Epoch 13 [70/220] loss=0.0078 mask=0.3354 depth=0.0078
+  Epoch 13 [80/220] loss=0.0076 mask=0.3304 depth=0.0076
+  Epoch 13 [90/220] loss=0.0074 mask=0.3297 depth=0.0074
+  Epoch 13 [100/220] loss=0.0073 mask=0.3282 depth=0.0073
+  Epoch 13 [110/220] loss=0.0075 mask=0.3290 depth=0.0075
+  Epoch 13 [120/220] loss=0.0074 mask=0.3385 depth=0.0074
+  Epoch 13 [130/220] loss=0.0073 mask=0.3323 depth=0.0073
+  Epoch 13 [140/220] loss=0.0073 mask=0.3371 depth=0.0073
+  Epoch 13 [150/220] loss=0.0076 mask=0.3397 depth=0.0076
+  Epoch 13 [160/220] loss=0.0076 mask=0.3397 depth=0.0076
+  Epoch 13 [170/220] loss=0.0077 mask=0.3434 depth=0.0077
+  Epoch 13 [180/220] loss=0.0077 mask=0.3377 depth=0.0077
+  Epoch 13 [190/220] loss=0.0075 mask=0.3365 depth=0.0075
+  Epoch 13 [200/220] loss=0.0075 mask=0.3409 depth=0.0075
+  Epoch 13 [210/220] loss=0.0075 mask=0.3435 depth=0.0075
+  Epoch 13 [220/220] loss=0.0076 mask=0.3420 depth=0.0076
+  Train: loss=0.0076 mask=0.3420 depth=0.0076 time=205.9s
+  Val epoch 13: loss=0.2218
+
+=== Phase2 Epoch 14/49 ===
+  Epoch 14 [10/220] loss=0.0063 mask=0.3363 depth=0.0063
+  Epoch 14 [20/220] loss=0.0065 mask=0.3419 depth=0.0065
+  Epoch 14 [30/220] loss=0.0064 mask=0.3265 depth=0.0064
+  Epoch 14 [40/220] loss=0.0062 mask=0.3169 depth=0.0062
+  Epoch 14 [50/220] loss=0.0067 mask=0.3328 depth=0.0067
+  Epoch 14 [60/220] loss=0.0065 mask=0.3451 depth=0.0065
+  Epoch 14 [70/220] loss=0.0065 mask=0.3416 depth=0.0065
+  Epoch 14 [80/220] loss=0.0068 mask=0.3408 depth=0.0068
+  Epoch 14 [90/220] loss=0.0068 mask=0.3433 depth=0.0068
+  Epoch 14 [100/220] loss=0.0070 mask=0.3404 depth=0.0070
+  Epoch 14 [110/220] loss=0.0073 mask=0.3436 depth=0.0073
+  Epoch 14 [120/220] loss=0.0076 mask=0.3517 depth=0.0076
+  Epoch 14 [130/220] loss=0.0074 mask=0.3445 depth=0.0074
+  Epoch 14 [140/220] loss=0.0073 mask=0.3421 depth=0.0073
+  Epoch 14 [150/220] loss=0.0073 mask=0.3376 depth=0.0073
+  Epoch 14 [160/220] loss=0.0071 mask=0.3390 depth=0.0071
+  Epoch 14 [170/220] loss=0.0071 mask=0.3372 depth=0.0071
+  Epoch 14 [180/220] loss=0.0070 mask=0.3349 depth=0.0070
+  Epoch 14 [190/220] loss=0.0069 mask=0.3356 depth=0.0069
+  Epoch 14 [200/220] loss=0.0069 mask=0.3341 depth=0.0069
+  Epoch 14 [210/220] loss=0.0069 mask=0.3353 depth=0.0069
+  Epoch 14 [220/220] loss=0.0070 mask=0.3374 depth=0.0070
+  Train: loss=0.0070 mask=0.3374 depth=0.0070 time=203.1s
+  Val epoch 14: loss=0.1859
+
+=== Phase2 Epoch 15/49 ===
+  Epoch 15 [10/220] loss=0.0043 mask=0.3005 depth=0.0043
+  Epoch 15 [20/220] loss=0.0047 mask=0.3155 depth=0.0047
+  Epoch 15 [30/220] loss=0.0048 mask=0.3093 depth=0.0048
+  Epoch 15 [40/220] loss=0.0048 mask=0.3190 depth=0.0048
+  Epoch 15 [50/220] loss=0.0055 mask=0.3315 depth=0.0055
+  Epoch 15 [60/220] loss=0.0059 mask=0.3311 depth=0.0059
+  Epoch 15 [70/220] loss=0.0058 mask=0.3275 depth=0.0058
+  Epoch 15 [80/220] loss=0.0057 mask=0.3280 depth=0.0057
+  Epoch 15 [90/220] loss=0.0062 mask=0.3399 depth=0.0062
+  Epoch 15 [100/220] loss=0.0062 mask=0.3470 depth=0.0062
+  Epoch 15 [110/220] loss=0.0059 mask=0.3480 depth=0.0059
+  Epoch 15 [120/220] loss=0.0059 mask=0.3460 depth=0.0059
+  Epoch 15 [130/220] loss=0.0059 mask=0.3473 depth=0.0059
+  Epoch 15 [140/220] loss=0.0059 mask=0.3427 depth=0.0059
+  Epoch 15 [150/220] loss=0.0058 mask=0.3419 depth=0.0058
+  Epoch 15 [160/220] loss=0.0058 mask=0.3388 depth=0.0058
+  Epoch 15 [170/220] loss=0.0059 mask=0.3384 depth=0.0059
+  Epoch 15 [180/220] loss=0.0060 mask=0.3387 depth=0.0060
+  Epoch 15 [190/220] loss=0.0060 mask=0.3364 depth=0.0060
+  Epoch 15 [200/220] loss=0.0061 mask=0.3343 depth=0.0061
+  Epoch 15 [210/220] loss=0.0061 mask=0.3386 depth=0.0061
+  Epoch 15 [220/220] loss=0.0062 mask=0.3386 depth=0.0062
+  Train: loss=0.0062 mask=0.3386 depth=0.0062 time=204.8s
+  Val epoch 15: loss=0.1932
+
+=== Phase2 Epoch 16/49 ===
+  Epoch 16 [10/220] loss=0.0083 mask=0.3259 depth=0.0083
+  Epoch 16 [20/220] loss=0.0060 mask=0.3301 depth=0.0060
+  Epoch 16 [30/220] loss=0.0057 mask=0.3237 depth=0.0057
+  Epoch 16 [40/220] loss=0.0062 mask=0.3432 depth=0.0062
+  Epoch 16 [50/220] loss=0.0060 mask=0.3477 depth=0.0060
+  Epoch 16 [60/220] loss=0.0064 mask=0.3388 depth=0.0064
+  Epoch 16 [70/220] loss=0.0060 mask=0.3392 depth=0.0060
+  Epoch 16 [80/220] loss=0.0058 mask=0.3369 depth=0.0058
+  Epoch 16 [90/220] loss=0.0058 mask=0.3437 depth=0.0058
+  Epoch 16 [100/220] loss=0.0058 mask=0.3441 depth=0.0058
+  Epoch 16 [110/220] loss=0.0057 mask=0.3368 depth=0.0057
+  Epoch 16 [120/220] loss=0.0056 mask=0.3314 depth=0.0056
+  Epoch 16 [130/220] loss=0.0056 mask=0.3405 depth=0.0056
+  Epoch 16 [140/220] loss=0.0056 mask=0.3431 depth=0.0056
+  Epoch 16 [150/220] loss=0.0056 mask=0.3425 depth=0.0056
+  Epoch 16 [160/220] loss=0.0056 mask=0.3417 depth=0.0056
+  Epoch 16 [170/220] loss=0.0056 mask=0.3398 depth=0.0056
+  Epoch 16 [180/220] loss=0.0055 mask=0.3387 depth=0.0055
+  Epoch 16 [190/220] loss=0.0054 mask=0.3373 depth=0.0054
+  Epoch 16 [200/220] loss=0.0054 mask=0.3358 depth=0.0054
+  Epoch 16 [210/220] loss=0.0054 mask=0.3376 depth=0.0054
+  Epoch 16 [220/220] loss=0.0055 mask=0.3371 depth=0.0055
+  Train: loss=0.0055 mask=0.3371 depth=0.0055 time=204.9s
+  Val epoch 16: loss=0.1913
+
+=== Phase2 Epoch 17/49 ===
+  Epoch 17 [10/220] loss=0.0041 mask=0.3481 depth=0.0041
+  Epoch 17 [20/220] loss=0.0045 mask=0.3409 depth=0.0045
+  Epoch 17 [30/220] loss=0.0043 mask=0.3426 depth=0.0043
+  Epoch 17 [40/220] loss=0.0050 mask=0.3292 depth=0.0050
+  Epoch 17 [50/220] loss=0.0051 mask=0.3253 depth=0.0051
+  Epoch 17 [60/220] loss=0.0052 mask=0.3303 depth=0.0052
+  Epoch 17 [70/220] loss=0.0052 mask=0.3340 depth=0.0052
+  Epoch 17 [80/220] loss=0.0053 mask=0.3244 depth=0.0053
+  Epoch 17 [90/220] loss=0.0052 mask=0.3218 depth=0.0052
+  Epoch 17 [100/220] loss=0.0052 mask=0.3216 depth=0.0052
+  Epoch 17 [110/220] loss=0.0052 mask=0.3200 depth=0.0052
+  Epoch 17 [120/220] loss=0.0051 mask=0.3226 depth=0.0051
+  Epoch 17 [130/220] loss=0.0051 mask=0.3270 depth=0.0051
+  Epoch 17 [140/220] loss=0.0051 mask=0.3293 depth=0.0051
+  Epoch 17 [150/220] loss=0.0052 mask=0.3265 depth=0.0052
+  Epoch 17 [160/220] loss=0.0052 mask=0.3282 depth=0.0052
+  Epoch 17 [170/220] loss=0.0052 mask=0.3265 depth=0.0052
+  Epoch 17 [180/220] loss=0.0053 mask=0.3295 depth=0.0053
+  Epoch 17 [190/220] loss=0.0052 mask=0.3326 depth=0.0052
+  Epoch 17 [200/220] loss=0.0053 mask=0.3343 depth=0.0053
+  Epoch 17 [210/220] loss=0.0052 mask=0.3329 depth=0.0052
+  Epoch 17 [220/220] loss=0.0052 mask=0.3349 depth=0.0052
+  Train: loss=0.0052 mask=0.3349 depth=0.0052 time=194.7s
+  Val epoch 17: loss=0.1986
+
+=== Phase2 Epoch 18/49 ===
+  Epoch 18 [10/220] loss=0.0034 mask=0.4847 depth=0.0034
+  Epoch 18 [20/220] loss=0.0033 mask=0.3734 depth=0.0033
+  Epoch 18 [30/220] loss=0.0036 mask=0.3286 depth=0.0036
+  Epoch 18 [40/220] loss=0.0038 mask=0.3193 depth=0.0038
+  Epoch 18 [50/220] loss=0.0039 mask=0.3223 depth=0.0039
+  Epoch 18 [60/220] loss=0.0042 mask=0.3325 depth=0.0042
+  Epoch 18 [70/220] loss=0.0042 mask=0.3339 depth=0.0042
+  Epoch 18 [80/220] loss=0.0042 mask=0.3398 depth=0.0042
+  Epoch 18 [90/220] loss=0.0043 mask=0.3377 depth=0.0043
+  Epoch 18 [100/220] loss=0.0043 mask=0.3319 depth=0.0043
+  Epoch 18 [110/220] loss=0.0044 mask=0.3280 depth=0.0044
+  Epoch 18 [120/220] loss=0.0046 mask=0.3261 depth=0.0046
+  Epoch 18 [130/220] loss=0.0047 mask=0.3358 depth=0.0047
+  Epoch 18 [140/220] loss=0.0049 mask=0.3422 depth=0.0049
+  Epoch 18 [150/220] loss=0.0048 mask=0.3404 depth=0.0048
+  Epoch 18 [160/220] loss=0.0048 mask=0.3363 depth=0.0048
+  Epoch 18 [170/220] loss=0.0049 mask=0.3400 depth=0.0049
+  Epoch 18 [180/220] loss=0.0050 mask=0.3417 depth=0.0050
+  Epoch 18 [190/220] loss=0.0050 mask=0.3448 depth=0.0050
+  Epoch 18 [200/220] loss=0.0051 mask=0.3439 depth=0.0051
+  Epoch 18 [210/220] loss=0.0051 mask=0.3443 depth=0.0051
+  Epoch 18 [220/220] loss=0.0052 mask=0.3403 depth=0.0052
+  Train: loss=0.0052 mask=0.3403 depth=0.0052 time=194.3s
+  Val epoch 18: loss=0.1964
+
+=== Phase2 Epoch 19/49 ===
+  Epoch 19 [10/220] loss=0.0053 mask=0.4235 depth=0.0053
+  Epoch 19 [20/220] loss=0.0058 mask=0.3407 depth=0.0058
+  Epoch 19 [30/220] loss=0.0058 mask=0.3143 depth=0.0058
+  Epoch 19 [40/220] loss=0.0056 mask=0.3250 depth=0.0056
+  Epoch 19 [50/220] loss=0.0057 mask=0.3262 depth=0.0057
+  Epoch 19 [60/220] loss=0.0055 mask=0.3338 depth=0.0055
+  Epoch 19 [70/220] loss=0.0053 mask=0.3386 depth=0.0053
+  Epoch 19 [80/220] loss=0.0050 mask=0.3320 depth=0.0050
+  Epoch 19 [90/220] loss=0.0049 mask=0.3314 depth=0.0049
+  Epoch 19 [100/220] loss=0.0049 mask=0.3419 depth=0.0049
+  Epoch 19 [110/220] loss=0.0048 mask=0.3406 depth=0.0048
+  Epoch 19 [120/220] loss=0.0048 mask=0.3457 depth=0.0048
+  Epoch 19 [130/220] loss=0.0048 mask=0.3376 depth=0.0048
+  Epoch 19 [140/220] loss=0.0050 mask=0.3445 depth=0.0050
+  Epoch 19 [150/220] loss=0.0050 mask=0.3472 depth=0.0050
+  Epoch 19 [160/220] loss=0.0051 mask=0.3422 depth=0.0051
+  Epoch 19 [170/220] loss=0.0052 mask=0.3438 depth=0.0052
+  Epoch 19 [180/220] loss=0.0052 mask=0.3442 depth=0.0052
+  Epoch 19 [190/220] loss=0.0051 mask=0.3446 depth=0.0051
+  Epoch 19 [200/220] loss=0.0051 mask=0.3418 depth=0.0051
+  Epoch 19 [210/220] loss=0.0051 mask=0.3393 depth=0.0051
+  Epoch 19 [220/220] loss=0.0051 mask=0.3374 depth=0.0051
+  Train: loss=0.0051 mask=0.3374 depth=0.0051 time=192.8s
+  Val epoch 19: loss=0.2086
+
+=== Phase2 Epoch 20/49 ===
+  Epoch 20 [10/220] loss=0.0055 mask=0.4344 depth=0.0055
+  Epoch 20 [20/220] loss=0.0050 mask=0.3701 depth=0.0050
+  Epoch 20 [30/220] loss=0.0054 mask=0.3709 depth=0.0054
+  Epoch 20 [40/220] loss=0.0050 mask=0.3532 depth=0.0050
+  Epoch 20 [50/220] loss=0.0047 mask=0.3606 depth=0.0047
+  Epoch 20 [60/220] loss=0.0045 mask=0.3481 depth=0.0045
+  Epoch 20 [70/220] loss=0.0043 mask=0.3372 depth=0.0043
+  Epoch 20 [80/220] loss=0.0043 mask=0.3415 depth=0.0043
+  Epoch 20 [90/220] loss=0.0046 mask=0.3375 depth=0.0046
+  Epoch 20 [100/220] loss=0.0044 mask=0.3424 depth=0.0044
+  Epoch 20 [110/220] loss=0.0044 mask=0.3421 depth=0.0044
+  Epoch 20 [120/220] loss=0.0045 mask=0.3404 depth=0.0045
+  Epoch 20 [130/220] loss=0.0044 mask=0.3359 depth=0.0044
+  Epoch 20 [140/220] loss=0.0045 mask=0.3393 depth=0.0045
+  Epoch 20 [150/220] loss=0.0044 mask=0.3383 depth=0.0044
+  Epoch 20 [160/220] loss=0.0043 mask=0.3435 depth=0.0043
+  Epoch 20 [170/220] loss=0.0043 mask=0.3414 depth=0.0043
+  Epoch 20 [180/220] loss=0.0041 mask=0.3408 depth=0.0041
+  Epoch 20 [190/220] loss=0.0042 mask=0.3429 depth=0.0042
+  Epoch 20 [200/220] loss=0.0042 mask=0.3423 depth=0.0042
+  Epoch 20 [210/220] loss=0.0042 mask=0.3406 depth=0.0042
+  Epoch 20 [220/220] loss=0.0042 mask=0.3385 depth=0.0042
+  Train: loss=0.0042 mask=0.3385 depth=0.0042 time=195.7s
+  Val epoch 20: loss=0.1892
+
+=== Phase2 Epoch 21/49 ===
+  Epoch 21 [10/220] loss=0.0060 mask=0.3704 depth=0.0060
+  Epoch 21 [20/220] loss=0.0050 mask=0.3357 depth=0.0050
+  Epoch 21 [30/220] loss=0.0043 mask=0.2944 depth=0.0043
+  Epoch 21 [40/220] loss=0.0041 mask=0.3172 depth=0.0041
+  Epoch 21 [50/220] loss=0.0040 mask=0.3227 depth=0.0040
+  Epoch 21 [60/220] loss=0.0038 mask=0.3150 depth=0.0038
+  Epoch 21 [70/220] loss=0.0038 mask=0.3173 depth=0.0038
+  Epoch 21 [80/220] loss=0.0037 mask=0.3183 depth=0.0037
+  Epoch 21 [90/220] loss=0.0036 mask=0.3221 depth=0.0036
+  Epoch 21 [100/220] loss=0.0036 mask=0.3201 depth=0.0036
+  Epoch 21 [110/220] loss=0.0035 mask=0.3284 depth=0.0035
+  Epoch 21 [120/220] loss=0.0035 mask=0.3325 depth=0.0035
+  Epoch 21 [130/220] loss=0.0035 mask=0.3386 depth=0.0035
+  Epoch 21 [140/220] loss=0.0035 mask=0.3418 depth=0.0035
+  Epoch 21 [150/220] loss=0.0035 mask=0.3431 depth=0.0035
+  Epoch 21 [160/220] loss=0.0037 mask=0.3446 depth=0.0037
+  Epoch 21 [170/220] loss=0.0038 mask=0.3458 depth=0.0038
+  Epoch 21 [180/220] loss=0.0037 mask=0.3431 depth=0.0037
+  Epoch 21 [190/220] loss=0.0037 mask=0.3425 depth=0.0037
+  Epoch 21 [200/220] loss=0.0037 mask=0.3406 depth=0.0037
+  Epoch 21 [210/220] loss=0.0037 mask=0.3426 depth=0.0037
+  Epoch 21 [220/220] loss=0.0037 mask=0.3378 depth=0.0037
+  Train: loss=0.0037 mask=0.3378 depth=0.0037 time=201.9s
+  Val epoch 21: loss=0.1786
+
+=== Phase2 Epoch 22/49 ===
+  Epoch 22 [10/220] loss=0.0039 mask=0.3736 depth=0.0039
+  Epoch 22 [20/220] loss=0.0032 mask=0.3749 depth=0.0032
+  Epoch 22 [30/220] loss=0.0030 mask=0.3477 depth=0.0030
+  Epoch 22 [40/220] loss=0.0030 mask=0.3428 depth=0.0030
+  Epoch 22 [50/220] loss=0.0030 mask=0.3599 depth=0.0030
+  Epoch 22 [60/220] loss=0.0030 mask=0.3467 depth=0.0030
+  Epoch 22 [70/220] loss=0.0032 mask=0.3431 depth=0.0032
+  Epoch 22 [80/220] loss=0.0031 mask=0.3455 depth=0.0031
+  Epoch 22 [90/220] loss=0.0030 mask=0.3491 depth=0.0030
+  Epoch 22 [100/220] loss=0.0030 mask=0.3346 depth=0.0030
+  Epoch 22 [110/220] loss=0.0032 mask=0.3377 depth=0.0032
+  Epoch 22 [120/220] loss=0.0033 mask=0.3354 depth=0.0033
+  Epoch 22 [130/220] loss=0.0033 mask=0.3326 depth=0.0033
+  Epoch 22 [140/220] loss=0.0032 mask=0.3353 depth=0.0032
+  Epoch 22 [150/220] loss=0.0033 mask=0.3377 depth=0.0033
+  Epoch 22 [160/220] loss=0.0032 mask=0.3412 depth=0.0032
+  Epoch 22 [170/220] loss=0.0032 mask=0.3429 depth=0.0032
+  Epoch 22 [180/220] loss=0.0033 mask=0.3415 depth=0.0033
+  Epoch 22 [190/220] loss=0.0032 mask=0.3387 depth=0.0032
+  Epoch 22 [200/220] loss=0.0033 mask=0.3381 depth=0.0033
+  Epoch 22 [210/220] loss=0.0033 mask=0.3373 depth=0.0033
+  Epoch 22 [220/220] loss=0.0034 mask=0.3362 depth=0.0034
+  Train: loss=0.0034 mask=0.3362 depth=0.0034 time=200.7s
+  Val epoch 22: loss=0.1871
+
+=== Phase2 Epoch 23/49 ===
+  Epoch 23 [10/220] loss=0.0036 mask=0.3317 depth=0.0036
+  Epoch 23 [20/220] loss=0.0031 mask=0.3152 depth=0.0031
+  Epoch 23 [30/220] loss=0.0029 mask=0.3010 depth=0.0029
+  Epoch 23 [40/220] loss=0.0028 mask=0.3258 depth=0.0028
+  Epoch 23 [50/220] loss=0.0027 mask=0.3177 depth=0.0027
+  Epoch 23 [60/220] loss=0.0028 mask=0.3097 depth=0.0028
+  Epoch 23 [70/220] loss=0.0027 mask=0.3095 depth=0.0027
+  Epoch 23 [80/220] loss=0.0027 mask=0.3173 depth=0.0027
+  Epoch 23 [90/220] loss=0.0029 mask=0.3221 depth=0.0029
+  Epoch 23 [100/220] loss=0.0030 mask=0.3291 depth=0.0030
+  Epoch 23 [110/220] loss=0.0030 mask=0.3308 depth=0.0030
+  Epoch 23 [120/220] loss=0.0031 mask=0.3295 depth=0.0031
+  Epoch 23 [130/220] loss=0.0031 mask=0.3314 depth=0.0031
+  Epoch 23 [140/220] loss=0.0031 mask=0.3301 depth=0.0031
+  Epoch 23 [150/220] loss=0.0032 mask=0.3382 depth=0.0032
+  Epoch 23 [160/220] loss=0.0033 mask=0.3343 depth=0.0033
+  Epoch 23 [170/220] loss=0.0032 mask=0.3327 depth=0.0032
+  Epoch 23 [180/220] loss=0.0032 mask=0.3354 depth=0.0032
+  Epoch 23 [190/220] loss=0.0032 mask=0.3353 depth=0.0032
+  Epoch 23 [200/220] loss=0.0032 mask=0.3375 depth=0.0032
+  Epoch 23 [210/220] loss=0.0034 mask=0.3403 depth=0.0034
+  Epoch 23 [220/220] loss=0.0033 mask=0.3389 depth=0.0033
+  Train: loss=0.0033 mask=0.3389 depth=0.0033 time=205.5s
+  Val epoch 23: loss=0.1783
+
+=== Phase2 Epoch 24/49 ===
+  Epoch 24 [10/220] loss=0.0024 mask=0.3407 depth=0.0024
+  Epoch 24 [20/220] loss=0.0027 mask=0.3109 depth=0.0027
+  Epoch 24 [30/220] loss=0.0031 mask=0.3121 depth=0.0031
+  Epoch 24 [40/220] loss=0.0032 mask=0.3218 depth=0.0032
+  Epoch 24 [50/220] loss=0.0035 mask=0.3205 depth=0.0035
+  Epoch 24 [60/220] loss=0.0034 mask=0.3079 depth=0.0034
+  Epoch 24 [70/220] loss=0.0033 mask=0.3203 depth=0.0033
+  Epoch 24 [80/220] loss=0.0033 mask=0.3259 depth=0.0033
+  Epoch 24 [90/220] loss=0.0033 mask=0.3267 depth=0.0033
+  Epoch 24 [100/220] loss=0.0033 mask=0.3327 depth=0.0033
+  Epoch 24 [110/220] loss=0.0032 mask=0.3376 depth=0.0032
+  Epoch 24 [120/220] loss=0.0031 mask=0.3411 depth=0.0031
+  Epoch 24 [130/220] loss=0.0031 mask=0.3429 depth=0.0031
+  Epoch 24 [140/220] loss=0.0031 mask=0.3414 depth=0.0031
+  Epoch 24 [150/220] loss=0.0031 mask=0.3418 depth=0.0031
+  Epoch 24 [160/220] loss=0.0031 mask=0.3420 depth=0.0031
+  Epoch 24 [170/220] loss=0.0031 mask=0.3406 depth=0.0031
+  Epoch 24 [180/220] loss=0.0031 mask=0.3371 depth=0.0031
+  Epoch 24 [190/220] loss=0.0031 mask=0.3386 depth=0.0031
+  Epoch 24 [200/220] loss=0.0032 mask=0.3407 depth=0.0032
+  Epoch 24 [210/220] loss=0.0032 mask=0.3396 depth=0.0032
+  Epoch 24 [220/220] loss=0.0032 mask=0.3411 depth=0.0032
+  Train: loss=0.0032 mask=0.3411 depth=0.0032 time=203.7s
+  Val epoch 24: loss=0.2015
+
+=== Phase2 Epoch 25/49 ===
+  Epoch 25 [10/220] loss=0.0032 mask=0.2646 depth=0.0032
+  Epoch 25 [20/220] loss=0.0028 mask=0.2459 depth=0.0028
+  Epoch 25 [30/220] loss=0.0026 mask=0.2760 depth=0.0026
+  Epoch 25 [40/220] loss=0.0027 mask=0.2895 depth=0.0027
+  Epoch 25 [50/220] loss=0.0027 mask=0.2973 depth=0.0027
+  Epoch 25 [60/220] loss=0.0027 mask=0.3064 depth=0.0027
+  Epoch 25 [70/220] loss=0.0028 mask=0.3076 depth=0.0028
+  Epoch 25 [80/220] loss=0.0031 mask=0.3165 depth=0.0031
+  Epoch 25 [90/220] loss=0.0030 mask=0.3113 depth=0.0030
+  Epoch 25 [100/220] loss=0.0030 mask=0.3141 depth=0.0030
+  Epoch 25 [110/220] loss=0.0031 mask=0.3235 depth=0.0031
+  Epoch 25 [120/220] loss=0.0032 mask=0.3252 depth=0.0032
+  Epoch 25 [130/220] loss=0.0031 mask=0.3276 depth=0.0031
+  Epoch 25 [140/220] loss=0.0031 mask=0.3296 depth=0.0031
+  Epoch 25 [150/220] loss=0.0031 mask=0.3334 depth=0.0031
+  Epoch 25 [160/220] loss=0.0031 mask=0.3411 depth=0.0031
+  Epoch 25 [170/220] loss=0.0031 mask=0.3414 depth=0.0031
+  Epoch 25 [180/220] loss=0.0031 mask=0.3399 depth=0.0031
+  Epoch 25 [190/220] loss=0.0031 mask=0.3407 depth=0.0031
+  Epoch 25 [200/220] loss=0.0031 mask=0.3372 depth=0.0031
+  Epoch 25 [210/220] loss=0.0032 mask=0.3355 depth=0.0032
+  Epoch 25 [220/220] loss=0.0032 mask=0.3360 depth=0.0032
+  Train: loss=0.0032 mask=0.3360 depth=0.0032 time=201.6s
+  Val epoch 25: loss=0.1869
+
+=== Phase2 Epoch 26/49 ===
+  Epoch 26 [10/220] loss=0.0042 mask=0.4360 depth=0.0042
+  Epoch 26 [20/220] loss=0.0035 mask=0.3893 depth=0.0035
+  Epoch 26 [30/220] loss=0.0031 mask=0.3637 depth=0.0031
+  Epoch 26 [40/220] loss=0.0030 mask=0.3515 depth=0.0030
+  Epoch 26 [50/220] loss=0.0030 mask=0.3507 depth=0.0030
+  Epoch 26 [60/220] loss=0.0029 mask=0.3421 depth=0.0029
+  Epoch 26 [70/220] loss=0.0028 mask=0.3338 depth=0.0028
+  Epoch 26 [80/220] loss=0.0027 mask=0.3281 depth=0.0027
+  Epoch 26 [90/220] loss=0.0027 mask=0.3393 depth=0.0027
+  Epoch 26 [100/220] loss=0.0027 mask=0.3334 depth=0.0027
+  Epoch 26 [110/220] loss=0.0028 mask=0.3348 depth=0.0028
+  Epoch 26 [120/220] loss=0.0028 mask=0.3344 depth=0.0028
+  Epoch 26 [130/220] loss=0.0027 mask=0.3333 depth=0.0027
+  Epoch 26 [140/220] loss=0.0028 mask=0.3320 depth=0.0028
+  Epoch 26 [150/220] loss=0.0028 mask=0.3330 depth=0.0028
+  Epoch 26 [160/220] loss=0.0028 mask=0.3337 depth=0.0028
+  Epoch 26 [170/220] loss=0.0028 mask=0.3314 depth=0.0028
+  Epoch 26 [180/220] loss=0.0028 mask=0.3325 depth=0.0028
+  Epoch 26 [190/220] loss=0.0028 mask=0.3312 depth=0.0028
+  Epoch 26 [200/220] loss=0.0029 mask=0.3273 depth=0.0029
+  Epoch 26 [210/220] loss=0.0030 mask=0.3331 depth=0.0030
+  Epoch 26 [220/220] loss=0.0030 mask=0.3363 depth=0.0030
+  Train: loss=0.0030 mask=0.3363 depth=0.0030 time=199.3s
+  Val epoch 26: loss=0.1835
+
+=== Phase2 Epoch 27/49 ===
+  Epoch 27 [10/220] loss=0.0020 mask=0.3016 depth=0.0020
+  Epoch 27 [20/220] loss=0.0035 mask=0.3004 depth=0.0035
+  Epoch 27 [30/220] loss=0.0031 mask=0.3025 depth=0.0031
+  Epoch 27 [40/220] loss=0.0032 mask=0.3436 depth=0.0032
+  Epoch 27 [50/220] loss=0.0032 mask=0.3324 depth=0.0032
+  Epoch 27 [60/220] loss=0.0030 mask=0.3353 depth=0.0030
+  Epoch 27 [70/220] loss=0.0028 mask=0.3339 depth=0.0028
+  Epoch 27 [80/220] loss=0.0030 mask=0.3286 depth=0.0030
+  Epoch 27 [90/220] loss=0.0029 mask=0.3282 depth=0.0029
+  Epoch 27 [100/220] loss=0.0029 mask=0.3285 depth=0.0029
+  Epoch 27 [110/220] loss=0.0029 mask=0.3300 depth=0.0029
+  Epoch 27 [120/220] loss=0.0030 mask=0.3306 depth=0.0030
+  Epoch 27 [130/220] loss=0.0030 mask=0.3360 depth=0.0030
+  Epoch 27 [140/220] loss=0.0030 mask=0.3426 depth=0.0030
+  Epoch 27 [150/220] loss=0.0030 mask=0.3388 depth=0.0030
+  Epoch 27 [160/220] loss=0.0030 mask=0.3379 depth=0.0030
+  Epoch 27 [170/220] loss=0.0030 mask=0.3392 depth=0.0030
+  Epoch 27 [180/220] loss=0.0030 mask=0.3378 depth=0.0030
+  Epoch 27 [190/220] loss=0.0030 mask=0.3353 depth=0.0030
+  Epoch 27 [200/220] loss=0.0030 mask=0.3345 depth=0.0030
+  Epoch 27 [210/220] loss=0.0030 mask=0.3296 depth=0.0030
+  Epoch 27 [220/220] loss=0.0030 mask=0.3307 depth=0.0030
+  Train: loss=0.0030 mask=0.3307 depth=0.0030 time=199.7s
+  Val epoch 27: loss=0.1834
+
+=== Phase2 Epoch 28/49 ===
+  Epoch 28 [10/220] loss=0.0027 mask=0.2703 depth=0.0027
+  Epoch 28 [20/220] loss=0.0024 mask=0.2851 depth=0.0024
+  Epoch 28 [30/220] loss=0.0025 mask=0.3229 depth=0.0025
+  Epoch 28 [40/220] loss=0.0025 mask=0.3320 depth=0.0025
+  Epoch 28 [50/220] loss=0.0024 mask=0.3438 depth=0.0024
+  Epoch 28 [60/220] loss=0.0025 mask=0.3363 depth=0.0025
+  Epoch 28 [70/220] loss=0.0024 mask=0.3357 depth=0.0024
+  Epoch 28 [80/220] loss=0.0025 mask=0.3360 depth=0.0025
+  Epoch 28 [90/220] loss=0.0025 mask=0.3309 depth=0.0025
+  Epoch 28 [100/220] loss=0.0025 mask=0.3294 depth=0.0025
+  Epoch 28 [110/220] loss=0.0025 mask=0.3432 depth=0.0025
+  Epoch 28 [120/220] loss=0.0025 mask=0.3405 depth=0.0025
+  Epoch 28 [130/220] loss=0.0025 mask=0.3458 depth=0.0025
+  Epoch 28 [140/220] loss=0.0025 mask=0.3436 depth=0.0025
+  Epoch 28 [150/220] loss=0.0026 mask=0.3426 depth=0.0026
+  Epoch 28 [160/220] loss=0.0027 mask=0.3437 depth=0.0027
+  Epoch 28 [170/220] loss=0.0027 mask=0.3389 depth=0.0027
+  Epoch 28 [180/220] loss=0.0027 mask=0.3367 depth=0.0027
+  Epoch 28 [190/220] loss=0.0027 mask=0.3351 depth=0.0027
+  Epoch 28 [200/220] loss=0.0027 mask=0.3382 depth=0.0027
+  Epoch 28 [210/220] loss=0.0027 mask=0.3386 depth=0.0027
+  Epoch 28 [220/220] loss=0.0027 mask=0.3335 depth=0.0027
+  Train: loss=0.0027 mask=0.3335 depth=0.0027 time=200.4s
+  Val epoch 28: loss=0.1747
+
+=== Phase2 Epoch 29/49 ===
+  Epoch 29 [10/220] loss=0.0028 mask=0.3758 depth=0.0028
+  Epoch 29 [20/220] loss=0.0026 mask=0.3778 depth=0.0026
+  Epoch 29 [30/220] loss=0.0027 mask=0.3836 depth=0.0027
+  Epoch 29 [40/220] loss=0.0024 mask=0.3726 depth=0.0024
+  Epoch 29 [50/220] loss=0.0024 mask=0.3628 depth=0.0024
+  Epoch 29 [60/220] loss=0.0025 mask=0.3602 depth=0.0025
+  Epoch 29 [70/220] loss=0.0025 mask=0.3709 depth=0.0025
+  Epoch 29 [80/220] loss=0.0025 mask=0.3744 depth=0.0025
+  Epoch 29 [90/220] loss=0.0026 mask=0.3684 depth=0.0026
+  Epoch 29 [100/220] loss=0.0025 mask=0.3613 depth=0.0025
+  Epoch 29 [110/220] loss=0.0026 mask=0.3460 depth=0.0026
+  Epoch 29 [120/220] loss=0.0026 mask=0.3446 depth=0.0026
+  Epoch 29 [130/220] loss=0.0026 mask=0.3439 depth=0.0026
+  Epoch 29 [140/220] loss=0.0027 mask=0.3443 depth=0.0027
+  Epoch 29 [150/220] loss=0.0028 mask=0.3437 depth=0.0028
+  Epoch 29 [160/220] loss=0.0028 mask=0.3406 depth=0.0028
+  Epoch 29 [170/220] loss=0.0028 mask=0.3381 depth=0.0028
+  Epoch 29 [180/220] loss=0.0028 mask=0.3377 depth=0.0028
+  Epoch 29 [190/220] loss=0.0027 mask=0.3368 depth=0.0027
+  Epoch 29 [200/220] loss=0.0028 mask=0.3376 depth=0.0028
+  Epoch 29 [210/220] loss=0.0027 mask=0.3344 depth=0.0027
+  Epoch 29 [220/220] loss=0.0027 mask=0.3334 depth=0.0027
+  Train: loss=0.0027 mask=0.3334 depth=0.0027 time=195.9s
+  Val epoch 29: loss=0.1712
+  Saved best phase2 model (val_loss=0.1712)
+
+=== Phase2 Epoch 30/49 ===
+  Epoch 30 [10/220] loss=0.0026 mask=0.3464 depth=0.0026
+  Epoch 30 [20/220] loss=0.0028 mask=0.3459 depth=0.0028
+  Epoch 30 [30/220] loss=0.0026 mask=0.3198 depth=0.0026
+  Epoch 30 [40/220] loss=0.0026 mask=0.3246 depth=0.0026
+  Epoch 30 [50/220] loss=0.0024 mask=0.3337 depth=0.0024
+  Epoch 30 [60/220] loss=0.0023 mask=0.3390 depth=0.0023
+  Epoch 30 [70/220] loss=0.0022 mask=0.3450 depth=0.0022
+  Epoch 30 [80/220] loss=0.0024 mask=0.3538 depth=0.0024
+  Epoch 30 [90/220] loss=0.0024 mask=0.3511 depth=0.0024
+  Epoch 30 [100/220] loss=0.0023 mask=0.3442 depth=0.0023
+  Epoch 30 [110/220] loss=0.0023 mask=0.3376 depth=0.0023
+  Epoch 30 [120/220] loss=0.0024 mask=0.3412 depth=0.0024
+  Epoch 30 [130/220] loss=0.0024 mask=0.3456 depth=0.0024
+  Epoch 30 [140/220] loss=0.0024 mask=0.3467 depth=0.0024
+  Epoch 30 [150/220] loss=0.0024 mask=0.3452 depth=0.0024
+  Epoch 30 [160/220] loss=0.0024 mask=0.3472 depth=0.0024
+  Epoch 30 [170/220] loss=0.0023 mask=0.3480 depth=0.0023
+  Epoch 30 [180/220] loss=0.0023 mask=0.3447 depth=0.0023
+  Epoch 30 [190/220] loss=0.0023 mask=0.3439 depth=0.0023
+  Epoch 30 [200/220] loss=0.0023 mask=0.3411 depth=0.0023
+  Epoch 30 [210/220] loss=0.0023 mask=0.3382 depth=0.0023
+  Epoch 30 [220/220] loss=0.0023 mask=0.3331 depth=0.0023
+  Train: loss=0.0023 mask=0.3331 depth=0.0023 time=196.3s
+  Val epoch 30: loss=0.1740
+
+=== Phase2 Epoch 31/49 ===
+  Epoch 31 [10/220] loss=0.0023 mask=0.3198 depth=0.0023
+  Epoch 31 [20/220] loss=0.0020 mask=0.3316 depth=0.0020
+  Epoch 31 [30/220] loss=0.0022 mask=0.3404 depth=0.0022
+  Epoch 31 [40/220] loss=0.0022 mask=0.3424 depth=0.0022
+  Epoch 31 [50/220] loss=0.0022 mask=0.3392 depth=0.0022
+  Epoch 31 [60/220] loss=0.0022 mask=0.3503 depth=0.0022
+  Epoch 31 [70/220] loss=0.0021 mask=0.3463 depth=0.0021
+  Epoch 31 [80/220] loss=0.0022 mask=0.3447 depth=0.0022
+  Epoch 31 [90/220] loss=0.0022 mask=0.3447 depth=0.0022
+  Epoch 31 [100/220] loss=0.0022 mask=0.3356 depth=0.0022
+  Epoch 31 [110/220] loss=0.0022 mask=0.3316 depth=0.0022
+  Epoch 31 [120/220] loss=0.0022 mask=0.3386 depth=0.0022
+  Epoch 31 [130/220] loss=0.0022 mask=0.3353 depth=0.0022
+  Epoch 31 [140/220] loss=0.0022 mask=0.3401 depth=0.0022
+  Epoch 31 [150/220] loss=0.0022 mask=0.3415 depth=0.0022
+  Epoch 31 [160/220] loss=0.0022 mask=0.3373 depth=0.0022
+  Epoch 31 [170/220] loss=0.0023 mask=0.3322 depth=0.0023
+  Epoch 31 [180/220] loss=0.0023 mask=0.3324 depth=0.0023
+  Epoch 31 [190/220] loss=0.0023 mask=0.3320 depth=0.0023
+  Epoch 31 [200/220] loss=0.0023 mask=0.3325 depth=0.0023
+  Epoch 31 [210/220] loss=0.0022 mask=0.3317 depth=0.0022
+  Epoch 31 [220/220] loss=0.0022 mask=0.3314 depth=0.0022
+  Train: loss=0.0022 mask=0.3314 depth=0.0022 time=203.1s
+  Val epoch 31: loss=0.1815
+
+=== Phase2 Epoch 32/49 ===
+  Epoch 32 [10/220] loss=0.0021 mask=0.3545 depth=0.0021
+  Epoch 32 [20/220] loss=0.0017 mask=0.2940 depth=0.0017
+  Epoch 32 [30/220] loss=0.0018 mask=0.3072 depth=0.0018
+  Epoch 32 [40/220] loss=0.0017 mask=0.3027 depth=0.0017
+  Epoch 32 [50/220] loss=0.0017 mask=0.3318 depth=0.0017
+  Epoch 32 [60/220] loss=0.0018 mask=0.3499 depth=0.0018
+  Epoch 32 [70/220] loss=0.0019 mask=0.3579 depth=0.0019
+  Epoch 32 [80/220] loss=0.0019 mask=0.3421 depth=0.0019
+  Epoch 32 [90/220] loss=0.0019 mask=0.3312 depth=0.0019
+  Epoch 32 [100/220] loss=0.0019 mask=0.3262 depth=0.0019
+  Epoch 32 [110/220] loss=0.0019 mask=0.3336 depth=0.0019
+  Epoch 32 [120/220] loss=0.0019 mask=0.3330 depth=0.0019
+  Epoch 32 [130/220] loss=0.0019 mask=0.3380 depth=0.0019
+  Epoch 32 [140/220] loss=0.0020 mask=0.3399 depth=0.0020
+  Epoch 32 [150/220] loss=0.0020 mask=0.3343 depth=0.0020
+  Epoch 32 [160/220] loss=0.0020 mask=0.3333 depth=0.0020
+  Epoch 32 [170/220] loss=0.0020 mask=0.3308 depth=0.0020
+  Epoch 32 [180/220] loss=0.0020 mask=0.3323 depth=0.0020
+  Epoch 32 [190/220] loss=0.0020 mask=0.3302 depth=0.0020
+  Epoch 32 [200/220] loss=0.0021 mask=0.3315 depth=0.0021
+  Epoch 32 [210/220] loss=0.0021 mask=0.3292 depth=0.0021
+  Epoch 32 [220/220] loss=0.0021 mask=0.3297 depth=0.0021
+  Train: loss=0.0021 mask=0.3297 depth=0.0021 time=193.7s
+  Val epoch 32: loss=0.1839
+
+=== Phase2 Epoch 33/49 ===
+  Epoch 33 [10/220] loss=0.0026 mask=0.3530 depth=0.0026
+  Epoch 33 [20/220] loss=0.0022 mask=0.3552 depth=0.0022
+  Epoch 33 [30/220] loss=0.0022 mask=0.3596 depth=0.0022
+  Epoch 33 [40/220] loss=0.0021 mask=0.3496 depth=0.0021
+  Epoch 33 [50/220] loss=0.0022 mask=0.3384 depth=0.0022
+  Epoch 33 [60/220] loss=0.0021 mask=0.3384 depth=0.0021
+  Epoch 33 [70/220] loss=0.0022 mask=0.3368 depth=0.0022
+  Epoch 33 [80/220] loss=0.0021 mask=0.3342 depth=0.0021
+  Epoch 33 [90/220] loss=0.0021 mask=0.3335 depth=0.0021
+  Epoch 33 [100/220] loss=0.0021 mask=0.3288 depth=0.0021
+  Epoch 33 [110/220] loss=0.0021 mask=0.3265 depth=0.0021
+  Epoch 33 [120/220] loss=0.0021 mask=0.3274 depth=0.0021
+  Epoch 33 [130/220] loss=0.0021 mask=0.3390 depth=0.0021
+  Epoch 33 [140/220] loss=0.0021 mask=0.3385 depth=0.0021
+  Epoch 33 [150/220] loss=0.0021 mask=0.3382 depth=0.0021
+  Epoch 33 [160/220] loss=0.0021 mask=0.3314 depth=0.0021
+  Epoch 33 [170/220] loss=0.0021 mask=0.3353 depth=0.0021
+  Epoch 33 [180/220] loss=0.0021 mask=0.3352 depth=0.0021
+  Epoch 33 [190/220] loss=0.0021 mask=0.3326 depth=0.0021
+  Epoch 33 [200/220] loss=0.0021 mask=0.3294 depth=0.0021
+  Epoch 33 [210/220] loss=0.0021 mask=0.3291 depth=0.0021
+  Epoch 33 [220/220] loss=0.0021 mask=0.3305 depth=0.0021
+  Train: loss=0.0021 mask=0.3305 depth=0.0021 time=200.0s
+  Val epoch 33: loss=0.1868
+
+=== Phase2 Epoch 34/49 ===
+  Epoch 34 [10/220] loss=0.0017 mask=0.3550 depth=0.0017
+  Epoch 34 [20/220] loss=0.0018 mask=0.3643 depth=0.0018
+  Epoch 34 [30/220] loss=0.0020 mask=0.3626 depth=0.0020
+  Epoch 34 [40/220] loss=0.0019 mask=0.3727 depth=0.0019
+  Epoch 34 [50/220] loss=0.0019 mask=0.3673 depth=0.0019
+  Epoch 34 [60/220] loss=0.0018 mask=0.3509 depth=0.0018
+  Epoch 34 [70/220] loss=0.0019 mask=0.3515 depth=0.0019
+  Epoch 34 [80/220] loss=0.0020 mask=0.3478 depth=0.0020
+  Epoch 34 [90/220] loss=0.0020 mask=0.3469 depth=0.0020
+  Epoch 34 [100/220] loss=0.0020 mask=0.3458 depth=0.0020
+  Epoch 34 [110/220] loss=0.0019 mask=0.3398 depth=0.0019
+  Epoch 34 [120/220] loss=0.0019 mask=0.3467 depth=0.0019
+  Epoch 34 [130/220] loss=0.0019 mask=0.3437 depth=0.0019
+  Epoch 34 [140/220] loss=0.0019 mask=0.3423 depth=0.0019
+  Epoch 34 [150/220] loss=0.0019 mask=0.3476 depth=0.0019
+  Epoch 34 [160/220] loss=0.0019 mask=0.3448 depth=0.0019
+  Epoch 34 [170/220] loss=0.0019 mask=0.3427 depth=0.0019
+  Epoch 34 [180/220] loss=0.0019 mask=0.3404 depth=0.0019
+  Epoch 34 [190/220] loss=0.0019 mask=0.3430 depth=0.0019
+  Epoch 34 [200/220] loss=0.0019 mask=0.3397 depth=0.0019
+  Epoch 34 [210/220] loss=0.0020 mask=0.3352 depth=0.0020
+  Epoch 34 [220/220] loss=0.0020 mask=0.3323 depth=0.0020
+  Train: loss=0.0020 mask=0.3323 depth=0.0020 time=200.2s
+  Val epoch 34: loss=0.1857
+
+=== Phase2 Epoch 35/49 ===
+  Epoch 35 [10/220] loss=0.0019 mask=0.2742 depth=0.0019
+  Epoch 35 [20/220] loss=0.0018 mask=0.2708 depth=0.0018
+  Epoch 35 [30/220] loss=0.0016 mask=0.2923 depth=0.0016
+  Epoch 35 [40/220] loss=0.0016 mask=0.3022 depth=0.0016
+  Epoch 35 [50/220] loss=0.0017 mask=0.2987 depth=0.0017
+  Epoch 35 [60/220] loss=0.0018 mask=0.3098 depth=0.0018
+  Epoch 35 [70/220] loss=0.0019 mask=0.3127 depth=0.0019
+  Epoch 35 [80/220] loss=0.0019 mask=0.3163 depth=0.0019
+  Epoch 35 [90/220] loss=0.0019 mask=0.3183 depth=0.0019
+  Epoch 35 [100/220] loss=0.0019 mask=0.3203 depth=0.0019
+  Epoch 35 [110/220] loss=0.0020 mask=0.3255 depth=0.0020
+  Epoch 35 [120/220] loss=0.0020 mask=0.3302 depth=0.0020
+  Epoch 35 [130/220] loss=0.0020 mask=0.3258 depth=0.0020
+  Epoch 35 [140/220] loss=0.0020 mask=0.3299 depth=0.0020
+  Epoch 35 [150/220] loss=0.0020 mask=0.3266 depth=0.0020
+  Epoch 35 [160/220] loss=0.0020 mask=0.3252 depth=0.0020
+  Epoch 35 [170/220] loss=0.0020 mask=0.3304 depth=0.0020
+  Epoch 35 [180/220] loss=0.0020 mask=0.3299 depth=0.0020
+  Epoch 35 [190/220] loss=0.0020 mask=0.3308 depth=0.0020
+  Epoch 35 [200/220] loss=0.0020 mask=0.3305 depth=0.0020
+  Epoch 35 [210/220] loss=0.0020 mask=0.3310 depth=0.0020
+  Epoch 35 [220/220] loss=0.0020 mask=0.3299 depth=0.0020
+  Train: loss=0.0020 mask=0.3299 depth=0.0020 time=200.4s
+  Val epoch 35: loss=0.1807
+
+=== Phase2 Epoch 36/49 ===
+  Epoch 36 [10/220] loss=0.0025 mask=0.3841 depth=0.0025
+  Epoch 36 [20/220] loss=0.0020 mask=0.3471 depth=0.0020
+  Epoch 36 [30/220] loss=0.0018 mask=0.3149 depth=0.0018
+  Epoch 36 [40/220] loss=0.0018 mask=0.3268 depth=0.0018
+  Epoch 36 [50/220] loss=0.0019 mask=0.3513 depth=0.0019
+  Epoch 36 [60/220] loss=0.0018 mask=0.3456 depth=0.0018
+  Epoch 36 [70/220] loss=0.0019 mask=0.3543 depth=0.0019
+  Epoch 36 [80/220] loss=0.0019 mask=0.3487 depth=0.0019
+  Epoch 36 [90/220] loss=0.0020 mask=0.3403 depth=0.0020
+  Epoch 36 [100/220] loss=0.0020 mask=0.3343 depth=0.0020
+  Epoch 36 [110/220] loss=0.0019 mask=0.3268 depth=0.0019
+  Epoch 36 [120/220] loss=0.0019 mask=0.3281 depth=0.0019
+  Epoch 36 [130/220] loss=0.0019 mask=0.3247 depth=0.0019
+  Epoch 36 [140/220] loss=0.0019 mask=0.3247 depth=0.0019
+  Epoch 36 [150/220] loss=0.0019 mask=0.3252 depth=0.0019
+  Epoch 36 [160/220] loss=0.0019 mask=0.3264 depth=0.0019
+  Epoch 36 [170/220] loss=0.0019 mask=0.3232 depth=0.0019
+  Epoch 36 [180/220] loss=0.0019 mask=0.3266 depth=0.0019
+  Epoch 36 [190/220] loss=0.0019 mask=0.3282 depth=0.0019
+  Epoch 36 [200/220] loss=0.0019 mask=0.3317 depth=0.0019
+  Epoch 36 [210/220] loss=0.0019 mask=0.3284 depth=0.0019
+  Epoch 36 [220/220] loss=0.0019 mask=0.3329 depth=0.0019
+  Train: loss=0.0019 mask=0.3329 depth=0.0019 time=193.4s
+  Val epoch 36: loss=0.1840
+
+=== Phase2 Epoch 37/49 ===
+  Epoch 37 [10/220] loss=0.0021 mask=0.4067 depth=0.0021
+  Epoch 37 [20/220] loss=0.0021 mask=0.3417 depth=0.0021
+  Epoch 37 [30/220] loss=0.0020 mask=0.3525 depth=0.0020
+  Epoch 37 [40/220] loss=0.0020 mask=0.3382 depth=0.0020
+  Epoch 37 [50/220] loss=0.0020 mask=0.3409 depth=0.0020
+  Epoch 37 [60/220] loss=0.0020 mask=0.3501 depth=0.0020
+  Epoch 37 [70/220] loss=0.0019 mask=0.3492 depth=0.0019
+  Epoch 37 [80/220] loss=0.0019 mask=0.3406 depth=0.0019
+  Epoch 37 [90/220] loss=0.0019 mask=0.3435 depth=0.0019
+  Epoch 37 [100/220] loss=0.0019 mask=0.3401 depth=0.0019
+  Epoch 37 [110/220] loss=0.0019 mask=0.3376 depth=0.0019
+  Epoch 37 [120/220] loss=0.0019 mask=0.3358 depth=0.0019
+  Epoch 37 [130/220] loss=0.0019 mask=0.3323 depth=0.0019
+  Epoch 37 [140/220] loss=0.0019 mask=0.3328 depth=0.0019
+  Epoch 37 [150/220] loss=0.0019 mask=0.3329 depth=0.0019
+  Epoch 37 [160/220] loss=0.0019 mask=0.3328 depth=0.0019
+  Epoch 37 [170/220] loss=0.0020 mask=0.3341 depth=0.0020
+  Epoch 37 [180/220] loss=0.0020 mask=0.3353 depth=0.0020
+  Epoch 37 [190/220] loss=0.0020 mask=0.3348 depth=0.0020
+  Epoch 37 [200/220] loss=0.0020 mask=0.3315 depth=0.0020
+  Epoch 37 [210/220] loss=0.0019 mask=0.3325 depth=0.0019
+  Epoch 37 [220/220] loss=0.0019 mask=0.3317 depth=0.0019
+  Train: loss=0.0019 mask=0.3317 depth=0.0019 time=196.9s
+  Val epoch 37: loss=0.1740
+
+=== Phase2 Epoch 38/49 ===
+  Epoch 38 [10/220] loss=0.0019 mask=0.3561 depth=0.0019
+  Epoch 38 [20/220] loss=0.0016 mask=0.3220 depth=0.0016
+  Epoch 38 [30/220] loss=0.0018 mask=0.3400 depth=0.0018
+  Epoch 38 [40/220] loss=0.0019 mask=0.3184 depth=0.0019
+  Epoch 38 [50/220] loss=0.0018 mask=0.3118 depth=0.0018
+  Epoch 38 [60/220] loss=0.0017 mask=0.3172 depth=0.0017
+  Epoch 38 [70/220] loss=0.0018 mask=0.3270 depth=0.0018
+  Epoch 38 [80/220] loss=0.0018 mask=0.3317 depth=0.0018
+  Epoch 38 [90/220] loss=0.0019 mask=0.3346 depth=0.0019
+  Epoch 38 [100/220] loss=0.0019 mask=0.3367 depth=0.0019
+  Epoch 38 [110/220] loss=0.0019 mask=0.3346 depth=0.0019
+  Epoch 38 [120/220] loss=0.0019 mask=0.3341 depth=0.0019
+  Epoch 38 [130/220] loss=0.0019 mask=0.3335 depth=0.0019
+  Epoch 38 [140/220] loss=0.0019 mask=0.3266 depth=0.0019
+  Epoch 38 [150/220] loss=0.0019 mask=0.3314 depth=0.0019
+  Epoch 38 [160/220] loss=0.0020 mask=0.3312 depth=0.0020
+  Epoch 38 [170/220] loss=0.0020 mask=0.3292 depth=0.0020
+  Epoch 38 [180/220] loss=0.0020 mask=0.3319 depth=0.0020
+  Epoch 38 [190/220] loss=0.0019 mask=0.3343 depth=0.0019
+  Epoch 38 [200/220] loss=0.0019 mask=0.3337 depth=0.0019
+  Epoch 38 [210/220] loss=0.0019 mask=0.3332 depth=0.0019
+  Epoch 38 [220/220] loss=0.0019 mask=0.3313 depth=0.0019
+  Train: loss=0.0019 mask=0.3313 depth=0.0019 time=198.7s
+  Val epoch 38: loss=0.1793
+
+=== Phase2 Epoch 39/49 ===
+  Epoch 39 [10/220] loss=0.0016 mask=0.3773 depth=0.0016
+  Epoch 39 [20/220] loss=0.0017 mask=0.3798 depth=0.0017
+  Epoch 39 [30/220] loss=0.0017 mask=0.3883 depth=0.0017
+  Epoch 39 [40/220] loss=0.0017 mask=0.3634 depth=0.0017
+  Epoch 39 [50/220] loss=0.0016 mask=0.3570 depth=0.0016
+  Epoch 39 [60/220] loss=0.0016 mask=0.3545 depth=0.0016
+  Epoch 39 [70/220] loss=0.0016 mask=0.3428 depth=0.0016
+  Epoch 39 [80/220] loss=0.0018 mask=0.3328 depth=0.0018
+  Epoch 39 [90/220] loss=0.0017 mask=0.3450 depth=0.0017
+  Epoch 39 [100/220] loss=0.0018 mask=0.3409 depth=0.0018
+  Epoch 39 [110/220] loss=0.0018 mask=0.3455 depth=0.0018
+  Epoch 39 [120/220] loss=0.0019 mask=0.3505 depth=0.0019
+  Epoch 39 [130/220] loss=0.0019 mask=0.3492 depth=0.0019
+  Epoch 39 [140/220] loss=0.0019 mask=0.3463 depth=0.0019
+  Epoch 39 [150/220] loss=0.0019 mask=0.3403 depth=0.0019
+  Epoch 39 [160/220] loss=0.0019 mask=0.3392 depth=0.0019
+  Epoch 39 [170/220] loss=0.0019 mask=0.3367 depth=0.0019
+  Epoch 39 [180/220] loss=0.0019 mask=0.3351 depth=0.0019
+  Epoch 39 [190/220] loss=0.0019 mask=0.3350 depth=0.0019
+  Epoch 39 [200/220] loss=0.0019 mask=0.3334 depth=0.0019
+  Epoch 39 [210/220] loss=0.0019 mask=0.3312 depth=0.0019
+  Epoch 39 [220/220] loss=0.0019 mask=0.3325 depth=0.0019
+  Train: loss=0.0019 mask=0.3325 depth=0.0019 time=204.8s
+  Val epoch 39: loss=0.1798
+
+=== Phase2 Epoch 40/49 ===
+  Epoch 40 [10/220] loss=0.0022 mask=0.3772 depth=0.0022
+  Epoch 40 [20/220] loss=0.0019 mask=0.3649 depth=0.0019
+  Epoch 40 [30/220] loss=0.0018 mask=0.3794 depth=0.0018
+  Epoch 40 [40/220] loss=0.0017 mask=0.3713 depth=0.0017
+  Epoch 40 [50/220] loss=0.0018 mask=0.3655 depth=0.0018
+  Epoch 40 [60/220] loss=0.0018 mask=0.3562 depth=0.0018
+  Epoch 40 [70/220] loss=0.0018 mask=0.3537 depth=0.0018
+  Epoch 40 [80/220] loss=0.0018 mask=0.3508 depth=0.0018
+  Epoch 40 [90/220] loss=0.0018 mask=0.3501 depth=0.0018
+  Epoch 40 [100/220] loss=0.0018 mask=0.3459 depth=0.0018
+  Epoch 40 [110/220] loss=0.0017 mask=0.3399 depth=0.0017
+  Epoch 40 [120/220] loss=0.0017 mask=0.3392 depth=0.0017
+  Epoch 40 [130/220] loss=0.0017 mask=0.3317 depth=0.0017
+  Epoch 40 [140/220] loss=0.0017 mask=0.3344 depth=0.0017
+  Epoch 40 [150/220] loss=0.0017 mask=0.3334 depth=0.0017
+  Epoch 40 [160/220] loss=0.0016 mask=0.3364 depth=0.0016
+  Epoch 40 [170/220] loss=0.0016 mask=0.3341 depth=0.0016
+  Epoch 40 [180/220] loss=0.0017 mask=0.3346 depth=0.0017
+  Epoch 40 [190/220] loss=0.0017 mask=0.3399 depth=0.0017
+  Epoch 40 [200/220] loss=0.0017 mask=0.3359 depth=0.0017
+  Epoch 40 [210/220] loss=0.0017 mask=0.3364 depth=0.0017
+  Epoch 40 [220/220] loss=0.0017 mask=0.3328 depth=0.0017
+  Train: loss=0.0017 mask=0.3328 depth=0.0017 time=200.6s
+  Val epoch 40: loss=0.1844
+
+=== Phase2 Epoch 41/49 ===
+  Epoch 41 [10/220] loss=0.0013 mask=0.4226 depth=0.0013
+  Epoch 41 [20/220] loss=0.0014 mask=0.3449 depth=0.0014
+  Epoch 41 [30/220] loss=0.0015 mask=0.3273 depth=0.0015
+  Epoch 41 [40/220] loss=0.0015 mask=0.3122 depth=0.0015
+  Epoch 41 [50/220] loss=0.0014 mask=0.3325 depth=0.0014
+  Epoch 41 [60/220] loss=0.0015 mask=0.3192 depth=0.0015
+  Epoch 41 [70/220] loss=0.0016 mask=0.3238 depth=0.0016
+  Epoch 41 [80/220] loss=0.0016 mask=0.3171 depth=0.0016
+  Epoch 41 [90/220] loss=0.0015 mask=0.3277 depth=0.0015
+  Epoch 41 [100/220] loss=0.0015 mask=0.3343 depth=0.0015
+  Epoch 41 [110/220] loss=0.0015 mask=0.3373 depth=0.0015
+  Epoch 41 [120/220] loss=0.0015 mask=0.3356 depth=0.0015
+  Epoch 41 [130/220] loss=0.0015 mask=0.3349 depth=0.0015
+  Epoch 41 [140/220] loss=0.0015 mask=0.3329 depth=0.0015
+  Epoch 41 [150/220] loss=0.0015 mask=0.3359 depth=0.0015
+  Epoch 41 [160/220] loss=0.0016 mask=0.3350 depth=0.0016
+  Epoch 41 [170/220] loss=0.0016 mask=0.3345 depth=0.0016
+  Epoch 41 [180/220] loss=0.0016 mask=0.3340 depth=0.0016
+  Epoch 41 [190/220] loss=0.0016 mask=0.3339 depth=0.0016
+  Epoch 41 [200/220] loss=0.0016 mask=0.3370 depth=0.0016
+  Epoch 41 [210/220] loss=0.0016 mask=0.3354 depth=0.0016
+  Epoch 41 [220/220] loss=0.0016 mask=0.3322 depth=0.0016
+  Train: loss=0.0016 mask=0.3322 depth=0.0016 time=198.2s
+  Val epoch 41: loss=0.1781
+
+=== Phase2 Epoch 42/49 ===
+  Epoch 42 [10/220] loss=0.0014 mask=0.2979 depth=0.0014
+  Epoch 42 [20/220] loss=0.0016 mask=0.3352 depth=0.0016
+  Epoch 42 [30/220] loss=0.0015 mask=0.3281 depth=0.0015
+  Epoch 42 [40/220] loss=0.0015 mask=0.3435 depth=0.0015
+  Epoch 42 [50/220] loss=0.0015 mask=0.3473 depth=0.0015
+  Epoch 42 [60/220] loss=0.0016 mask=0.3400 depth=0.0016
+  Epoch 42 [70/220] loss=0.0015 mask=0.3413 depth=0.0015
+  Epoch 42 [80/220] loss=0.0016 mask=0.3434 depth=0.0016
+  Epoch 42 [90/220] loss=0.0016 mask=0.3374 depth=0.0016
+  Epoch 42 [100/220] loss=0.0016 mask=0.3378 depth=0.0016
+  Epoch 42 [110/220] loss=0.0016 mask=0.3396 depth=0.0016
+  Epoch 42 [120/220] loss=0.0016 mask=0.3450 depth=0.0016
+  Epoch 42 [130/220] loss=0.0016 mask=0.3425 depth=0.0016
+  Epoch 42 [140/220] loss=0.0016 mask=0.3350 depth=0.0016
+  Epoch 42 [150/220] loss=0.0016 mask=0.3309 depth=0.0016
+  Epoch 42 [160/220] loss=0.0016 mask=0.3314 depth=0.0016
+  Epoch 42 [170/220] loss=0.0016 mask=0.3323 depth=0.0016
+  Epoch 42 [180/220] loss=0.0016 mask=0.3297 depth=0.0016
+  Epoch 42 [190/220] loss=0.0016 mask=0.3306 depth=0.0016
+  Epoch 42 [200/220] loss=0.0015 mask=0.3262 depth=0.0015
+  Epoch 42 [210/220] loss=0.0015 mask=0.3274 depth=0.0015
+  Epoch 42 [220/220] loss=0.0016 mask=0.3300 depth=0.0016
+  Train: loss=0.0016 mask=0.3300 depth=0.0016 time=191.2s
+  Val epoch 42: loss=0.1831
+
+=== Phase2 Epoch 43/49 ===
+  Epoch 43 [10/220] loss=0.0013 mask=0.2956 depth=0.0013
+  Epoch 43 [20/220] loss=0.0013 mask=0.2897 depth=0.0013
+  Epoch 43 [30/220] loss=0.0013 mask=0.2999 depth=0.0013
+  Epoch 43 [40/220] loss=0.0013 mask=0.3039 depth=0.0013
+  Epoch 43 [50/220] loss=0.0013 mask=0.3120 depth=0.0013
+  Epoch 43 [60/220] loss=0.0013 mask=0.3106 depth=0.0013
+  Epoch 43 [70/220] loss=0.0014 mask=0.3144 depth=0.0014
+  Epoch 43 [80/220] loss=0.0014 mask=0.3162 depth=0.0014
+  Epoch 43 [90/220] loss=0.0014 mask=0.3147 depth=0.0014
+  Epoch 43 [100/220] loss=0.0014 mask=0.3122 depth=0.0014
+  Epoch 43 [110/220] loss=0.0014 mask=0.3163 depth=0.0014
+  Epoch 43 [120/220] loss=0.0014 mask=0.3151 depth=0.0014
+  Epoch 43 [130/220] loss=0.0014 mask=0.3158 depth=0.0014
+  Epoch 43 [140/220] loss=0.0014 mask=0.3222 depth=0.0014
+  Epoch 43 [150/220] loss=0.0014 mask=0.3233 depth=0.0014
+  Epoch 43 [160/220] loss=0.0015 mask=0.3271 depth=0.0015
+  Epoch 43 [170/220] loss=0.0015 mask=0.3305 depth=0.0015
+  Epoch 43 [180/220] loss=0.0015 mask=0.3321 depth=0.0015
+  Epoch 43 [190/220] loss=0.0015 mask=0.3318 depth=0.0015
+  Epoch 43 [200/220] loss=0.0015 mask=0.3345 depth=0.0015
+  Epoch 43 [210/220] loss=0.0015 mask=0.3301 depth=0.0015
+  Epoch 43 [220/220] loss=0.0016 mask=0.3314 depth=0.0016
+  Train: loss=0.0016 mask=0.3314 depth=0.0016 time=194.9s
+  Val epoch 43: loss=0.1739
+
+=== Phase2 Epoch 44/49 ===
+  Epoch 44 [10/220] loss=0.0011 mask=0.3558 depth=0.0011
+  Epoch 44 [20/220] loss=0.0012 mask=0.3145 depth=0.0012
+  Epoch 44 [30/220] loss=0.0013 mask=0.3350 depth=0.0013
+  Epoch 44 [40/220] loss=0.0013 mask=0.3293 depth=0.0013
+  Epoch 44 [50/220] loss=0.0015 mask=0.3158 depth=0.0015
+  Epoch 44 [60/220] loss=0.0015 mask=0.3344 depth=0.0015
+  Epoch 44 [70/220] loss=0.0015 mask=0.3191 depth=0.0015
+  Epoch 44 [80/220] loss=0.0015 mask=0.3234 depth=0.0015
+  Epoch 44 [90/220] loss=0.0015 mask=0.3249 depth=0.0015
+  Epoch 44 [100/220] loss=0.0015 mask=0.3222 depth=0.0015
+  Epoch 44 [110/220] loss=0.0015 mask=0.3162 depth=0.0015
+  Epoch 44 [120/220] loss=0.0015 mask=0.3162 depth=0.0015
+  Epoch 44 [130/220] loss=0.0015 mask=0.3224 depth=0.0015
+  Epoch 44 [140/220] loss=0.0016 mask=0.3213 depth=0.0016
+  Epoch 44 [150/220] loss=0.0016 mask=0.3220 depth=0.0016
+  Epoch 44 [160/220] loss=0.0016 mask=0.3207 depth=0.0016
+  Epoch 44 [170/220] loss=0.0016 mask=0.3212 depth=0.0016
+  Epoch 44 [180/220] loss=0.0016 mask=0.3217 depth=0.0016
+  Epoch 44 [190/220] loss=0.0016 mask=0.3264 depth=0.0016
+  Epoch 44 [200/220] loss=0.0016 mask=0.3286 depth=0.0016
+  Epoch 44 [210/220] loss=0.0016 mask=0.3289 depth=0.0016
+  Epoch 44 [220/220] loss=0.0016 mask=0.3302 depth=0.0016
+  Train: loss=0.0016 mask=0.3302 depth=0.0016 time=203.7s
+  Val epoch 44: loss=0.1832
+
+=== Phase2 Epoch 45/49 ===
+  Epoch 45 [10/220] loss=0.0011 mask=0.2956 depth=0.0011
+  Epoch 45 [20/220] loss=0.0012 mask=0.2917 depth=0.0012
+  Epoch 45 [30/220] loss=0.0015 mask=0.3340 depth=0.0015
+  Epoch 45 [40/220] loss=0.0015 mask=0.3267 depth=0.0015
+  Epoch 45 [50/220] loss=0.0015 mask=0.3213 depth=0.0015
+  Epoch 45 [60/220] loss=0.0015 mask=0.3167 depth=0.0015
+  Epoch 45 [70/220] loss=0.0015 mask=0.3081 depth=0.0015
+  Epoch 45 [80/220] loss=0.0015 mask=0.3087 depth=0.0015
+  Epoch 45 [90/220] loss=0.0015 mask=0.3205 depth=0.0015
+  Epoch 45 [100/220] loss=0.0016 mask=0.3181 depth=0.0016
+  Epoch 45 [110/220] loss=0.0016 mask=0.3191 depth=0.0016
+  Epoch 45 [120/220] loss=0.0016 mask=0.3168 depth=0.0016
+  Epoch 45 [130/220] loss=0.0015 mask=0.3169 depth=0.0015
+  Epoch 45 [140/220] loss=0.0016 mask=0.3210 depth=0.0016
+  Epoch 45 [150/220] loss=0.0016 mask=0.3260 depth=0.0016
+  Epoch 45 [160/220] loss=0.0016 mask=0.3278 depth=0.0016
+  Epoch 45 [170/220] loss=0.0016 mask=0.3283 depth=0.0016
+  Epoch 45 [180/220] loss=0.0016 mask=0.3245 depth=0.0016
+  Epoch 45 [190/220] loss=0.0015 mask=0.3275 depth=0.0015
+  Epoch 45 [200/220] loss=0.0015 mask=0.3308 depth=0.0015
+  Epoch 45 [210/220] loss=0.0015 mask=0.3313 depth=0.0015
+  Epoch 45 [220/220] loss=0.0015 mask=0.3336 depth=0.0015
+  Train: loss=0.0015 mask=0.3336 depth=0.0015 time=201.3s
+  Val epoch 45: loss=0.1810
+
+=== Phase2 Epoch 46/49 ===
+  Epoch 46 [10/220] loss=0.0015 mask=0.3267 depth=0.0015
+  Epoch 46 [20/220] loss=0.0015 mask=0.3257 depth=0.0015
+  Epoch 46 [30/220] loss=0.0015 mask=0.3335 depth=0.0015
+  Epoch 46 [40/220] loss=0.0015 mask=0.3361 depth=0.0015
+  Epoch 46 [50/220] loss=0.0015 mask=0.3367 depth=0.0015
+  Epoch 46 [60/220] loss=0.0015 mask=0.3267 depth=0.0015
+  Epoch 46 [70/220] loss=0.0014 mask=0.3272 depth=0.0014
+  Epoch 46 [80/220] loss=0.0014 mask=0.3244 depth=0.0014
+  Epoch 46 [90/220] loss=0.0014 mask=0.3344 depth=0.0014
+  Epoch 46 [100/220] loss=0.0014 mask=0.3303 depth=0.0014
+  Epoch 46 [110/220] loss=0.0014 mask=0.3256 depth=0.0014
+  Epoch 46 [120/220] loss=0.0014 mask=0.3240 depth=0.0014
+  Epoch 46 [130/220] loss=0.0014 mask=0.3220 depth=0.0014
+  Epoch 46 [140/220] loss=0.0014 mask=0.3187 depth=0.0014
+  Epoch 46 [150/220] loss=0.0014 mask=0.3173 depth=0.0014
+  Epoch 46 [160/220] loss=0.0014 mask=0.3279 depth=0.0014
+  Epoch 46 [170/220] loss=0.0014 mask=0.3255 depth=0.0014
+  Epoch 46 [180/220] loss=0.0015 mask=0.3274 depth=0.0015
+  Epoch 46 [190/220] loss=0.0015 mask=0.3302 depth=0.0015
+  Epoch 46 [200/220] loss=0.0015 mask=0.3292 depth=0.0015
+  Epoch 46 [210/220] loss=0.0015 mask=0.3306 depth=0.0015
+  Epoch 46 [220/220] loss=0.0015 mask=0.3302 depth=0.0015
+  Train: loss=0.0015 mask=0.3302 depth=0.0015 time=197.8s
+  Val epoch 46: loss=0.1747
+
+=== Phase2 Epoch 47/49 ===
+  Epoch 47 [10/220] loss=0.0014 mask=0.4123 depth=0.0014
+  Epoch 47 [20/220] loss=0.0014 mask=0.3689 depth=0.0014
+  Epoch 47 [30/220] loss=0.0013 mask=0.3323 depth=0.0013
+  Epoch 47 [40/220] loss=0.0013 mask=0.3475 depth=0.0013
+  Epoch 47 [50/220] loss=0.0013 mask=0.3324 depth=0.0013
+  Epoch 47 [60/220] loss=0.0014 mask=0.3312 depth=0.0014
+  Epoch 47 [70/220] loss=0.0014 mask=0.3396 depth=0.0014
+  Epoch 47 [80/220] loss=0.0014 mask=0.3379 depth=0.0014
+  Epoch 47 [90/220] loss=0.0014 mask=0.3416 depth=0.0014
+  Epoch 47 [100/220] loss=0.0014 mask=0.3453 depth=0.0014
+  Epoch 47 [110/220] loss=0.0014 mask=0.3552 depth=0.0014
+  Epoch 47 [120/220] loss=0.0014 mask=0.3463 depth=0.0014
+  Epoch 47 [130/220] loss=0.0015 mask=0.3491 depth=0.0015
+  Epoch 47 [140/220] loss=0.0015 mask=0.3463 depth=0.0015
+  Epoch 47 [150/220] loss=0.0015 mask=0.3465 depth=0.0015
+  Epoch 47 [160/220] loss=0.0015 mask=0.3428 depth=0.0015
+  Epoch 47 [170/220] loss=0.0015 mask=0.3328 depth=0.0015
+  Epoch 47 [180/220] loss=0.0015 mask=0.3293 depth=0.0015
+  Epoch 47 [190/220] loss=0.0015 mask=0.3326 depth=0.0015
+  Epoch 47 [200/220] loss=0.0015 mask=0.3339 depth=0.0015
+  Epoch 47 [210/220] loss=0.0015 mask=0.3307 depth=0.0015
+  Epoch 47 [220/220] loss=0.0015 mask=0.3319 depth=0.0015
+  Train: loss=0.0015 mask=0.3319 depth=0.0015 time=199.5s
+  Val epoch 47: loss=0.1769
+
+=== Phase2 Epoch 48/49 ===
+  Epoch 48 [10/220] loss=0.0012 mask=0.2914 depth=0.0012
+  Epoch 48 [20/220] loss=0.0011 mask=0.2963 depth=0.0011
+  Epoch 48 [30/220] loss=0.0011 mask=0.3268 depth=0.0011
+  Epoch 48 [40/220] loss=0.0012 mask=0.3408 depth=0.0012
+  Epoch 48 [50/220] loss=0.0012 mask=0.3417 depth=0.0012
+  Epoch 48 [60/220] loss=0.0012 mask=0.3395 depth=0.0012
+  Epoch 48 [70/220] loss=0.0012 mask=0.3319 depth=0.0012
+  Epoch 48 [80/220] loss=0.0013 mask=0.3340 depth=0.0013
+  Epoch 48 [90/220] loss=0.0013 mask=0.3338 depth=0.0013
+  Epoch 48 [100/220] loss=0.0014 mask=0.3363 depth=0.0014
+  Epoch 48 [110/220] loss=0.0014 mask=0.3406 depth=0.0014
+  Epoch 48 [120/220] loss=0.0014 mask=0.3343 depth=0.0014
+  Epoch 48 [130/220] loss=0.0014 mask=0.3254 depth=0.0014
+  Epoch 48 [140/220] loss=0.0014 mask=0.3261 depth=0.0014
+  Epoch 48 [150/220] loss=0.0014 mask=0.3228 depth=0.0014
+  Epoch 48 [160/220] loss=0.0014 mask=0.3187 depth=0.0014
+  Epoch 48 [170/220] loss=0.0014 mask=0.3218 depth=0.0014
+  Epoch 48 [180/220] loss=0.0014 mask=0.3215 depth=0.0014
+  Epoch 48 [190/220] loss=0.0014 mask=0.3230 depth=0.0014
+  Epoch 48 [200/220] loss=0.0014 mask=0.3232 depth=0.0014
+  Epoch 48 [210/220] loss=0.0014 mask=0.3295 depth=0.0014
+  Epoch 48 [220/220] loss=0.0014 mask=0.3296 depth=0.0014
+  Train: loss=0.0014 mask=0.3296 depth=0.0014 time=197.5s
+  Val epoch 48: loss=0.1722
+
+=== Phase2 Epoch 49/49 ===
+  Epoch 49 [10/220] loss=0.0023 mask=0.3339 depth=0.0023
+  Epoch 49 [20/220] loss=0.0018 mask=0.3524 depth=0.0018
+  Epoch 49 [30/220] loss=0.0016 mask=0.3506 depth=0.0016
+  Epoch 49 [40/220] loss=0.0015 mask=0.3562 depth=0.0015
+  Epoch 49 [50/220] loss=0.0014 mask=0.3504 depth=0.0014
+  Epoch 49 [60/220] loss=0.0014 mask=0.3575 depth=0.0014
+  Epoch 49 [70/220] loss=0.0015 mask=0.3529 depth=0.0015
+  Epoch 49 [80/220] loss=0.0015 mask=0.3456 depth=0.0015
+  Epoch 49 [90/220] loss=0.0015 mask=0.3401 depth=0.0015
+  Epoch 49 [100/220] loss=0.0015 mask=0.3440 depth=0.0015
+  Epoch 49 [110/220] loss=0.0016 mask=0.3404 depth=0.0016
+  Epoch 49 [120/220] loss=0.0016 mask=0.3380 depth=0.0016
+  Epoch 49 [130/220] loss=0.0015 mask=0.3326 depth=0.0015
+  Epoch 49 [140/220] loss=0.0015 mask=0.3356 depth=0.0015
+  Epoch 49 [150/220] loss=0.0015 mask=0.3320 depth=0.0015
+  Epoch 49 [160/220] loss=0.0015 mask=0.3372 depth=0.0015
+  Epoch 49 [170/220] loss=0.0016 mask=0.3389 depth=0.0016
+  Epoch 49 [180/220] loss=0.0016 mask=0.3406 depth=0.0016
+  Epoch 49 [190/220] loss=0.0016 mask=0.3370 depth=0.0016
+  Epoch 49 [200/220] loss=0.0016 mask=0.3321 depth=0.0016
+  Epoch 49 [210/220] loss=0.0015 mask=0.3337 depth=0.0015
+  Epoch 49 [220/220] loss=0.0015 mask=0.3305 depth=0.0015
+  Train: loss=0.0015 mask=0.3305 depth=0.0015 time=197.8s
+  Val epoch 49: loss=0.1796
+
+Phase 2 complete. Best val loss: 0.1712

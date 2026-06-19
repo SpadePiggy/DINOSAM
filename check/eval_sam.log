@@ -1,0 +1,118 @@
+(dinov3-sam) LXT@ubuntu:~/lxt/DINOSAM$ cd /home/LXT/lxt/DINOSAM && CUDA_VISIBLE_DEVICES=1 python -m dinosam.evaluate --sam_checkpoint /data3/LXT/data/checkpoint/sam_vit_b_01ec64.pth --encoder sam  --phase1_checkpoint /data3/LXT/DINOv3-SAM/model_sam/SAM/phase1_best.pt --phase2_checkpoint /data3/LXT/DINOv3-SAM/model_sam/SAM/phase2_best.pt --n_sub_iterations 8 --save_masks_dir /data3/LXT/DINOv3-SAM/model_sam/SAM/eval_test
+Test dataset: /data3/LXT/DINOv3-SAM/1724_test
+Test samples: 220
+Iterative eval: n_sub=8, mask_prob=0.0
+
+Loading Phase 1 model: /data3/LXT/DINOv3-SAM/model_sam/SAM/phase1_best.pt
+
+============================================================
+  Phase 1 Model (mask-only trained)
+============================================================
+  Segmentation Dice:  0.9124  (median: 0.9432)
+  Segmentation IoU:   0.8520  (median: 0.8926)
+  IoU Prediction:     0.8733
+  IoU Pred MAE:       0.0570
+  Depth MSE:          3563.1140
+  Depth MAE:          50.7062
+  Depth RMSE:         59.6918
+  Depth R²:           -0.0180
+  Depth Pred:         mean=-7.84  std=0.09
+  Depth GT:           mean=0.00  std=59.16
+  Samples:            220
+
+  Depth MAE by class (original scale):
+       Depth       MAE      RMSE   Pred Mean     N
+    --------  --------  --------  ----------  ----
+        -100     92.23     92.23       -7.77    10
+         -90     82.21     82.21       -7.79    10
+         -80     72.20     72.20       -7.80    10
+         -70     62.18     62.18       -7.82    10
+         -60     52.10     52.10       -7.90    10
+         -50     42.09     42.09       -7.91    10
+         -40     32.06     32.07       -7.94    10
+         -30     22.08     22.08       -7.92    10
+         -20     12.16     12.16       -7.84    10
+         -10      2.18      2.18       -7.82    10
+          +0      7.76      7.76       -7.76    20
+         +10     17.74     17.74       -7.74    10
+         +20     27.78     27.78       -7.78    10
+         +30     37.83     37.83       -7.83    10
+         +40     47.88     47.88       -7.88    10
+         +50     57.90     57.90       -7.90    10
+         +60     67.95     67.95       -7.95    10
+         +70     77.93     77.93       -7.93    10
+         +80     87.86     87.86       -7.86    10
+         +90     97.86     97.86       -7.86    10
+        +100    107.81    107.81       -7.81    10
+  Saved: /data3/LXT/DINOv3-SAM/model_sam/SAM/eval_test/phase1/phase1_depth_pred_vs_gt.png
+  Saved: /data3/LXT/DINOv3-SAM/model_sam/SAM/eval_test/phase1/phase1_depth_residual_vs_gt.png
+
+  Masks + plots saved to: /data3/LXT/DINOv3-SAM/model_sam/SAM/eval_test/phase1
+
+Loading Phase 2 model: /data3/LXT/DINOv3-SAM/model_sam/SAM/phase2_best.pt
+
+============================================================
+  Phase 2 Model (depth trained)
+============================================================
+  Segmentation Dice:  0.6914  (median: 0.8518)
+  Segmentation IoU:   0.6078  (median: 0.7418)
+  IoU Prediction:     0.8023
+  IoU Pred MAE:       0.2181
+  Depth MSE:          2064.7003
+  Depth MAE:          32.1070
+  Depth RMSE:         45.4390
+  Depth R²:           0.4101
+  Depth Pred:         mean=1.32  std=41.88
+  Depth GT:           mean=0.00  std=59.16
+  Samples:            220
+
+  Depth MAE by class (original scale):
+       Depth       MAE      RMSE   Pred Mean     N
+    --------  --------  --------  ----------  ----
+        -100     71.73     86.29      -29.29    10
+         -90     60.70     72.72      -39.38    10
+         -80     40.34     50.86      -44.98    10
+         -70     41.63     57.64      -31.87    10
+         -60     38.25     46.44      -24.45    10
+         -50     22.55     28.72      -31.03    10
+         -40     23.86     37.70      -19.47    10
+         -30     10.85     13.09      -29.37    10
+         -20     21.51     40.89       -2.56    10
+         -10     19.82     23.49       -1.18    10
+          +0     12.61     16.49        0.07    20
+         +10     13.67     17.09       20.12    10
+         +20     15.89     17.80        9.95    10
+         +30     23.74     29.50       18.10    10
+         +40     17.04     19.33       22.96    10
+         +50     21.55     25.73       31.34    10
+         +60     44.64     49.74       15.36    10
+         +70     30.14     36.15       42.92    10
+         +80     38.51     47.03       52.06    10
+         +90     51.21     58.10       43.21    10
+        +100     73.51     86.92       26.51    10
+  Saved: /data3/LXT/DINOv3-SAM/model_sam/SAM/eval_test/phase2/phase2_depth_pred_vs_gt.png
+  Saved: /data3/LXT/DINOv3-SAM/model_sam/SAM/eval_test/phase2/phase2_depth_residual_vs_gt.png
+
+  Masks + plots saved to: /data3/LXT/DINOv3-SAM/model_sam/SAM/eval_test/phase2
+
+============================================================
+  Phase 1 vs Phase 2 Comparison
+============================================================
+  Dice:       0.9124 -> 0.6914  (-0.2210)
+  IoU:        0.8520 -> 0.6078  (-0.2442)
+  Depth MAE:  50.7062 -> 32.1070  (-18.5992)
+
+
+  Segmentation Dice:  0.9038  (median: 0.9435)                                                                                                    
+    Segmentation IoU:   0.8398  (median: 0.8930)                                                                                                      
+    IoU Prediction:     0.8780                                                                                                                        
+    IoU Pred MAE:       0.0687                                                                                                                        
+    Depth MSE:          470.3360                                                                                                                      
+    Depth MAE:          14.6336                                                                                                                       
+    Depth RMSE:         21.6872                                                                                                                       
+    Depth R²:           0.8656                                                                                                                        
+    Depth Pred:         mean=-3.20  std=55.01                                                                                                         
+    Depth GT:           mean=0.00  std=59.16                                                                                                          
+    Samples:            220】这是phase2的结果 
+
+cd /home/LXT/lxt/DINOSAM && CUDA_VISIBLE_DEVICES=1 nohup python -m dinosam.train.trainer --sam_checkpoint /data3/LXT/data/checkpoint/sam_vit_b_01ec64.pth --encoder sam --output_dir /data3/LXT/DINOv3-SAM/model_sam/SAM_retrain --train_phase both --n_sub_iterations 8 --mask_prob 0.5 --depth_loss_weight 1.0 --batch_size 2 > train_sam_retrain.log 2>&1 &
