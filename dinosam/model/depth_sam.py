@@ -132,12 +132,16 @@ class DepthSam(nn.Module):
             param.requires_grad = False
 
     def preprocess(self, x: torch.Tensor) -> Tuple[torch.Tensor, Tuple[int, int]]:
-        x = self.transform.apply_image_torch(x)
-        input_size = x.shape[-2:]
+        # Bypass SAM's apply_image_torch which uses shape[0],[1] (B,C) instead of
+        # shape[2],[3] (H,W) to compute the resize target (upstream SAM bug).
+        oldh, oldw = x.shape[2], x.shape[3]
+        newh, neww = ResizeLongestSide.get_preprocess_shape(oldh, oldw, self.img_size)
+        x = F.interpolate(x, size=(newh, neww), mode="bilinear", align_corners=False,
+                          antialias=True)
+        input_size = (newh, neww)
         x = (x - self.sam.pixel_mean.unsqueeze(0)) / self.sam.pixel_std.unsqueeze(0)
-        h, w = x.shape[-2:]
-        padh = self.sam.image_encoder.img_size - h
-        padw = self.sam.image_encoder.img_size - w
+        padh = self.img_size - newh
+        padw = self.img_size - neww
         x = F.pad(x, (0, padw, 0, padh))
         return x, input_size
 
@@ -163,8 +167,9 @@ class DepthSam(nn.Module):
         original_sizes: torch.Tensor,
         input_size: Tuple[int, int],
         mask_input: torch.Tensor = None,
+        return_fullres: bool = True,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Run mask branch (inner SAM prompt_encoder + mask_decoder) per image.
+        """Run mask branch (inner SAM prompt_encoder + mask_decoder).
 
         Args:
             image_embeddings: (B, 256, 64, 64)
@@ -172,54 +177,66 @@ class DepthSam(nn.Module):
             point_labels: (B, N)
             original_sizes: (B, 2)
             mask_input: (B, 1, 256, 256) optional low-res mask from previous iteration
+            return_fullres: if False, skip postprocess_masks and return None for masks
 
         Returns:
             low_res_masks: (B, 1, 256, 256)
             iou_pred: (B, 1)
-            masks: (B, 1, H, W) postprocessed to original resolution
+            masks: (B, 1, H, W) or None if return_fullres=False
         """
         B = image_embeddings.shape[0]
         inner_pe = self.sam.prompt_encoder.get_dense_pe()
 
-        all_masks = []
-        all_low_res = []
-        all_iou = []
-
+        # Per-sample coord transform, then batch
+        pc_list = []
         for i in range(B):
-            curr_embedding = image_embeddings[i:i+1]
             orig_h, orig_w = original_sizes[i].tolist()
-
             pc = self.transform.apply_coords_torch(
                 point_coords[i:i+1], (orig_h, orig_w)
             )
-            points = (pc, point_labels[i:i+1])
+            pc_list.append(pc)
+        pc_batched = torch.cat(pc_list, dim=0)  # (B, N, 2)
 
+        # Batched prompt_encoder (1 call instead of B — PromptEncoder has no
+        # repeat_interleave issue unlike MaskDecoder)
+        sparse_emb, dense_emb = self.sam.prompt_encoder(
+            points=(pc_batched, point_labels), boxes=None, masks=mask_input,
+        )
+
+        # Per-sample mask_decoder (MaskDecoder.predict_masks uses repeat_interleave
+        # which produces B²-shaped tensors when inputs are batched)
+        all_low_res = []
+        all_iou = []
+        for i in range(B):
             masks_input_i = mask_input[i:i+1] if mask_input is not None else None
-
-            sparse_emb, dense_emb = self.sam.prompt_encoder(
-                points=points, boxes=None, masks=masks_input_i,
-            )
-            low_res_masks, iou_pred = self.sam.mask_decoder(
-                image_embeddings=curr_embedding,
+            low_res_i, iou_i = self.sam.mask_decoder(
+                image_embeddings=image_embeddings[i:i+1],
                 image_pe=inner_pe,
-                sparse_prompt_embeddings=sparse_emb,
-                dense_prompt_embeddings=dense_emb,
+                sparse_prompt_embeddings=sparse_emb[i:i+1],
+                dense_prompt_embeddings=dense_emb[i:i+1],
                 multimask_output=False,
             )
+            all_low_res.append(low_res_i)
+            all_iou.append(iou_i)
 
-            masks = self.sam.postprocess_masks(
-                low_res_masks, input_size=input_size, original_size=(orig_h, orig_w),
-            )
+        low_res_masks = torch.cat(all_low_res, dim=0)
+        iou_pred = torch.cat(all_iou, dim=0)
 
-            all_masks.append(masks)
-            all_low_res.append(low_res_masks)
-            all_iou.append(iou_pred)
+        # Postprocessing stays per-sample (original_size varies per image)
+        if return_fullres:
+            masks_list = []
+            for i in range(B):
+                orig_h, orig_w = original_sizes[i].tolist()
+                mask_i = self.sam.postprocess_masks(
+                    low_res_masks[i:i+1], input_size=input_size,
+                    original_size=(orig_h, orig_w),
+                )
+                masks_list.append(mask_i)
+            masks = torch.cat(masks_list, dim=0)
+        else:
+            masks = None
 
-        return (
-            torch.cat(all_low_res, dim=0),
-            torch.cat(all_iou, dim=0),
-            torch.cat(all_masks, dim=0),
-        )
+        return low_res_masks, iou_pred, masks
 
     def forward_depth(
         self,
@@ -230,14 +247,14 @@ class DepthSam(nn.Module):
         depth_point_coords: torch.Tensor = None,
         depth_point_labels: torch.Tensor = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Run depth branch (outer prompt_encoder + depth_decoder) per image.
+        """Run depth branch (outer prompt_encoder + depth_decoder).
 
         Args:
             image_embeddings: (B, 256, 64, 64)
             low_res_masks: (B, 1, 256, 256) typically detached from mask branch
             input_size: (H, W) of preprocessed images before padding
             original_sizes: (B, 2) original image sizes
-            depth_point_coords: (B, N, 2) optional point prompts in 256x256 space
+            depth_point_coords: (B, N, 2) optional point prompts in original image space
             depth_point_labels: (B, N) optional point labels
 
         Returns:
@@ -246,33 +263,43 @@ class DepthSam(nn.Module):
         """
         B = image_embeddings.shape[0]
         outer_pe = self.outer_prompt_encoder.get_dense_pe()
-        all_depth = []
+
+        # Per-sample coord transform, then batch (matches forward_mask convention)
+        points_batched = None
+        if depth_point_coords is not None:
+            pc_list = []
+            for i in range(B):
+                orig_h, orig_w = original_sizes[i].tolist()
+                pc = self.transform.apply_coords_torch(
+                    depth_point_coords[i:i+1], (orig_h, orig_w)
+                )
+                pc_list.append(pc)
+            pc_batched = torch.cat(pc_list, dim=0)  # (B, N, 2)
+            points_batched = (pc_batched, depth_point_labels)
+
+        # Batched outer_prompt_encoder (PromptEncoder has no repeat_interleave issue)
+        outer_sparse, outer_dense = self.outer_prompt_encoder(
+            points=points_batched, boxes=None, masks=low_res_masks,
+        )
+
+        # Per-sample depth_decoder (DepthMaskDecoder uses repeat_interleave which
+        # produces B²-shaped tensors when inputs are batched)
         all_decoder_masks = []
-
+        all_depth = []
         for i in range(B):
-            curr_embedding = image_embeddings[i:i+1]
-            orig_h, orig_w = original_sizes[i].tolist()
-
-            points_i = None
-            if depth_point_coords is not None:
-                pc = depth_point_coords[i:i+1]
-                pl = depth_point_labels[i:i+1]
-                points_i = (pc, pl)
-
-            outer_sparse, outer_dense = self.outer_prompt_encoder(
-                points=points_i, boxes=None, masks=low_res_masks[i:i+1],
-            )
-            low_res_decoder_masks, depth_pred = self.depth_decoder(
-                image_embeddings=curr_embedding,
+            low_res_decoder_i, depth_i = self.depth_decoder(
+                image_embeddings=image_embeddings[i:i+1],
                 image_pe=outer_pe,
-                sparse_prompt_embeddings=outer_sparse,
-                dense_prompt_embeddings=outer_dense,
+                sparse_prompt_embeddings=outer_sparse[i:i+1],
+                dense_prompt_embeddings=outer_dense[i:i+1],
             )
-            decoder_masks = self.sam.postprocess_masks(
-                low_res_decoder_masks, input_size=input_size, original_size=(orig_h, orig_w),
+            orig_h, orig_w = original_sizes[i].tolist()
+            decoder_masks_i = self.sam.postprocess_masks(
+                low_res_decoder_i, input_size=input_size,
+                original_size=(orig_h, orig_w),
             )
-            all_depth.append(depth_pred.squeeze(-1))
-            all_decoder_masks.append(decoder_masks)
+            all_decoder_masks.append(decoder_masks_i)
+            all_depth.append(depth_i.squeeze(-1))
 
         return torch.cat(all_depth, dim=0), torch.cat(all_decoder_masks, dim=0)
 

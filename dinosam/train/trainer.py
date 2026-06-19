@@ -157,6 +157,7 @@ def train_one_epoch_phase2(model, dataloader, optimizer, device, epoch, writer, 
         depth_labels = batch["depth"].to(device)
         gt_masks = batch["gt_mask"].to(device)
         original_sizes = batch["original_size"].to(device)
+        is_log_batch = (batch_idx + 1) % args.log_interval == 0
 
         if args.n_sub_iterations > 1:
             # Iterative depth training
@@ -173,35 +174,35 @@ def train_one_epoch_phase2(model, dataloader, optimizer, device, epoch, writer, 
                 device=device,
                 args=args,
             )
+            total_loss += loss_val
+            total_mask_loss += mask_val
+            total_depth_loss += depth_val
+            n_batches += 1
         else:
             # Standard (non-iterative) depth training
             image_embeddings, input_size = model.encode_images(images)
+
+            # Skip full-res postprocessing on non-log batches (mask branch frozen)
             low_res_masks, iou_pred, masks_fullres = model.forward_mask(
                 image_embeddings=image_embeddings,
                 point_coords=point_coords,
                 point_labels=point_labels,
                 original_sizes=original_sizes,
                 input_size=input_size,
+                return_fullres=is_log_batch,
             )
 
-            # Transform point coords to model input space for depth branch
-            orig_h, orig_w = original_sizes[0].tolist()
-            depth_point_coords = model.transform.apply_coords_torch(
-                point_coords, (orig_h, orig_w)
-            )
-
+            # Pass point coords in original image space (forward_depth does
+            # per-sample apply_coords_torch internally — fixes original_sizes[0] bug)
             depth_pred, decoder_masks = model.forward_depth(
                 image_embeddings=image_embeddings,
                 low_res_masks=low_res_masks,
                 input_size=input_size,
                 original_sizes=original_sizes,
-                depth_point_coords=depth_point_coords,
+                depth_point_coords=point_coords,
                 depth_point_labels=point_labels,
             )
 
-            # Both mask losses use dice_loss against GT at original resolution
-            inner_mask_loss = dice_loss(masks_fullres, gt_masks)
-            decoder_mask_loss = dice_loss(decoder_masks, gt_masks)
             depth_loss = depth_mse_loss(depth_pred, depth_labels)
             loss = args.depth_loss_weight * depth_loss
 
@@ -210,30 +211,38 @@ def train_one_epoch_phase2(model, dataloader, optimizer, device, epoch, writer, 
             optimizer.step()
 
             loss_val = loss.item()
-            mask_val = inner_mask_loss.item()
             depth_val = depth_loss.item()
+            if is_log_batch:
+                inner_mask_loss = dice_loss(masks_fullres, gt_masks)
+                decoder_mask_loss = dice_loss(decoder_masks, gt_masks)
+                mask_val = inner_mask_loss.item()
+            else:
+                mask_val = 0.0
 
-        total_loss += loss_val
-        total_mask_loss += mask_val
-        total_depth_loss += depth_val
-        n_batches += 1
+            total_loss += loss_val
+            total_depth_loss += depth_val
+            n_batches += 1
+            if is_log_batch:
+                total_mask_loss += mask_val
 
         global_step = epoch * len(dataloader) + batch_idx
         if writer is not None:
             writer.add_scalar("train/loss", total_loss / n_batches, global_step)
-            writer.add_scalar("train/mask_loss", total_mask_loss / n_batches, global_step)
+            writer.add_scalar("train/mask_loss",
+                              total_mask_loss / max(1, (batch_idx + 1) // args.log_interval),
+                              global_step)
             writer.add_scalar("train/depth_loss", total_depth_loss / n_batches, global_step)
 
-        if (batch_idx + 1) % args.log_interval == 0:
+        if is_log_batch:
             print(
                 f"  Epoch {epoch} [{batch_idx+1}/{len(dataloader)}] "
-                f"loss={total_loss/n_batches:.4f} mask={total_mask_loss/n_batches:.4f} "
+                f"loss={total_loss/n_batches:.4f} mask={total_mask_loss / max(1, (batch_idx + 1) // args.log_interval):.4f} "
                 f"depth={total_depth_loss/n_batches:.4f}"
             )
 
     return {
         "loss": total_loss / n_batches,
-        "mask_loss": total_mask_loss / n_batches,
+        "mask_loss": total_mask_loss / max(1, n_batches // args.log_interval),
         "depth_loss": total_depth_loss / n_batches,
     }
 
@@ -253,30 +262,26 @@ def validate_phase2(model, dataloader, device, epoch, writer, args):
         original_sizes = batch["original_size"].to(device)
 
         image_embeddings, input_size = model.encode_images(images)
-        low_res_masks, iou_pred, masks_fullres = model.forward_mask(
+        low_res_masks, iou_pred, _ = model.forward_mask(
             image_embeddings=image_embeddings,
             point_coords=point_coords,
             point_labels=point_labels,
             original_sizes=original_sizes,
             input_size=input_size,
+            return_fullres=False,
         )
 
-        orig_h, orig_w = original_sizes[0].tolist()
-        depth_point_coords = model.transform.apply_coords_torch(
-            point_coords, (orig_h, orig_w)
-        )
-
-        depth_pred, decoder_masks = model.forward_depth(
+        # Pass point coords in original image space (forward_depth does
+        # per-sample apply_coords_torch internally — fixes original_sizes[0] bug)
+        depth_pred, _ = model.forward_depth(
             image_embeddings=image_embeddings,
             low_res_masks=low_res_masks.detach(),
             input_size=input_size,
             original_sizes=original_sizes,
-            depth_point_coords=depth_point_coords,
+            depth_point_coords=point_coords,
             depth_point_labels=point_labels,
         )
 
-        inner_mask_loss = dice_loss(masks_fullres, gt_masks)
-        decoder_mask_loss = dice_loss(decoder_masks, gt_masks)
         depth_loss = depth_mse_loss(depth_pred, depth_labels)
         total_loss += (args.depth_loss_weight * depth_loss).item()
         n_batches += 1

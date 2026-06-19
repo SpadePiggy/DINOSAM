@@ -86,17 +86,15 @@ def iterative_train_step(
     avg_mask_loss = total_mask_loss / n_sub
     avg_iou_loss = total_iou_loss / n_sub
 
-    # Transform point coords to model input space for depth branch
-    orig_h, orig_w = original_sizes[0].tolist()
-    depth_point_coords = model.transform.apply_coords_torch(
-        cur_point_coords, (orig_h, orig_w)
-    )
+    # cur_point_coords are already in original image space (scaled from low-res
+    # by iterative_mask_step logic at the top of the loop). forward_depth does
+    # per-sample apply_coords_torch internally — fixes original_sizes[0] bug.
     depth_pred, decoder_masks_fullres = model.forward_depth(
         image_embeddings=image_embeddings,
         low_res_masks=final_low_res_masks.detach(),
         input_size=input_size,
         original_sizes=original_sizes,
-        depth_point_coords=depth_point_coords,
+        depth_point_coords=cur_point_coords,
         depth_point_labels=cur_point_labels,
     )
     depth_loss = depth_mse_loss(depth_pred, depth_labels)
@@ -267,11 +265,21 @@ def iterative_depth_step(
                 pred_binary = (decoder_masks_lowres > 0).float()
                 new_coords, new_labels = prompt_generator(gt_lowres, pred_binary)
 
+                # Scale 256x256 coords to original image space (forward_depth
+                # expects original-image-space coords and does per-sample
+                # apply_coords_torch internally)
+                lr_h, lr_w = 256, 256
+                scale_x = original_sizes[:, 1].float().view(B, 1, 1) / lr_w
+                scale_y = original_sizes[:, 0].float().view(B, 1, 1) / lr_h
+                new_coords_scaled = new_coords.clone()
+                new_coords_scaled[:, :, 0] = new_coords[:, :, 0] * scale_x.squeeze(-1)
+                new_coords_scaled[:, :, 1] = new_coords[:, :, 1] * scale_y.squeeze(-1)
+
                 if cur_depth_coords is None:
-                    cur_depth_coords = new_coords
+                    cur_depth_coords = new_coords_scaled
                     cur_depth_labels = new_labels
                 else:
-                    cur_depth_coords = torch.cat([cur_depth_coords, new_coords], dim=1)
+                    cur_depth_coords = torch.cat([cur_depth_coords, new_coords_scaled], dim=1)
                     cur_depth_labels = torch.cat([cur_depth_labels, new_labels], dim=1)
 
     avg_depth_loss = total_depth_loss / n_sub
