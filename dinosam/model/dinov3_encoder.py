@@ -10,7 +10,7 @@ _dinov3_path = os.path.join(os.path.expanduser("~"), "lxt", "dinov3")
 if _dinov3_path not in sys.path:
     sys.path.insert(0, _dinov3_path)
 
-from .mona import Mona
+from .adapters import get_adapter
 
 
 class DINOv3MonaEncoder(nn.Module):
@@ -20,7 +20,7 @@ class DINOv3MonaEncoder(nn.Module):
     Output shape matches SAM image_encoder: (B, 256, 64, 64) for 1024×1024 input.
     """
 
-    def __init__(self, checkpoint_path, img_size=1024, embed_dim=768, out_dim=256):
+    def __init__(self, checkpoint_path, img_size=1024, embed_dim=768, out_dim=256, adapter_type="mona"):
         super().__init__()
         self.img_size = img_size
         self.embed_dim = embed_dim
@@ -58,8 +58,8 @@ class DINOv3MonaEncoder(nn.Module):
         for param in self.backbone.parameters():
             param.requires_grad = False
 
-        self.mona1 = Mona(embed_dim, factor=8)
-        self.mona2 = Mona(embed_dim, factor=8)
+        self.adapter1 = get_adapter(adapter_type, embed_dim, factor=8)
+        self.adapter2 = get_adapter(adapter_type, embed_dim, factor=8)
 
         self.projection = nn.Linear(embed_dim, out_dim)
 
@@ -101,8 +101,8 @@ class DINOv3MonaEncoder(nn.Module):
         H = W = int(N ** 0.5)
 
         x = patch_tokens.view(B, H * W, C)
-        x = self.mona1(x, (H, W))
-        x = self.mona2(x, (H, W))
+        x = self.adapter1(x, (H, W))
+        x = self.adapter2(x, (H, W))
 
         x = self.projection(x)  # (B, H*W, 256)
         x = x.view(B, H, W, -1).permute(0, 3, 1, 2)  # (B, 256, H, W)
