@@ -128,41 +128,89 @@ class FCAdapter(nn.Module):
 
 ### 4.3 DualAttnAdapter
 
-内联实现 DANet 的 PAM（Position Attention Module）和 CAM（Channel Attention Module），并行计算后逐元素求和。不依赖外部 DANet 包。
+内联实现 DANet 的 PAM（Position Attention Module）和 CAM（Channel Attention Module），并行计算后逐元素求和，再加全局残差。不依赖外部 DANet 包。
+
+**关键设计决策**：PAM/CAM 内部**不包含残差连接**（不同于 DANet 原版），由外层的 `DualAttnAdapter.forward()` 统一添加一个全局残差。这避免了 PAM 和 CAM 各自加残差后求和导致的 identity 信号双加（`2x` 而非 `x`）问题，保证初始化时等价于恒等映射。
 
 **数据流**：
 ```
-(B,N,C) → reshape → (B,C,H,W) ─┬─ PAM → attention_out ─┐
-                                └─ CAM → attention_out ─┴─ sum → reshape → (B,N,C)
+(B,N,C) → reshape → (B,C,H,W) ─┬─ PAM (no residual) → attn_pam ─┐
+                                └─ CAM (no residual) → attn_cam ─┴─ (attn_pam + attn_cam) / 2 + identity → reshape → (B,N,C)
 ```
 
 **PAM_Module（空间注意力）**：
-- 三个 1×1 卷积：query (C→C/8), key (C→C/8), value (C→C)
+- 三个 1×1 卷积：query (C→C/factor), key (C→C/factor), value (C→C)，降维比例由 `factor` 参数控制
 - 计算 `softmax(query^T × key)` 得到 (N, N) 空间注意力图，每个位置聚合所有位置的特征
-- 输出：`γ × (value × attention^T).reshape + x`，γ 初始化为 0
+- 输出：`γ × (value × attention^T).reshape`（仅 attention 分支，无残差），γ 初始化为 0
 
 **CAM_Module（通道注意力）**：
 - 无额外卷积，直接从原始特征计算
 - `softmax(max_energy − x·x^T)` 得到 (C, C) 通道注意力图（使用 max 减法做数值稳定）
-- 输出：`β × (attention × x).reshape + x`，β 初始化为 0
+- 输出：`β × (attention × x).reshape`（仅 attention 分支，无残差），β 初始化为 0
 
-**可学习的缩放参数初始化为 0**，保证训练初期注意力分支输出为 0，整体等价于恒等映射，与 Mona 的 `γ=1e-6` 初始化策略目的一致。
+**可学习的缩放参数初始化为 0**，保证训练初期 attention 分支输出为 0，加上全局残差后等价于恒等映射。与 Mona/FCAdapter 的 `γ=1e-6` 初始化策略目的一致。
+
+**内存注意**：PAM 为 64×64 特征图计算 `(4096, 4096)` 注意力矩阵（~16M floats，fp32 ≈ 64MB）。两个 adapter 各有一份，batch_size=4 时总开销约 500MB–1GB。在 <8GB VRAM 的 GPU 上可能需要减小 batch_size。
 
 ```python
+class PAM_Module(nn.Module):
+    """Position Attention Module — no internal residual."""
+    def __init__(self, in_dim, factor=8):
+        super().__init__()
+        reduction = in_dim // factor
+        self.query_conv = nn.Conv2d(in_dim, reduction, 1)
+        self.key_conv = nn.Conv2d(in_dim, reduction, 1)
+        self.value_conv = nn.Conv2d(in_dim, in_dim, 1)
+        self.gamma = nn.Parameter(torch.zeros(1))
+
+    def forward(self, x):
+        B, C, H, W = x.shape
+        N = H * W
+        query = self.query_conv(x).view(B, -1, N).permute(0, 2, 1)  # (B, N, C//factor)
+        key = self.key_conv(x).view(B, -1, N)                         # (B, C//factor, N)
+        attn = torch.softmax(torch.bmm(query, key), dim=-1)           # (B, N, N)
+        value = self.value_conv(x).view(B, -1, N)                     # (B, C, N)
+        out = torch.bmm(value, attn.permute(0, 2, 1)).view(B, C, H, W)
+        return self.gamma * out  # no residual here
+
+
+class CAM_Module(nn.Module):
+    """Channel Attention Module — no internal residual."""
+    def __init__(self, in_dim):
+        super().__init__()
+        self.gamma = nn.Parameter(torch.zeros(1))
+
+    def forward(self, x):
+        B, C, H, W = x.shape
+        N = H * W
+        query = x.view(B, C, N)                                       # (B, C, N)
+        key = x.view(B, C, N).permute(0, 2, 1)                        # (B, N, C)
+        energy = torch.bmm(query, key)                                 # (B, C, C)
+        energy = torch.max(energy, -1, keepdim=True)[0].expand_as(energy) - energy
+        attn = torch.softmax(energy, dim=-1)
+        out = torch.bmm(attn, query).view(B, C, H, W)
+        return self.gamma * out  # no residual here
+
+
 class DualAttnAdapter(nn.Module):
     def __init__(self, in_dim, factor=8):
         super().__init__()
-        self.pam = PAM_Module(in_dim)
+        self.pam = PAM_Module(in_dim, factor)
         self.cam = CAM_Module(in_dim)
 
     def forward(self, x, hw_shapes=None):
+        if hw_shapes is None:
+            raise ValueError(
+                "DualAttnAdapter requires hw_shapes for 2D reshape. "
+                "Got hw_shapes=None."
+            )
         B, N, C = x.shape
         H, W = hw_shapes
+        identity = x
         x_2d = x.reshape(B, H, W, C).permute(0, 3, 1, 2)  # (B, C, H, W)
-        out = self.pam(x_2d) + self.cam(x_2d)
-        out = out.permute(0, 2, 3, 1).reshape(B, N, C)
-        return out
-```
+        attn_out = (self.pam(x_2d) + self.cam(x_2d)) / 2.0
+        out = attn_out.permute(0, 2, 3, 1).reshape(B, N, C)
+        return identity + out  # single global residual
 
 ---
 
@@ -225,9 +273,24 @@ model = DepthSam(
 
 ---
 
-## 6. CLI 与配置
+## 6. Checkpoint 兼容性
 
-新增 `--adapter_type` 参数，仅当 `--encoder dinov3` 时生效：
+**Key 名变更**：旧代码使用 `mona1.*` / `mona2.*`，新代码统一使用 `adapter1.*` / `adapter2.*`。
+
+**影响**：已有 branch 上训练的 checkpoint（如 `phase1_best.pt`、`phase2_best.pt`）**无法直接加载**，因为 state_dict key 名不匹配。
+
+**迁移路径**：
+- 如果加载旧 checkpoint，需要手动 remap key：将 `mona1.*` → `adapter1.*`，`mona2.*` → `adapter2.*`
+- 跨 adapter 类型的 checkpoint 不兼容（如 `mona` 的权重无法加载到 `fc` 模型）
+- 建议：在 DINO 分支上从头训练各 adapter 类型
+
+**设计说明**：刻意统一为 `adapter1/adapter2` 命名，而非保留 `mona1/mona2`。语义上更清晰——属性名反映了角色（第一个/第二个适配器）而非类型（Mona）。
+
+---
+
+## 7. CLI 与配置
+
+新增 `--adapter_type` 参数：
 
 ```python
 parser.add_argument("--adapter_type", type=str, default="mona",
@@ -235,7 +298,11 @@ parser.add_argument("--adapter_type", type=str, default="mona",
                     help="Feature adapter type for DINOv3 encoder (default: mona)")
 ```
 
+**有效性校验**：`--adapter_type` 仅在 `--encoder dinov3` 时生效。当 `--encoder sam` 且 `--adapter_type` 被显式指定为非默认值时，应打印 warning 提示用户该参数被忽略。
+
 向后兼容：默认值为 `"mona"`，已有训练/评估命令无需修改。
+
+**两个入口都需要添加**：`train/trainer.py` 和 `evaluate.py` 的 argparse 块各自添加此参数。
 
 训练命令示例：
 
@@ -249,7 +316,7 @@ python -m dinosam.train.trainer ... --encoder dinov3 --adapter_type dual_attn
 
 ---
 
-## 7. 成功标准
+## 8. 成功标准
 
 1. `--adapter_type mona` 训练结果与当前 DINO 分支完全一致（向后兼容验证）
 2. `--adapter_type fc` 可正常训练和评估
