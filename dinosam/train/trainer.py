@@ -304,6 +304,7 @@ def _build_model_and_data(args, device):
         sam,
         encoder_type=args.encoder,
         dinov3_checkpoint=args.dinov3_checkpoint,
+        adapter_type=args.adapter_type,
     )
     model.freeze_image_encoder()
     model.init_depth_from_sam()
@@ -498,7 +499,13 @@ def main():
                         help="Image encoder type: 'sam' (default) or 'dinov3' (DINOv3+Mona)")
     parser.add_argument("--dinov3_checkpoint", type=str, default=None,
                         help="Path to DINOv3 ViT-B/16 checkpoint (required when --encoder dinov3)")
+    parser.add_argument("--adapter_type", type=str, default="mona",
+                        choices=["mona", "fc", "dual_attn"],
+                        help="Feature adapter type for DINOv3 encoder (default: mona)")
     args = parser.parse_args()
+
+    if args.encoder == "sam" and args.adapter_type != "mona":
+        print(f"Warning: --adapter_type '{args.adapter_type}' is ignored when --encoder sam")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
