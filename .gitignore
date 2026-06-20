@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.claude/
+DONE/
+TODO/
+*.log
+nohup.out
