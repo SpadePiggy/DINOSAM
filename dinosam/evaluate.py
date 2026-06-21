@@ -321,6 +321,10 @@ def main():
     else:
         print(f"\nPhase 1 checkpoint not found: {args.phase1_checkpoint}")
 
+    # Free Phase 1 model from GPU before loading Phase 2
+    del model, sam
+    torch.cuda.empty_cache()
+
     # ---- Phase 2 ----
     if os.path.exists(args.phase2_checkpoint):
         print(f"\nLoading Phase 2 model: {args.phase2_checkpoint}")
