@@ -1,0 +1,15 @@
+{"file":"docs/superpowers/specs/2026-06-19-dino-adapter-selectable-design.md","action":"Write","timestamp":"2026-06-19T07:29:18Z","important":false}
+{"file":"Plans.md","action":"Write","timestamp":"2026-06-19T07:36:31Z","important":true}
+{"file":".claude/state/review-result.json","action":"Write","timestamp":"2026-06-19T08:14:38Z","important":false}
+{"file":"/data3/LXT/DINOv3-SAM/model_DINO/dual_attn_iter8/config.log","action":"Write","timestamp":"2026-06-19T09:19:23Z","important":false}
+{"file":"TODO_ACC.md","action":"Write","timestamp":"2026-06-19T09:51:47Z","important":false}
+{"file":"docs/superpowers/specs/2026-06-19-training-speed-optimization-design.md","action":"Write","timestamp":"2026-06-19T09:54:57Z","important":false}
+{"file":"dinosam/model/depth_sam.py","action":"Edit","timestamp":"2026-06-19T10:21:32Z","important":false}
+{"file":"dinosam/train/trainer.py","action":"Edit","timestamp":"2026-06-19T10:22:28Z","important":false}
+{"file":"dinosam/train/iterative.py","action":"Edit","timestamp":"2026-06-19T10:23:46Z","important":false}
+{"file":"DONE/2026-06-19-training-speed-optimization.md","action":"Write","timestamp":"2026-06-19T10:44:42Z","important":false}
+{"file":"/data3/LXT/DINOv3-SAM/model_DINO/test/run_quick_test.sh","action":"Write","timestamp":"2026-06-19T11:58:52Z","important":false}
+{"file":"/data3/LXT/DINOv3-SAM/model_DINO/fc_iter8/config.log","action":"Write","timestamp":"2026-06-19T12:04:32Z","important":false}
+{"file":"/data3/LXT/DINOv3-SAM/model_DINO/mona_iter8/config.log","action":"Write","timestamp":"2026-06-19T12:07:40Z","important":false}
+{"file":".gitignore","action":"Write","timestamp":"2026-06-20T06:43:39Z","important":false}
+{"file":"dinosam/evaluate.py","action":"Edit","timestamp":"2026-06-21T14:33:16Z","important":false}

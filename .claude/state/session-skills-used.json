@@ -1,0 +1,18 @@
+{
+  "used": [
+    "superpowers:brainstorming",
+    "superpowers:dispatching-parallel-agents",
+    "claude-code-harness:harness-plan",
+    "code-review",
+    "claude-code-harness:harness-review",
+    "claude-code-harness:breezing",
+    "claude-code-harness:harness-work",
+    "code-review",
+    "claude-code-harness:harness-review",
+    "brainstorming",
+    "review",
+    "review"
+  ],
+  "session_start": "2026-06-19T07:20:12Z",
+  "last_used": "2026-06-19T10:27:26Z"
+}

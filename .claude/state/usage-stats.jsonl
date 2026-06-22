@@ -1,0 +1,12 @@
+{"type":"skill","name":"brainstorming","digest":"{\"skill\":\"superpowers:brainstorming\",\"args\":\"在DINO分支上，目前的DINO主干的模型特征\ufffd\ufffd","timestamp":"2026-06-19T07:20:12Z"}
+{"type":"skill","name":"dispatching-parallel-agents","digest":"{\"skill\":\"superpowers:dispatching-parallel-agents\",\"args\":\"并行执行两个 review 任务：\\n1. \ufffd","timestamp":"2026-06-19T07:30:13Z"}
+{"type":"skill","name":"harness-plan","digest":"{\"skill\":\"claude-code-harness:harness-plan\",\"args\":\"Create a detailed step-by-step implementation pl","timestamp":"2026-06-19T07:32:38Z"}
+{"type":"skill","name":"code-review","digest":"{\"skill\":\"code-review\",\"args\":\"--effort high /home/LXT/lxt/DINOSAM/DINOSAM/docs/superpowers/specs/20","timestamp":"2026-06-19T07:41:07Z"}
+{"type":"skill","name":"harness-review","digest":"{\"skill\":\"claude-code-harness:harness-review\",\"args\":\"Review the design spec at /home/LXT/lxt/DINOSA","timestamp":"2026-06-19T07:53:54Z"}
+{"type":"skill","name":"breezing","digest":"{\"skill\":\"claude-code-harness:breezing\",\"args\":\"all\"}","timestamp":"2026-06-19T08:00:00Z"}
+{"type":"skill","name":"harness-work","digest":"{\"skill\":\"claude-code-harness:harness-work\",\"args\":\"all\"}","timestamp":"2026-06-19T08:00:20Z"}
+{"type":"skill","name":"code-review","digest":"{\"skill\":\"code-review\",\"args\":\"--effort high /home/LXT/lxt/DINOSAM/DINOSAM/Plans.md\"}","timestamp":"2026-06-19T08:04:25Z"}
+{"type":"skill","name":"harness-review","digest":"{\"skill\":\"claude-code-harness:harness-review\",\"args\":\"Review the implementation plan at /home/LXT/lx","timestamp":"2026-06-19T08:14:41Z"}
+{"type":"skill","name":"brainstorming","digest":"{\"skill\":\"brainstorming\"}","timestamp":"2026-06-19T09:29:31Z"}
+{"type":"skill","name":"review","digest":"{\"skill\":\"review\"}","timestamp":"2026-06-19T09:55:06Z"}
+{"type":"skill","name":"review","digest":"{\"skill\":\"review\"}","timestamp":"2026-06-19T10:27:25Z"}
