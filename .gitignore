@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Generated outputs
+out/
+
+# Generated docs (keep source .md if any, ignore converted artifacts)
+docs/**/*.html
+docs/**/*.docx
+
+# Superpowers session state
+docs/superpowers/plans/
+
+# Claude Code local state
+.claude/

@@ -13,3 +13,4 @@
 {"file":"/data3/LXT/DINOv3-SAM/model_DINO/mona_iter8/config.log","action":"Write","timestamp":"2026-06-19T12:07:40Z","important":false}
 {"file":".gitignore","action":"Write","timestamp":"2026-06-20T06:43:39Z","important":false}
 {"file":"dinosam/evaluate.py","action":"Edit","timestamp":"2026-06-21T14:33:16Z","important":false}
+{"file":".gitignore","action":"Write","timestamp":"2026-06-22T09:57:06Z","important":false}
