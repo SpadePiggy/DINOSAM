@@ -1,8 +1,0 @@
-out/
-__pycache__/
-*.pyc
-.claude/
-DONE/
-TODO/
-*.log
-nohup.out
