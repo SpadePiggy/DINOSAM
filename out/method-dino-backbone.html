@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DINOSAM — DINOv3 主干方向方法论</title>
+<style>
+:root{--c1:#0f3460;--c2:#e94560;--c3:#16213e;--c4:#533483;--bg:#f7f8fc;--card:#fff;--code-bg:#1e1e2e;--code-fg:#cdd6f4}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;line-height:1.8;color:#1a1a2e;background:var(--bg)}
+.wrap{max-width:1060px;margin:0 auto;padding:48px 28px 80px}
+h1{font-size:2em;color:var(--c1);border-bottom:4px solid var(--c2);padding-bottom:10px;margin-bottom:6px}
+.sub{color:#666;font-size:1.05em;margin-bottom:36px}
+h2{font-size:1.5em;color:var(--c3);margin:48px 0 14px;padding-left:12px;border-left:4px solid var(--c2)}
+h3{font-size:1.2em;color:var(--c1);margin:28px 0 10px}
+h4{font-size:1.05em;color:var(--c4);margin:18px 0 8px}
+p{margin-bottom:12px}
+ul,ol{margin:0 0 14px 24px}
+li{margin:4px 0}
+.card{background:var(--card);border-radius:8px;padding:22px 26px;margin:18px 0;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.card.red{border-left:4px solid var(--c2)}
+.card.blue{border-left:4px solid var(--c1)}
+.card.green{border-left:4px solid #2ecc71}
+.card.purple{border-left:4px solid var(--c4)}
+.card.orange{border-left:4px solid #ff9800}
+.ref{display:inline-block;background:#e8f4f8;color:var(--c1);padding:2px 8px;border-radius:4px;font-family:'Fira Code',Consolas,monospace;font-size:.86em}
+pre{background:var(--code-bg);color:var(--code-fg);padding:18px;border-radius:8px;overflow-x:auto;margin:10px 0 18px;font-family:'Fira Code',Consolas,monospace;font-size:.88em;line-height:1.6}
+code{background:#eef;color:#333;padding:2px 6px;border-radius:3px;font-family:'Fira Code',Consolas,monospace;font-size:.9em}
+table{width:100%;border-collapse:collapse;margin:14px 0}
+th{background:var(--c1);color:#fff;padding:9px 14px;text-align:left;font-weight:600}
+td{padding:9px 14px;border-bottom:1px solid #e0e0e0}
+tr:nth-child(even) td{background:#f8f9fa}
+.sep{height:1px;background:linear-gradient(to right,transparent,var(--c2),transparent);margin:48px 0}
+.fig{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:20px 12px 10px;margin:24px 0;text-align:center;overflow-x:auto}
+.fig svg{max-width:100%;height:auto}
+.fig-cap{color:#555;font-size:.92em;margin-top:8px;font-style:italic}
+.toc{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:22px 30px;margin-bottom:36px}
+.toc h3{margin-top:0;color:var(--c1)}
+.toc ul{list-style:none;padding-left:0}
+.toc li{margin:5px 0}
+.toc li a{color:var(--c1);text-decoration:none;border-bottom:1px dashed #ccc}
+.toc li a:hover{color:var(--c2);border-bottom-color:var(--c2)}
+.toc ul ul{padding-left:22px}
+.math{font-family:'Times New Roman',serif;font-style:italic}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>DINOSAM — DINOv3 主干方向方法论</h1>
+<p class="sub">以 DINOv3 ViT-B/16 + 可训练适配器替代 SAM 图像编码器的深度感知分割框架</p>
+
+<div class="toc">
+<h3>目录</h3>
+<ul>
+<li><a href="#s0">概述</a></li>
+<li><a href="#s1">3.1 整体架构</a></li>
+<li><a href="#s2">3.2 DINOv3 编码器与特征对齐</a></li>
+<li><a href="#s3">3.3 适配器设计（核心消融模块）</a>
+  <ul>
+    <li><a href="#s3a">3.3.2 MoNA — 多尺度卷积适配器</a></li>
+    <li><a href="#s3b">3.3.3 FCAdapter — 全连接瓶颈适配器</a></li>
+    <li><a href="#s3c">3.3.4 DualAttnAdapter — 双重注意力适配器</a></li>
+    <li><a href="#s3d">3.3.5 结构对比总结</a></li>
+  </ul>
+</li>
+<li><a href="#s4">3.4 训练策略</a></li>
+<li><a href="#s5">3.5 损失函数</a></li>
+<li><a href="#s6">3.6 评估方法</a></li>
+</ul>
+</div>
+
+<!-- ======================================================== -->
+<h2 id="s0">概述</h2>
+
+<div class="card red">
+<p>本文方法的核心在于：将 SAM 原有的 ViT-B 图像编码器替换为冻结的 <strong>DINOv3 ViT-B/16</strong> 预训练骨干，通过轻量可训练适配器将 DINOv3 的通用视觉表征对齐到 SAM 的 256 维特征空间，从而使掩码分支和深度分支可以共享同一套编码器输出，无须修改下游解码器结构。</p>
+<p>为系统性评估适配器设计对迁移效果的影响，我们设计了三种结构差异显著的适配器——<strong>MoNA</strong>（多尺度卷积）、<strong>FCAdapter</strong>（纯全连接瓶颈）和 <strong>DualAttnAdapter</strong>（双重注意力）——作为消融实验的核心变量。三者保持相同的瓶颈压缩比和残差结构，仅在核心变换机制上存在差异。</p>
+</div>
+
+<!-- ======================================================== -->
+<div class="sep"></div>
+<h2 id="s1">3.1 整体架构</h2>
+
+<div class="card blue">
+<p>DINOSAM 由共享的图像编码器和两个独立解码分支组成。当编码器类型指定为 <code>dinov3</code> 时，构造函数实例化 DINOv3MonaEncoder 替代 SAM 原生 ViT-B 编码器。此替换对下游分支<strong>完全透明</strong>——两个解码分支的结构、参数和前向逻辑与使用 SAM 编码器时完全一致。</p>
+<p>这一设计确保了消融实验的公平性：编码器变更所带来的性能差异可完全归因于骨干表征能力和适配器设计，而非下游结构差异。</p>
+</div>
+
+<!-- 图 1：DINOv3 整体架构 -->
+<div class="fig">
+<svg viewBox="0 0 920 480" xmlns="http://www.w3.org/2000/svg" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="13">
+  <rect x="0" y="0" width="920" height="480" fill="#fafbfe" rx="10"/>
+
+  <!-- 输入图像 -->
+  <rect x="20" y="200" width="90" height="45" rx="7" fill="#e8f4f8" stroke="#0f3460" stroke-width="1.5"/>
+  <text x="65" y="228" text-anchor="middle" fill="#0f3460" font-weight="600" font-size="12">输入图像</text>
+
+  <line x1="110" y1="222" x2="140" y2="222" stroke="#333" stroke-width="1.5" marker-end="url(#d1)"/>
+
+  <!-- DINOv3 编码器大框 -->
+  <rect x="140" y="130" width="330" height="195" rx="10" fill="#fff8e130" stroke="#ff9800" stroke-width="2"/>
+  <text x="305" y="155" text-anchor="middle" fill="#ff9800" font-size="14" font-weight="700">DINOv3MonaEncoder</text>
+
+  <!-- DINOv3 骨干 -->
+  <rect x="160" y="170" width="130" height="55" rx="6" fill="#ffeaa7" stroke="#d63031" stroke-width="1.5"/>
+  <text x="225" y="193" text-anchor="middle" fill="#d63031" font-size="12" font-weight="700">DINOv3 ViT-B/16</text>
+  <text x="225" y="213" text-anchor="middle" fill="#d63031" font-size="9">🔒 完全冻结</text>
+
+  <line x1="290" y1="197" x2="310" y2="197" stroke="#333" stroke-width="1.2" marker-end="url(#d1)"/>
+
+  <!-- 适配器 -->
+  <rect x="310" y="170" width="70" height="55" rx="6" fill="#55efc4" stroke="#00b894" stroke-width="1.5"/>
+  <text x="345" y="193" text-anchor="middle" fill="#00695c" font-size="11" font-weight="600">Adapter</text>
+  <text x="345" y="208" text-anchor="middle" fill="#00695c" font-size="9">×2 串联</text>
+
+  <line x1="380" y1="197" x2="400" y2="197" stroke="#333" stroke-width="1.2" marker-end="url(#d1)"/>
+
+  <!-- 投影层 -->
+  <rect x="400" y="175" width="55" height="45" rx="6" fill="#74b9ff" stroke="#0984e3" stroke-width="1.2"/>
+  <text x="427" y="195" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">Linear</text>
+  <text x="427" y="210" text-anchor="middle" fill="#fff" font-size="9">768→256</text>
+
+  <!-- 输出 -->
+  <line x1="455" y1="197" x2="490" y2="197" stroke="#333" stroke-width="1.5" marker-end="url(#d1)"/>
+  <text x="472" y="188" text-anchor="middle" fill="#666" font-size="9">(B,256,64,64)</text>
+
+  <!-- 分支点 -->
+  <circle cx="495" cy="222" r="5" fill="#333"/>
+  <line x1="495" y1="197" x2="495" y2="222" stroke="#333" stroke-width="1.5"/>
+  <line x1="495" y1="222" x2="495" y2="100" stroke="#333" stroke-width="1.2"/>
+  <line x1="495" y1="222" x2="495" y2="360" stroke="#333" stroke-width="1.2"/>
+  <line x1="495" y1="100" x2="545" y2="100" stroke="#333" stroke-width="1.2" marker-end="url(#d1)"/>
+  <line x1="495" y1="360" x2="545" y2="360" stroke="#333" stroke-width="1.2" marker-end="url(#d1)"/>
+
+  <!-- 掩码分支 -->
+  <text x="530" y="78" fill="#0984e3" font-size="11" font-weight="600">掩码分支（与 SAM 方案共享）</text>
+  <rect x="545" y="85" width="140" height="35" rx="5" fill="#dff9fb" stroke="#0984e3" stroke-width="1"/>
+  <text x="615" y="108" text-anchor="middle" fill="#0984e3" font-size="11">Inner PE + MaskDecoder</text>
+  <line x1="685" y1="102" x2="740" y2="90" stroke="#333" stroke-width="1.2" marker-end="url(#d1)"/>
+  <rect x="740" y="75" width="80" height="28" rx="4" fill="#55efc4" stroke="#00b894" stroke-width="1"/>
+  <text x="780" y="93" text-anchor="middle" fill="#00695c" font-size="10">掩码</text>
+  <line x1="685" y1="108" x2="740" y2="118" stroke="#333" stroke-width="1.2" marker-end="url(#d1)"/>
+  <rect x="740" y="105" width="80" height="28" rx="4" fill="#81ecec" stroke="#00cec9" stroke-width="1"/>
+  <text x="780" y="123" text-anchor="middle" fill="#006266" font-size="10">IoU</text>
+
+  <!-- low_res 连线 -->
+  <line x1="615" y1="120" x2="615" y2="335" stroke="#e94560" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="630" y="230" fill="#e94560" font-size="9" font-weight="600">detach</text>
+
+  <!-- 深度分支 -->
+  <text x="530" y="348" fill="#533483" font-size="11" font-weight="600">深度分支（与 SAM 方案共享）</text>
+  <rect x="545" y="345" width="140" height="35" rx="5" fill="#f0e6ff" stroke="#533483" stroke-width="1"/>
+  <text x="615" y="368" text-anchor="middle" fill="#533483" font-size="11">Outer PE + DepthDecoder</text>
+  <line x1="685" y1="358" x2="740" y2="348" stroke="#333" stroke-width="1.2" marker-end="url(#d1)"/>
+  <rect x="740" y="333" width="80" height="28" rx="4" fill="#ffeaa7" stroke="#fdcb6e" stroke-width="1"/>
+  <text x="780" y="351" text-anchor="middle" fill="#6c5100" font-size="10">深度</text>
+  <line x1="685" y1="368" x2="740" y2="378" stroke="#333" stroke-width="1.2" marker-end="url(#d1)"/>
+  <rect x="740" y="365" width="80" height="28" rx="4" fill="#fab1a0" stroke="#e17055" stroke-width="1"/>
+  <text x="780" y="383" text-anchor="middle" fill="#6b2d00" font-size="10">辅助掩码</text>
+
+  <!-- 图例 -->
+  <rect x="20" y="430" width="880" height="40" rx="6" fill="#fff" stroke="#ddd" stroke-width="1"/>
+  <rect x="40" y="443" width="12" height="12" rx="2" fill="#ffeaa7" stroke="#d63031" stroke-width="1"/>
+  <text x="58" y="454" fill="#333" font-size="10">冻结骨干</text>
+  <rect x="140" y="443" width="12" height="12" rx="2" fill="#55efc4" stroke="#00b894" stroke-width="1"/>
+  <text x="158" y="454" fill="#333" font-size="10">可训练适配器 (Phase 1)</text>
+  <rect x="310" y="443" width="12" height="12" rx="2" fill="#74b9ff" stroke="#0984e3" stroke-width="1"/>
+  <text x="328" y="454" fill="#333" font-size="10">可训练投影层 (Phase 1)</text>
+  <rect x="490" y="443" width="12" height="12" rx="2" fill="#dff9fb" stroke="#0984e3" stroke-width="1"/>
+  <text x="508" y="454" fill="#333" font-size="10">掩码分支 (Phase 1)</text>
+  <rect x="640" y="443" width="12" height="12" rx="2" fill="#f0e6ff" stroke="#533483" stroke-width="1"/>
+  <text x="658" y="454" fill="#333" font-size="10">深度分支 (Phase 2)</text>
+
+  <defs><marker id="d1" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#333"/></marker></defs>
+</svg>
+<p class="fig-cap">图 1：DINOv3 主干方向的 DINOSAM 整体架构。DINOv3 骨干冻结，适配器和投影层可训练；下游掩码/深度分支与 SAM 方案完全共享。</p>
+</div>
+
+<p class="ref">depth_sam.py:23-59, dinov3_encoder.py:16-110</p>
+
+<!-- ======================================================== -->
+<div class="sep"></div>
+<h2 id="s2">3.2 DINOv3 编码器与特征对齐</h2>
+
+<div class="card blue">
+<h4>设计动机</h4>
+<p>SAM 的原生 ViT-B 在大规模分割数据上预训练，具备强分割先验，但其表征受限于分割任务本身的监督信号。DINOv3 ViT-B/16 经自监督预训练获得的视觉表征已被证明在多种下游任务中展现出优越的迁移性能。然而，DINOv3 的输出维度 (768) 与 SAM 的内部特征维度 (256) 不一致，且两者的图像预处理流程存在显著差异，需要通过适配模块实现特征空间对齐。</p>
+</div>
+
+<h3>骨干网络配置</h3>
+
+<div class="card">
+<table>
+<tr><th>参数</th><th>值</th><th>说明</th></tr>
+<tr><td>img_size</td><td>1024</td><td>输入图像尺寸</td></tr>
+<tr><td>patch_size</td><td>16</td><td>Patch 大小</td></tr>
+<tr><td>embed_dim</td><td>768</td><td>嵌入维度</td></tr>
+<tr><td>depth</td><td>12</td><td>Transformer 层数</td></tr>
+<tr><td>num_heads</td><td>12</td><td>注意力头数</td></tr>
+<tr><td>ffn_ratio</td><td>4</td><td>FFN 扩展比</td></tr>
+<tr><td>pos_embed</td><td>RoPE (base=100)</td><td>旋转位置编码</td></tr>
+<tr><td>n_storage_tokens</td><td>4</td><td>存储 token</td></tr>
+<tr><td>layerscale_init</td><td>1×10⁻⁵</td><td>层缩放初始值</td></tr>
+<tr><td>norm_layer</td><td>LayerNorm BF16</td><td>归一化层</td></tr>
+</table>
+</div>
+
+<h3>前向传播流程</h3>
+
+<!-- 图 2：DINOv3 编码器前向传播 -->
+<div class="fig">
+<svg viewBox="0 0 900 170" xmlns="http://www.w3.org/2000/svg" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="12">
+  <rect x="0" y="0" width="900" height="170" fill="#fafbfe" rx="8"/>
+
+  <rect x="15" y="50" width="80" height="55" rx="6" fill="#fab1a0" stroke="#e17055" stroke-width="1.2"/>
+  <text x="55" y="73" text-anchor="middle" fill="#6b2d00" font-size="10">原始图像</text>
+  <text x="55" y="90" text-anchor="middle" fill="#888" font-size="9">(B,3,H,W)</text>
+
+  <line x1="95" y1="77" x2="120" y2="77" stroke="#333" stroke-width="1.2" marker-end="url(#d2)"/>
+
+  <rect x="120" y="45" width="90" height="65" rx="6" fill="#dfe6e9" stroke="#636e72" stroke-width="1"/>
+  <text x="165" y="68" text-anchor="middle" fill="#2d3436" font-size="10" font-weight="600">直接 Resize</text>
+  <text x="165" y="83" text-anchor="middle" fill="#636e72" font-size="9">→ 1024²</text>
+  <text x="165" y="98" text-anchor="middle" fill="#e94560" font-size="8" font-weight="600">不保持宽高比</text>
+
+  <line x1="210" y1="77" x2="233" y2="77" stroke="#333" stroke-width="1.2" marker-end="url(#d2)"/>
+
+  <rect x="233" y="45" width="95" height="65" rx="6" fill="#dfe6e9" stroke="#636e72" stroke-width="1"/>
+  <text x="280" y="68" text-anchor="middle" fill="#2d3436" font-size="10" font-weight="600">ImageNet 归一化</text>
+  <text x="280" y="83" text-anchor="middle" fill="#636e72" font-size="9">mean/std ×255</text>
+
+  <line x1="328" y1="77" x2="350" y2="77" stroke="#333" stroke-width="1.2" marker-end="url(#d2)"/>
+
+  <rect x="350" y="40" width="120" height="75" rx="6" fill="#ffeaa7" stroke="#d63031" stroke-width="1.5"/>
+  <text x="410" y="62" text-anchor="middle" fill="#d63031" font-size="11" font-weight="700">DINOv3 骨干</text>
+  <text x="410" y="78" text-anchor="middle" fill="#d63031" font-size="9">🔒 冻结</text>
+  <text x="410" y="93" text-anchor="middle" fill="#888" font-size="8">→ patch_tokens</text>
+  <text x="410" y="106" text-anchor="middle" fill="#888" font-size="8">(B, N, 768)</text>
+
+  <line x1="470" y1="77" x2="500" y2="77" stroke="#333" stroke-width="1.2" marker-end="url(#d2)"/>
+
+  <rect x="500" y="45" width="90" height="65" rx="6" fill="#55efc4" stroke="#00b894" stroke-width="1.5"/>
+  <text x="545" y="67" text-anchor="middle" fill="#00695c" font-size="10" font-weight="600">Adapter 1</text>
+  <text x="545" y="82" text-anchor="middle" fill="#00695c" font-size="10" font-weight="600">↓</text>
+  <text x="545" y="97" text-anchor="middle" fill="#00695c" font-size="10" font-weight="600">Adapter 2</text>
+
+  <line x1="590" y1="77" x2="620" y2="77" stroke="#333" stroke-width="1.2" marker-end="url(#d2)"/>
+
+  <rect x="620" y="50" width="80" height="55" rx="6" fill="#74b9ff" stroke="#0984e3" stroke-width="1.2"/>
+  <text x="660" y="72" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">Linear</text>
+  <text x="660" y="88" text-anchor="middle" fill="#fff" font-size="9">768 → 256</text>
+
+  <line x1="700" y1="77" x2="730" y2="77" stroke="#333" stroke-width="1.2" marker-end="url(#d2)"/>
+
+  <rect x="730" y="45" width="80" height="65" rx="6" fill="#a29bfe" stroke="#533483" stroke-width="1.2"/>
+  <text x="770" y="67" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">Reshape</text>
+  <text x="770" y="83" text-anchor="middle" fill="#fff" font-size="9">(B, 256,</text>
+  <text x="770" y="97" text-anchor="middle" fill="#fff" font-size="9">H, W)</text>
+
+  <line x1="810" y1="77" x2="840" y2="77" stroke="#333" stroke-width="1.2" marker-end="url(#d2)"/>
+
+  <rect x="840" y="55" width="50" height="45" rx="6" fill="#55efc4" stroke="#00b894" stroke-width="1.5"/>
+  <text x="865" y="76" text-anchor="middle" fill="#00695c" font-size="10" font-weight="600">输出</text>
+  <text x="865" y="90" text-anchor="middle" fill="#00695c" font-size="8">(B,256,</text>
+  <text x="865" y="100" text-anchor="middle" fill="#00695c" font-size="8">64,64)</text>
+
+  <!-- 预处理对比 -->
+  <rect x="15" y="130" width="875" height="30" rx="4" fill="#fff3e0" stroke="#ff9800" stroke-width="1"/>
+  <text x="450" y="150" text-anchor="middle" fill="#e65100" font-size="10">与 SAM 区别：直接 resize 到 1024²（不保持宽高比、不填充），使用 ImageNet 归一化参数而非 SAM 专有参数</text>
+
+  <defs><marker id="d2" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#333"/></marker></defs>
+</svg>
+<p class="fig-cap">图 2：DINOv3MonaEncoder 前向传播流程。骨干冻结，只有适配器和投影层可训练。</p>
+</div>
+
+<h3>与 SAM 编码器的预处理对比</h3>
+
+<table>
+<tr><th>步骤</th><th>SAM 编码器</th><th>DINOv3 编码器</th></tr>
+<tr><td>图像缩放</td><td>保持宽高比，最长边 1024px</td><td>直接缩放至 1024×1024</td></tr>
+<tr><td>归一化参数</td><td>SAM 专有 pixel_mean/std</td><td>ImageNet mean/std ×255</td></tr>
+<tr><td>空间填充</td><td>零填充至 1024×1024</td><td>不需要</td></tr>
+<tr><td>返回的 input_size</td><td>实际缩放后尺寸 (h', w')</td><td>固定值 (1024, 1024)</td></tr>
+</table>
+
+<p class="ref">dinov3_encoder.py:79-110</p>
+
+<!-- ======================================================== -->
+<div class="sep"></div>
+<h2 id="s3">3.3 适配器设计（核心消融模块）</h2>
+
+<div class="card orange">
+<h4>消融逻辑</h4>
+<p>为系统性评估不同归纳偏置对稠密预测迁移效果的影响，设计三种适配器。每种保持<strong>相同的瓶颈压缩比</strong>（768/8=96）和残差连接结构，仅在核心变换机制上存在差异：</p>
+<ul>
+<li><strong>MoNA</strong>：引入多尺度空间卷积 → 评估<strong>局部空间信息</strong>的贡献</li>
+<li><strong>FCAdapter</strong>：仅保留通道变换 → 作为<strong>通道基线</strong></li>
+<li><strong>DualAttnAdapter</strong>：引入全局注意力 → 评估<strong>全局上下文建模</strong>的价值</li>
+</ul>
+<p>三者对比系统性地回答：对于从通用骨干到稠密预测任务的特征适配，<strong>何种归纳偏置最为有效？</strong></p>
+</div>
+
+<!-- ======================================================== -->
+<h3 id="s3a">3.3.2 MoNA — 多尺度卷积适配器（默认）</h3>
+
+<div class="card green">
+<p>核心假设：稠密预测任务受益于<strong>多尺度局部空间信息</strong>的注入。</p>
+</div>
+
+<!-- 图 3：MoNA 详细结构 -->
+<div class="fig">
+<svg viewBox="0 0 900 440" xmlns="http://www.w3.org/2000/svg" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="12">
+  <rect x="0" y="0" width="900" height="440" fill="#fafbfe" rx="8"/>
+
+  <text x="450" y="25" text-anchor="middle" fill="#00b894" font-size="15" font-weight="700">MoNA 适配器内部结构</text>
+
+  <!-- 输入 -->
+  <rect x="60" y="50" width="140" height="35" rx="5" fill="#e8f4f8" stroke="#0f3460" stroke-width="1.2"/>
+  <text x="130" y="73" text-anchor="middle" fill="#0f3460" font-size="11">输入 x (B, N, 768)</text>
+
+  <!-- 分支 -->
+  <line x1="130" y1="85" x2="130" y2="110" stroke="#333" stroke-width="1.2"/>
+  <circle cx="130" cy="110" r="4" fill="#333"/>
+  <line x1="130" y1="110" x2="130" y2="130" stroke="#333" stroke-width="1.2" marker-end="url(#d3)"/>
+  <line x1="130" y1="110" x2="780" y2="110" stroke="#999" stroke-width="1" stroke-dasharray="4"/>
+  <text x="810" y="114" fill="#999" font-size="10">identity</text>
+
+  <!-- 仿射归一化 -->
+  <rect x="55" y="130" width="150" height="50" rx="6" fill="#dfe6e9" stroke="#636e72" stroke-width="1"/>
+  <text x="130" y="152" text-anchor="middle" fill="#2d3436" font-size="11" font-weight="600">仿射归一化</text>
+  <text x="130" y="170" text-anchor="middle" fill="#636e72" font-size="9">LN(x)·γ + x·γₓ</text>
+
+  <line x1="130" y1="180" x2="130" y2="210" stroke="#333" stroke-width="1.2" marker-end="url(#d3)"/>
+
+  <!-- 下投影 -->
+  <rect x="55" y="210" width="150" height="40" rx="6" fill="#74b9ff" stroke="#0984e3" stroke-width="1.2"/>
+  <text x="130" y="235" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">Linear: 768 → 96</text>
+
+  <line x1="130" y1="250" x2="130" y2="275" stroke="#333" stroke-width="1.2" marker-end="url(#d3)"/>
+
+  <!-- Reshape -->
+  <rect x="65" y="275" width="130" height="30" rx="4" fill="#dfe6e9" stroke="#636e72" stroke-width="1"/>
+  <text x="130" y="295" text-anchor="middle" fill="#636e72" font-size="10">Reshape → (B, 96, H, W)</text>
+
+  <line x1="195" y1="290" x2="250" y2="290" stroke="#333" stroke-width="1.2" marker-end="url(#d3)"/>
+
+  <!-- MonaOp 大框 -->
+  <rect x="250" y="195" width="430" height="230" rx="10" fill="#e8f8f520" stroke="#00b894" stroke-width="2"/>
+  <text x="465" y="218" text-anchor="middle" fill="#00b894" font-size="14" font-weight="700">MonaOp — 多尺度深度卷积模块</text>
+
+  <!-- 三路卷积 -->
+  <line x1="310" y1="290" x2="310" y2="240" stroke="#333" stroke-width="1"/>
+  <line x1="310" y1="290" x2="310" y2="340" stroke="#333" stroke-width="1"/>
+  <circle cx="310" cy="290" r="3" fill="#333"/>
+
+  <rect x="330" y="238" width="130" height="28" rx="4" fill="#55efc4" stroke="#00b894" stroke-width="1.2"/>
+  <text x="395" y="257" text-anchor="middle" fill="#00695c" font-size="10" font-weight="600">DWConv 3×3 (groups=96)</text>
+
+  <rect x="330" y="276" width="130" height="28" rx="4" fill="#55efc4" stroke="#00b894" stroke-width="1.2"/>
+  <text x="395" y="295" text-anchor="middle" fill="#00695c" font-size="10" font-weight="600">DWConv 5×5 (groups=96)</text>
+
+  <rect x="330" y="314" width="130" height="28" rx="4" fill="#55efc4" stroke="#00b894" stroke-width="1.2"/>
+  <text x="395" y="333" text-anchor="middle" fill="#00695c" font-size="10" font-weight="600">DWConv 7×7 (groups=96)</text>
+
+  <!-- 合并 -->
+  <line x1="460" y1="252" x2="505" y2="290" stroke="#333" stroke-width="1"/>
+  <line x1="460" y1="290" x2="505" y2="290" stroke="#333" stroke-width="1"/>
+  <line x1="460" y1="328" x2="505" y2="290" stroke="#333" stroke-width="1"/>
+
+  <rect x="505" y="275" width="55" height="30" rx="4" fill="#fff3e0" stroke="#ff9800" stroke-width="1"/>
+  <text x="532" y="295" text-anchor="middle" fill="#e65100" font-size="10" font-weight="600">Avg /3</text>
+
+  <!-- +identity -->
+  <line x1="560" y1="290" x2="585" y2="290" stroke="#333" stroke-width="1"/>
+  <circle cx="590" cy="290" r="10" fill="#fff" stroke="#333" stroke-width="1.2"/>
+  <text x="590" y="294" text-anchor="middle" fill="#333" font-size="12" font-weight="700">+</text>
+  <text x="590" y="315" text-anchor="middle" fill="#999" font-size="8">+identity</text>
+
+  <!-- 1×1 Conv -->
+  <line x1="600" y1="290" x2="625" y2="290" stroke="#333" stroke-width="1.2" marker-end="url(#d3)"/>
+  <rect x="625" y="275" width="40" height="30" rx="4" fill="#74b9ff" stroke="#0984e3" stroke-width="1"/>
+  <text x="645" y="295" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">1×1</text>
+
+  <!-- 外层合并 -->
+  <line x1="665" y1="290" x2="690" y2="290" stroke="#333" stroke-width="1.2"/>
+
+  <!-- MonaOp 输出 -->
+  <line x1="690" y1="290" x2="720" y2="290" stroke="#333" stroke-width="1.2" marker-end="url(#d3)"/>
+
+  <!-- 后续处理 -->
+  <rect x="720" y="270" width="70" height="20" rx="3" fill="#dfe6e9" stroke="#636e72" stroke-width="1"/>
+  <text x="755" y="284" text-anchor="middle" fill="#636e72" font-size="9">Reshape→seq</text>
+
+  <line x1="755" y1="290" x2="755" y2="310" stroke="#333" stroke-width="1.2" marker-end="url(#d3)"/>
+
+  <rect x="720" y="310" width="70" height="20" rx="3" fill="#fab1a0" stroke="#e17055" stroke-width="1"/>
+  <text x="755" y="324" text-anchor="middle" fill="#6b2d00" font-size="9">GELU</text>
+
+  <line x1="755" y1="330" x2="755" y2="345" stroke="#333" stroke-width="1.2" marker-end="url(#d3)"/>
+
+  <rect x="720" y="345" width="70" height="20" rx="3" fill="#dfe6e9" stroke="#636e72" stroke-width="1"/>
+  <text x="755" y="359" text-anchor="middle" fill="#636e72" font-size="9">Dropout 0.1</text>
+
+  <line x1="755" y1="365" x2="755" y2="380" stroke="#333" stroke-width="1.2" marker-end="url(#d3)"/>
+
+  <rect x="710" y="380" width="90" height="25" rx="4" fill="#74b9ff" stroke="#0984e3" stroke-width="1.2"/>
+  <text x="755" y="397" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">Linear: 96→768</text>
+
+  <!-- 残差加 -->
+  <line x1="755" y1="405" x2="820" y2="405" stroke="#333" stroke-width="1.2"/>
+  <line x1="820" y1="405" x2="820" y2="110" stroke="#333" stroke-width="1.2"/>
+  <circle cx="820" cy="110" r="10" fill="#fff" stroke="#333" stroke-width="1.2"/>
+  <text x="820" y="114" text-anchor="middle" fill="#333" font-size="12" font-weight="700">+</text>
+
+  <line x1="830" y1="110" x2="870" y2="110" stroke="#333" stroke-width="1.2" marker-end="url(#d3)"/>
+  <rect x="835" y="95" width="55" height="30" rx="4" fill="#a29bfe" stroke="#533483" stroke-width="1.2"/>
+  <text x="862" y="114" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">输出</text>
+
+  <!-- 初始化注释 -->
+  <rect x="55" y="140" width="5" height="5" rx="1" fill="transparent"/>
+  <text x="20" y="400" fill="#666" font-size="9">γ 初始化为 1×10⁻⁶ · 1 向量</text>
+  <text x="20" y="415" fill="#666" font-size="9">γₓ 初始化为全 1 向量</text>
+  <text x="20" y="430" fill="#666" font-size="9">→ 初始时适配器 ≈ 恒等映射</text>
+
+  <defs><marker id="d3" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#333"/></marker></defs>
+</svg>
+<p class="fig-cap">图 3：MoNA 适配器完整数据流。MonaOp 内部使用 3/5/7 三种尺度的深度可分离卷积并行处理，均值聚合后加恒等映射和 1×1 通道混合。</p>
+</div>
+
+<p class="ref">mona.py:1-65</p>
+
+<!-- ======================================================== -->
+<h3 id="s3b">3.3.3 FCAdapter — 全连接瓶颈适配器（通道基线）</h3>
+
+<div class="card blue">
+<p>FCAdapter 作为消融基线，保留了 MoNA 的全部<strong>通道变换路径</strong>（仿射归一化 + 瓶颈 MLP + 残差），<strong>仅移除了 MonaOp 空间卷积模块</strong>。MoNA 与 FCAdapter 的对比直接揭示多尺度空间卷积对稠密预测迁移效果的边际贡献。</p>
+</div>
+
+<!-- 图 4：FCAdapter 结构（精简对比） -->
+<div class="fig">
+<svg viewBox="0 0 760 200" xmlns="http://www.w3.org/2000/svg" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="12">
+  <rect x="0" y="0" width="760" height="200" fill="#fafbfe" rx="8"/>
+
+  <text x="380" y="22" text-anchor="middle" fill="#0f3460" font-size="14" font-weight="700">FCAdapter — 纯全连接路径（无空间卷积）</text>
+
+  <!-- 输入 -->
+  <rect x="20" y="70" width="90" height="35" rx="5" fill="#e8f4f8" stroke="#0f3460" stroke-width="1"/>
+  <text x="65" y="92" text-anchor="middle" fill="#0f3460" font-size="10">x (B,N,768)</text>
+
+  <!-- 分支 -->
+  <line x1="110" y1="87" x2="130" y2="87" stroke="#333" stroke-width="1"/>
+  <circle cx="130" cy="87" r="3" fill="#333"/>
+  <line x1="130" y1="87" x2="130" y2="50" stroke="#999" stroke-width="1" stroke-dasharray="4"/>
+  <line x1="130" y1="50" x2="680" y2="50" stroke="#999" stroke-width="1" stroke-dasharray="4"/>
+  <text x="400" y="45" text-anchor="middle" fill="#999" font-size="9">identity（残差跳连）</text>
+
+  <line x1="130" y1="87" x2="155" y2="87" stroke="#333" stroke-width="1.2" marker-end="url(#d4)"/>
+
+  <rect x="155" y="70" width="95" height="35" rx="5" fill="#dfe6e9" stroke="#636e72" stroke-width="1"/>
+  <text x="202" y="85" text-anchor="middle" fill="#2d3436" font-size="10" font-weight="600">LN·γ + x·γₓ</text>
+  <text x="202" y="98" text-anchor="middle" fill="#636e72" font-size="8">仿射归一化</text>
+
+  <line x1="250" y1="87" x2="275" y2="87" stroke="#333" stroke-width="1.2" marker-end="url(#d4)"/>
+
+  <rect x="275" y="72" width="90" height="30" rx="5" fill="#74b9ff" stroke="#0984e3" stroke-width="1.2"/>
+  <text x="320" y="92" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">768 → 96</text>
+
+  <line x1="365" y1="87" x2="385" y2="87" stroke="#333" stroke-width="1.2" marker-end="url(#d4)"/>
+
+  <rect x="385" y="72" width="55" height="30" rx="5" fill="#fab1a0" stroke="#e17055" stroke-width="1"/>
+  <text x="412" y="92" text-anchor="middle" fill="#6b2d00" font-size="10">GELU</text>
+
+  <line x1="440" y1="87" x2="460" y2="87" stroke="#333" stroke-width="1.2" marker-end="url(#d4)"/>
+
+  <rect x="460" y="72" width="70" height="30" rx="5" fill="#dfe6e9" stroke="#636e72" stroke-width="1"/>
+  <text x="495" y="92" text-anchor="middle" fill="#636e72" font-size="10">Drop 0.1</text>
+
+  <line x1="530" y1="87" x2="550" y2="87" stroke="#333" stroke-width="1.2" marker-end="url(#d4)"/>
+
+  <rect x="550" y="72" width="90" height="30" rx="5" fill="#74b9ff" stroke="#0984e3" stroke-width="1.2"/>
+  <text x="595" y="92" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">96 → 768</text>
+
+  <line x1="640" y1="87" x2="665" y2="87" stroke="#333" stroke-width="1.2"/>
+
+  <!-- 残差加 -->
+  <circle cx="680" cy="70" r="10" fill="#fff" stroke="#333" stroke-width="1.2"/>
+  <text x="680" y="74" text-anchor="middle" fill="#333" font-size="12" font-weight="700">+</text>
+  <line x1="680" y1="60" x2="680" y2="50" stroke="#999" stroke-width="1" stroke-dasharray="4"/>
+
+  <line x1="690" y1="70" x2="730" y2="70" stroke="#333" stroke-width="1.2" marker-end="url(#d4)"/>
+  <rect x="720" y="55" width="35" height="30" rx="4" fill="#a29bfe" stroke="#533483" stroke-width="1"/>
+  <text x="737" y="75" text-anchor="middle" fill="#fff" font-size="9">输出</text>
+
+  <!-- 对比标注 -->
+  <rect x="200" y="130" width="360" height="50" rx="6" fill="#fff3e0" stroke="#ff9800" stroke-width="1"/>
+  <text x="380" y="150" text-anchor="middle" fill="#e65100" font-size="11" font-weight="600">与 MoNA 唯一的区别</text>
+  <text x="380" y="168" text-anchor="middle" fill="#333" font-size="10">FCAdapter 移除了 MonaOp（3/5/7 深度卷积），仅保留通道瓶颈变换</text>
+
+  <defs><marker id="d4" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#333"/></marker></defs>
+</svg>
+<p class="fig-cap">图 4：FCAdapter 数据流。与 MoNA 共享全部通道变换路径，仅移除空间卷积。</p>
+</div>
+
+<p class="ref">adapters/fc_adapter.py:1-38</p>
+
+<!-- ======================================================== -->
+<h3 id="s3c">3.3.4 DualAttnAdapter — 双重注意力适配器</h3>
+
+<div class="card purple">
+<p>引入全局注意力机制作为第三种归纳偏置。设计基于 DANet 的双重注意力思想：同时建模空间位置间和通道间的长程依赖。注意：DualAttnAdapter <strong>没有</strong>瓶颈压缩结构，参数量和计算复杂度与 MoNA/FC 存在差异——这是有意为之，消融目标是评估归纳偏置<strong>类型</strong>的影响。</p>
+</div>
+
+<!-- 图 5：DualAttnAdapter 详细结构 -->
+<div class="fig">
+<svg viewBox="0 0 900 500" xmlns="http://www.w3.org/2000/svg" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="12">
+  <rect x="0" y="0" width="900" height="500" fill="#fafbfe" rx="8"/>
+
+  <text x="450" y="25" text-anchor="middle" fill="#533483" font-size="15" font-weight="700">DualAttnAdapter — PAM + CAM 并行</text>
+
+  <!-- 输入 -->
+  <rect x="360" y="45" width="180" height="35" rx="5" fill="#e8f4f8" stroke="#0f3460" stroke-width="1.2"/>
+  <text x="450" y="67" text-anchor="middle" fill="#0f3460" font-size="11">输入 x (B, N, C=768)</text>
+
+  <!-- 分支点 -->
+  <line x1="450" y1="80" x2="450" y2="100" stroke="#333" stroke-width="1.2"/>
+  <circle cx="450" cy="100" r="4" fill="#333"/>
+
+  <!-- identity 跳连 -->
+  <line x1="450" y1="100" x2="830" y2="100" stroke="#999" stroke-width="1" stroke-dasharray="4"/>
+  <text x="830" y="95" text-anchor="end" fill="#999" font-size="9">identity</text>
+
+  <!-- Reshape -->
+  <line x1="450" y1="100" x2="450" y2="120" stroke="#333" stroke-width="1.2" marker-end="url(#d5)"/>
+  <rect x="375" y="120" width="150" height="28" rx="4" fill="#dfe6e9" stroke="#636e72" stroke-width="1"/>
+  <text x="450" y="139" text-anchor="middle" fill="#636e72" font-size="10">Reshape → (B, C, H, W)</text>
+
+  <!-- 分叉 -->
+  <line x1="450" y1="148" x2="450" y2="165" stroke="#333" stroke-width="1.2"/>
+  <circle cx="450" cy="165" r="3" fill="#333"/>
+  <line x1="450" y1="165" x2="200" y2="165" stroke="#333" stroke-width="1"/>
+  <line x1="200" y1="165" x2="200" y2="185" stroke="#333" stroke-width="1.2" marker-end="url(#d5)"/>
+  <line x1="450" y1="165" x2="700" y2="165" stroke="#333" stroke-width="1"/>
+  <line x1="700" y1="165" x2="700" y2="185" stroke="#333" stroke-width="1.2" marker-end="url(#d5)"/>
+
+  <!-- ===== PAM ===== -->
+  <rect x="30" y="185" width="340" height="230" rx="10" fill="#e8f4f830" stroke="#0984e3" stroke-width="1.5"/>
+  <text x="200" y="207" text-anchor="middle" fill="#0984e3" font-size="13" font-weight="700">PAM — 位置注意力模块</text>
+
+  <!-- Q,K,V -->
+  <rect x="50" y="220" width="90" height="28" rx="4" fill="#dff9fb" stroke="#0984e3" stroke-width="1"/>
+  <text x="95" y="239" text-anchor="middle" fill="#0984e3" font-size="10">Q: Conv1×1</text>
+  <text x="95" y="257" text-anchor="middle" fill="#888" font-size="8">C→C/8=96</text>
+
+  <rect x="155" y="220" width="90" height="28" rx="4" fill="#dff9fb" stroke="#0984e3" stroke-width="1"/>
+  <text x="200" y="239" text-anchor="middle" fill="#0984e3" font-size="10">K: Conv1×1</text>
+  <text x="200" y="257" text-anchor="middle" fill="#888" font-size="8">C→C/8=96</text>
+
+  <rect x="260" y="220" width="90" height="28" rx="4" fill="#dff9fb" stroke="#0984e3" stroke-width="1"/>
+  <text x="305" y="239" text-anchor="middle" fill="#0984e3" font-size="10">V: Conv1×1</text>
+  <text x="305" y="257" text-anchor="middle" fill="#888" font-size="8">C→C (768)</text>
+
+  <!-- 注意力计算 -->
+  <line x1="140" y1="260" x2="180" y2="290" stroke="#333" stroke-width="1"/>
+  <line x1="200" y1="260" x2="180" y2="290" stroke="#333" stroke-width="1"/>
+
+  <rect x="130" y="290" width="140" height="28" rx="4" fill="#fff3e0" stroke="#ff9800" stroke-width="1"/>
+  <text x="200" y="309" text-anchor="middle" fill="#e65100" font-size="10">A = softmax(Qᵀ × K)</text>
+
+  <line x1="200" y1="318" x2="200" y2="340" stroke="#333" stroke-width="1.2"/>
+  <line x1="305" y1="260" x2="305" y2="350" stroke="#333" stroke-width="1"/>
+  <line x1="305" y1="350" x2="230" y2="350" stroke="#333" stroke-width="1"/>
+
+  <rect x="130" y="340" width="140" height="28" rx="4" fill="#81ecec" stroke="#00cec9" stroke-width="1"/>
+  <text x="200" y="359" text-anchor="middle" fill="#006266" font-size="10">out = α · (V × Aᵀ)</text>
+
+  <text x="200" y="390" text-anchor="middle" fill="#e94560" font-size="10" font-weight="600">α 初始化为 0</text>
+
+  <!-- ===== CAM ===== -->
+  <rect x="530" y="185" width="340" height="230" rx="10" fill="#f0e6ff30" stroke="#533483" stroke-width="1.5"/>
+  <text x="700" y="207" text-anchor="middle" fill="#533483" font-size="13" font-weight="700">CAM — 通道注意力模块</text>
+
+  <!-- Q, K 直接来自 X -->
+  <rect x="560" y="225" width="130" height="28" rx="4" fill="#f0e6ff" stroke="#533483" stroke-width="1"/>
+  <text x="625" y="244" text-anchor="middle" fill="#533483" font-size="10">Q = X.view(B,C,N)</text>
+
+  <rect x="710" y="225" width="140" height="28" rx="4" fill="#f0e6ff" stroke="#533483" stroke-width="1"/>
+  <text x="780" y="244" text-anchor="middle" fill="#533483" font-size="10">K = X.view(B,C,N)ᵀ</text>
+
+  <!-- 能量矩阵 -->
+  <line x1="625" y1="253" x2="700" y2="278" stroke="#333" stroke-width="1"/>
+  <line x1="780" y1="253" x2="700" y2="278" stroke="#333" stroke-width="1"/>
+
+  <rect x="620" y="278" width="160" height="28" rx="4" fill="#fff3e0" stroke="#ff9800" stroke-width="1"/>
+  <text x="700" y="297" text-anchor="middle" fill="#e65100" font-size="10">E = Q × K (B,C,C)</text>
+
+  <line x1="700" y1="306" x2="700" y2="320" stroke="#333" stroke-width="1.2" marker-end="url(#d5)"/>
+
+  <rect x="600" y="320" width="200" height="28" rx="4" fill="#fff3e0" stroke="#ff9800" stroke-width="1"/>
+  <text x="700" y="339" text-anchor="middle" fill="#e65100" font-size="10">E' = max(E) - E (稳定化)</text>
+
+  <line x1="700" y1="348" x2="700" y2="360" stroke="#333" stroke-width="1.2" marker-end="url(#d5)"/>
+
+  <rect x="620" y="360" width="160" height="28" rx="4" fill="#81ecec" stroke="#00cec9" stroke-width="1"/>
+  <text x="700" y="379" text-anchor="middle" fill="#006266" font-size="10">out = β · softmax(E')·Q</text>
+
+  <text x="700" y="404" text-anchor="middle" fill="#e94560" font-size="10" font-weight="600">β 初始化为 0</text>
+
+  <!-- 合并 -->
+  <line x1="200" y1="415" x2="200" y2="440" stroke="#333" stroke-width="1.2"/>
+  <line x1="700" y1="415" x2="700" y2="440" stroke="#333" stroke-width="1.2"/>
+  <line x1="200" y1="440" x2="420" y2="440" stroke="#333" stroke-width="1.2"/>
+  <line x1="700" y1="440" x2="480" y2="440" stroke="#333" stroke-width="1.2"/>
+
+  <rect x="395" y="425" width="110" height="30" rx="5" fill="#ffeaa7" stroke="#fdcb6e" stroke-width="1.2"/>
+  <text x="450" y="445" text-anchor="middle" fill="#6c5100" font-size="10" font-weight="600">(PAM + CAM) / 2</text>
+
+  <!-- Reshape 回序列 + 残差 -->
+  <line x1="505" y1="440" x2="570" y2="440" stroke="#333" stroke-width="1.2"/>
+  <rect x="570" y="425" width="100" height="30" rx="5" fill="#dfe6e9" stroke="#636e72" stroke-width="1"/>
+  <text x="620" y="445" text-anchor="middle" fill="#636e72" font-size="10">Reshape → seq</text>
+
+  <line x1="670" y1="440" x2="720" y2="440" stroke="#333" stroke-width="1.2"/>
+
+  <!-- 残差 -->
+  <line x1="830" y1="100" x2="830" y2="440" stroke="#999" stroke-width="1" stroke-dasharray="4"/>
+  <circle cx="830" cy="440" r="10" fill="#fff" stroke="#333" stroke-width="1.2"/>
+  <text x="830" y="444" text-anchor="middle" fill="#333" font-size="12" font-weight="700">+</text>
+  <line x1="720" y1="440" x2="820" y2="440" stroke="#333" stroke-width="1.2"/>
+
+  <line x1="840" y1="440" x2="880" y2="440" stroke="#333" stroke-width="1.2" marker-end="url(#d5)"/>
+  <text x="880" y="435" fill="#533483" font-size="10" font-weight="600">输出</text>
+
+  <!-- 公式注释 -->
+  <rect x="30" y="460" width="840" height="30" rx="4" fill="#f0e6ff" stroke="#533483" stroke-width="1"/>
+  <text x="450" y="480" text-anchor="middle" fill="#533483" font-size="10">x' = x + reshape((PAM(X_2d) + CAM(X_2d)) / 2)，全局唯一残差连接（PAM/CAM 内部无残差）</text>
+
+  <defs><marker id="d5" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#333"/></marker></defs>
+</svg>
+<p class="fig-cap">图 5：DualAttnAdapter 内部结构。PAM 建模空间位置间长程依赖，CAM 建模通道间语义关联，两者并行输出取均值后加全局残差。α/β 均初始化为 0。</p>
+</div>
+
+<p class="ref">adapters/dual_attn_adapter.py:1-79</p>
+
+<!-- ======================================================== -->
+<h3 id="s3d">3.3.5 结构对比总结</h3>
+
+<!-- 图 6：三种适配器对比 -->
+<div class="fig">
+<svg viewBox="0 0 860 280" xmlns="http://www.w3.org/2000/svg" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="12">
+  <rect x="0" y="0" width="860" height="280" fill="#fafbfe" rx="8"/>
+
+  <text x="430" y="25" text-anchor="middle" fill="#0f3460" font-size="14" font-weight="700">三种适配器消融设计逻辑</text>
+
+  <!-- FCAdapter (基线) -->
+  <rect x="30" y="50" width="240" height="165" rx="10" fill="#e8f4f830" stroke="#0f3460" stroke-width="2"/>
+  <text x="150" y="75" text-anchor="middle" fill="#0f3460" font-size="13" font-weight="700">FCAdapter（基线）</text>
+  <rect x="55" y="90" width="190" height="25" rx="4" fill="#dfe6e9" stroke="#636e72" stroke-width="1"/>
+  <text x="150" y="107" text-anchor="middle" fill="#636e72" font-size="10">仿射归一化</text>
+  <rect x="55" y="120" width="190" height="25" rx="4" fill="#74b9ff" stroke="#0984e3" stroke-width="1.2"/>
+  <text x="150" y="137" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">通道瓶颈 MLP (768→96→768)</text>
+  <rect x="55" y="150" width="190" height="25" rx="4" fill="#dfe6e9" stroke="#636e72" stroke-width="1" stroke-dasharray="4"/>
+  <text x="150" y="167" text-anchor="middle" fill="#bbb" font-size="10">（无空间操作）</text>
+  <rect x="55" y="180" width="190" height="25" rx="4" fill="#dfe6e9" stroke="#636e72" stroke-width="1"/>
+  <text x="150" y="197" text-anchor="middle" fill="#636e72" font-size="10">全局残差</text>
+
+  <!-- MoNA -->
+  <rect x="310" y="50" width="240" height="165" rx="10" fill="#e8f8f520" stroke="#00b894" stroke-width="2"/>
+  <text x="430" y="75" text-anchor="middle" fill="#00b894" font-size="13" font-weight="700">MoNA（默认）</text>
+  <rect x="335" y="90" width="190" height="25" rx="4" fill="#dfe6e9" stroke="#636e72" stroke-width="1"/>
+  <text x="430" y="107" text-anchor="middle" fill="#636e72" font-size="10">仿射归一化</text>
+  <rect x="335" y="120" width="190" height="25" rx="4" fill="#74b9ff" stroke="#0984e3" stroke-width="1.2"/>
+  <text x="430" y="137" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">通道瓶颈 MLP (768→96→768)</text>
+  <rect x="335" y="150" width="190" height="25" rx="4" fill="#55efc4" stroke="#00b894" stroke-width="1.5"/>
+  <text x="430" y="167" text-anchor="middle" fill="#00695c" font-size="10" font-weight="600">+ MonaOp (3/5/7 DWConv)</text>
+  <rect x="335" y="180" width="190" height="25" rx="4" fill="#dfe6e9" stroke="#636e72" stroke-width="1"/>
+  <text x="430" y="197" text-anchor="middle" fill="#636e72" font-size="10">全局残差</text>
+
+  <!-- DualAttn -->
+  <rect x="590" y="50" width="240" height="165" rx="10" fill="#f0e6ff30" stroke="#533483" stroke-width="2"/>
+  <text x="710" y="75" text-anchor="middle" fill="#533483" font-size="13" font-weight="700">DualAttn（注意力）</text>
+  <rect x="615" y="90" width="190" height="25" rx="4" fill="#dfe6e9" stroke="#636e72" stroke-width="1" stroke-dasharray="4"/>
+  <text x="710" y="107" text-anchor="middle" fill="#bbb" font-size="10">（无仿射归一化）</text>
+  <rect x="615" y="120" width="190" height="25" rx="4" fill="#dfe6e9" stroke="#636e72" stroke-width="1" stroke-dasharray="4"/>
+  <text x="710" y="137" text-anchor="middle" fill="#bbb" font-size="10">（无瓶颈 MLP）</text>
+  <rect x="615" y="150" width="190" height="25" rx="4" fill="#a29bfe" stroke="#533483" stroke-width="1.5"/>
+  <text x="710" y="167" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">PAM + CAM 全局注意力</text>
+  <rect x="615" y="180" width="190" height="25" rx="4" fill="#dfe6e9" stroke="#636e72" stroke-width="1"/>
+  <text x="710" y="197" text-anchor="middle" fill="#636e72" font-size="10">全局残差</text>
+
+  <!-- 箭头和标注 -->
+  <line x1="270" y1="162" x2="310" y2="162" stroke="#e94560" stroke-width="2" marker-end="url(#d6)"/>
+  <text x="290" y="155" text-anchor="middle" fill="#e94560" font-size="8" font-weight="600">+空间</text>
+
+  <line x1="550" y1="162" x2="590" y2="162" stroke="#e94560" stroke-width="2" marker-end="url(#d6)"/>
+  <text x="570" y="155" text-anchor="middle" fill="#e94560" font-size="8" font-weight="600">换机制</text>
+
+  <!-- 底部总结 -->
+  <rect x="30" y="230" width="800" height="40" rx="6" fill="#fff3e0" stroke="#ff9800" stroke-width="1"/>
+  <text x="430" y="248" text-anchor="middle" fill="#e65100" font-size="11" font-weight="600">消融逻辑：FC（纯通道）→ MoNA（+局部多尺度空间）→ DualAttn（全局注意力替代局部卷积）</text>
+  <text x="430" y="263" text-anchor="middle" fill="#333" font-size="10">→ 系统评估：对于稠密预测迁移，局部空间 / 全局注意力 / 纯通道变换哪种最有效？</text>
+
+  <defs><marker id="d6" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#e94560"/></marker></defs>
+</svg>
+<p class="fig-cap">图 6：三种适配器结构差异与消融设计逻辑。共享残差结构，核心变换机制逐步替换。</p>
+</div>
+
+<table>
+<tr><th>属性</th><th>MoNA</th><th>FCAdapter</th><th>DualAttnAdapter</th></tr>
+<tr><td>核心机制</td><td>多尺度深度卷积 + 瓶颈 MLP</td><td>纯瓶颈 MLP</td><td>位置注意力 + 通道注意力</td></tr>
+<tr><td>空间建模</td><td>局部多尺度 (3/5/7)</td><td>无</td><td>全局自注意力</td></tr>
+<tr><td>通道建模</td><td>线性瓶颈</td><td>线性瓶颈</td><td>通道自注意力</td></tr>
+<tr><td>瓶颈维度</td><td>96 (768/8)</td><td>96 (768/8)</td><td>无瓶颈 (QK 降维仅限 PAM)</td></tr>
+<tr><td>零初始化策略</td><td>γ = 10⁻⁶</td><td>γ = 10⁻⁶</td><td>α=0, β=0</td></tr>
+<tr><td>消融角色</td><td>默认方案</td><td>通道基线</td><td>注意力方案</td></tr>
+</table>
+
+<p class="ref">adapters/__init__.py:21-32</p>
+
+<!-- ======================================================== -->
+<div class="sep"></div>
+<h2 id="s4">3.4 训练策略</h2>
+
+<!-- 图 7：DINOv3 两阶段训练对比 -->
+<div class="fig">
+<svg viewBox="0 0 860 320" xmlns="http://www.w3.org/2000/svg" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="12">
+  <rect x="0" y="0" width="860" height="320" fill="#fafbfe" rx="8"/>
+
+  <!-- Phase 1 -->
+  <rect x="20" y="15" width="400" height="290" rx="10" fill="#e8f4f830" stroke="#0984e3" stroke-width="1.5"/>
+  <text x="220" y="40" text-anchor="middle" fill="#0984e3" font-size="14" font-weight="700">Phase 1：掩码 + 适配器训练</text>
+
+  <rect x="40" y="55" width="170" height="26" rx="4" fill="#ffeaa7" stroke="#d63031" stroke-width="1"/>
+  <text x="125" y="73" text-anchor="middle" fill="#d63031" font-size="10">🔒 DINOv3 骨干</text>
+  <rect x="220" y="55" width="185" height="26" rx="4" fill="#ffeaa7" stroke="#d63031" stroke-width="1"/>
+  <text x="312" y="73" text-anchor="middle" fill="#d63031" font-size="10">🔒 深度分支 + SAM ViT-B</text>
+
+  <rect x="40" y="92" width="170" height="26" rx="4" fill="#55efc4" stroke="#00b894" stroke-width="1.5"/>
+  <text x="125" y="110" text-anchor="middle" fill="#00695c" font-size="10" font-weight="600">✏️ Adapter1 + Adapter2</text>
+  <rect x="220" y="92" width="90" height="26" rx="4" fill="#55efc4" stroke="#00b894" stroke-width="1.5"/>
+  <text x="265" y="110" text-anchor="middle" fill="#00695c" font-size="10" font-weight="600">✏️ Projection</text>
+  <rect x="320" y="92" width="85" height="26" rx="4" fill="#55efc4" stroke="#00b894" stroke-width="1.5"/>
+  <text x="362" y="110" text-anchor="middle" fill="#00695c" font-size="10" font-weight="600">✏️ PE+MD</text>
+
+  <rect x="40" y="135" width="365" height="45" rx="6" fill="#fff" stroke="#0984e3" stroke-width="1"/>
+  <text x="222" y="155" text-anchor="middle" fill="#0f3460" font-size="11" font-weight="600">损失函数</text>
+  <text x="222" y="172" text-anchor="middle" fill="#333" font-size="10" font-style="italic">L = L_dice(masks, GT) + MSE(IoU_pred, IoU_true)</text>
+
+  <!-- 对比标注 -->
+  <rect x="40" y="195" width="365" height="100" rx="6" fill="#fff3e0" stroke="#ff9800" stroke-width="1"/>
+  <text x="222" y="215" text-anchor="middle" fill="#e65100" font-size="11" font-weight="700">与 SAM 方案的关键差异</text>
+  <text x="50" y="235" fill="#333" font-size="10">1. SAM 方案：编码器完全冻结，无可训练编码部分</text>
+  <text x="50" y="253" fill="#333" font-size="10">2. DINOv3 方案：适配器 + 投影层可训练 ← 核心差异</text>
+  <text x="50" y="271" fill="#333" font-size="10">3. 掩码分支 (PE+MD) 在两种方案中均可训练</text>
+  <text x="50" y="289" fill="#333" font-size="10">4. 图像预处理：直接 resize vs 保持宽高比+填充</text>
+
+  <!-- 箭头 -->
+  <line x1="420" y1="160" x2="440" y2="160" stroke="#e94560" stroke-width="2" marker-end="url(#d7)"/>
+
+  <!-- Phase 2 -->
+  <rect x="440" y="15" width="400" height="290" rx="10" fill="#f0e6ff30" stroke="#533483" stroke-width="1.5"/>
+  <text x="640" y="40" text-anchor="middle" fill="#533483" font-size="14" font-weight="700">Phase 2：深度训练</text>
+
+  <rect x="460" y="55" width="365" height="26" rx="4" fill="#ffeaa7" stroke="#d63031" stroke-width="1"/>
+  <text x="642" y="73" text-anchor="middle" fill="#d63031" font-size="10">🔒 所有 Phase 1 参数（包括适配器和投影层）+ DINOv3 + SAM ViT-B</text>
+
+  <rect x="460" y="92" width="170" height="26" rx="4" fill="#55efc4" stroke="#00b894" stroke-width="1.5"/>
+  <text x="545" y="110" text-anchor="middle" fill="#00695c" font-size="10" font-weight="600">✏️ Outer PromptEncoder</text>
+  <rect x="640" y="92" width="175" height="26" rx="4" fill="#55efc4" stroke="#00b894" stroke-width="1.5"/>
+  <text x="727" y="110" text-anchor="middle" fill="#00695c" font-size="10" font-weight="600">✏️ DepthMaskDecoder</text>
+
+  <rect x="460" y="135" width="365" height="45" rx="6" fill="#fff" stroke="#533483" stroke-width="1"/>
+  <text x="642" y="155" text-anchor="middle" fill="#0f3460" font-size="11" font-weight="600">损失函数</text>
+  <text x="642" y="172" text-anchor="middle" fill="#333" font-size="10" font-style="italic">L = λ × MSE(depth_pred, depth_GT)</text>
+
+  <rect x="460" y="195" width="365" height="60" rx="6" fill="#e8f8f5" stroke="#2ecc71" stroke-width="1"/>
+  <text x="642" y="215" text-anchor="middle" fill="#00695c" font-size="11" font-weight="600">与 SAM 方案完全一致</text>
+  <text x="50" y="240" fill="#333" font-size="10"></text>
+  <text x="470" y="235" fill="#333" font-size="10">Phase 2 中适配器也被冻结，仅深度分支可训练</text>
+  <text x="470" y="250" fill="#333" font-size="10">掩码分支在 no_grad 下运行</text>
+
+  <defs><marker id="d7" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#e94560"/></marker></defs>
+</svg>
+<p class="fig-cap">图 7：DINOv3 方向两阶段训练策略。Phase 1 中适配器和投影层可训练是与 SAM 方案的核心区别。</p>
+</div>
+
+<p class="ref">trainer.py:357-478, depth_sam.py:114-118</p>
+
+<!-- ======================================================== -->
+<div class="sep"></div>
+<h2 id="s5">3.5 损失函数</h2>
+
+<div class="card">
+<p>掩码分支和深度分支分别使用独立的损失函数，与 SAM 编码器方案<strong>完全一致</strong>，不因编码器替换而改变：</p>
+
+<h4>Phase 1 掩码损失</h4>
+<p style="font-family:'Times New Roman',serif;font-size:14px;">
+<em>L</em><sub>mask</sub> = <em>L</em><sub>dice</sub>(M<sub>pred</sub>, M<sub>gt</sub>) + MSE(<em>q̂</em>, <em>q</em>)
+</p>
+<p>其中 Dice loss 在 sigmoid 激活后计算：<em>L</em><sub>dice</sub> = 1 − 2|pred∩gt| / (|pred|+|gt|+ε)。IoU loss 为预测 IoU 与真实 IoU 的均方误差。</p>
+
+<h4>Phase 2 深度损失</h4>
+<p style="font-family:'Times New Roman',serif;font-size:14px;">
+<em>L</em><sub>depth</sub> = λ × MSE(<em>d</em><sub>pred</sub>, <em>d</em><sub>gt</sub>)
+</p>
+<p>深度标签归一化为除以 100，λ 为深度损失权重（默认 1.0）。</p>
+</div>
+
+<!-- ======================================================== -->
+<div class="sep"></div>
+<h2 id="s6">3.6 评估方法</h2>
+
+<div class="card">
+<p>评估流程与 SAM 编码器方案保持一致，通过 <code>--encoder dinov3 --adapter_type {mona, fc, dual_attn}</code> 切换编码器和适配器配置。</p>
+
+<h4>分割指标</h4>
+<table>
+<tr><th>指标</th><th>说明</th></tr>
+<tr><td>Dice</td><td>掩码重叠度</td></tr>
+<tr><td>IoU</td><td>交并比</td></tr>
+<tr><td>IoU Prediction</td><td>模型预测 IoU 值</td></tr>
+<tr><td>IoU Pred MAE</td><td>IoU 自评估校准误差</td></tr>
+</table>
+
+<h4>深度指标</h4>
+<table>
+<tr><th>指标</th><th>说明</th></tr>
+<tr><td>MAE</td><td>平均绝对误差（原始尺度 ×100）</td></tr>
+<tr><td>MSE / RMSE</td><td>均方误差 / 均方根误差</td></tr>
+<tr><td>R²</td><td>决定系数</td></tr>
+<tr><td>Per-class MAE</td><td>按深度类别分类 MAE</td></tr>
+</table>
+
+<p>支持迭代推理和 Phase 1 / Phase 2 对比评估。</p>
+</div>
+
+<p class="ref">evaluate.py:264-366</p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DINOSAM — SAM 主干方向方法论</title>
+<style>
+:root{--c1:#0f3460;--c2:#e94560;--c3:#16213e;--c4:#533483;--bg:#f7f8fc;--card:#fff;--code-bg:#1e1e2e;--code-fg:#cdd6f4}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;line-height:1.8;color:#1a1a2e;background:var(--bg)}
+.wrap{max-width:1060px;margin:0 auto;padding:48px 28px 80px}
+h1{font-size:2em;color:var(--c1);border-bottom:4px solid var(--c2);padding-bottom:10px;margin-bottom:6px}
+.sub{color:#666;font-size:1.05em;margin-bottom:36px}
+h2{font-size:1.5em;color:var(--c3);margin:48px 0 14px;padding-left:12px;border-left:4px solid var(--c2)}
+h3{font-size:1.2em;color:var(--c1);margin:28px 0 10px}
+h4{font-size:1.05em;color:var(--c4);margin:18px 0 8px}
+p{margin-bottom:12px}
+ul,ol{margin:0 0 14px 24px}
+li{margin:4px 0}
+.card{background:var(--card);border-radius:8px;padding:22px 26px;margin:18px 0;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.card.red{border-left:4px solid var(--c2)}
+.card.blue{border-left:4px solid var(--c1)}
+.card.green{border-left:4px solid #2ecc71}
+.card.purple{border-left:4px solid var(--c4)}
+.ref{display:inline-block;background:#e8f4f8;color:var(--c1);padding:2px 8px;border-radius:4px;font-family:'Fira Code',Consolas,monospace;font-size:.86em}
+pre{background:var(--code-bg);color:var(--code-fg);padding:18px;border-radius:8px;overflow-x:auto;margin:10px 0 18px;font-family:'Fira Code',Consolas,monospace;font-size:.88em;line-height:1.6}
+code{background:#eef;color:#333;padding:2px 6px;border-radius:3px;font-family:'Fira Code',Consolas,monospace;font-size:.9em}
+table{width:100%;border-collapse:collapse;margin:14px 0}
+th{background:var(--c1);color:#fff;padding:9px 14px;text-align:left;font-weight:600}
+td{padding:9px 14px;border-bottom:1px solid #e0e0e0}
+tr:nth-child(even) td{background:#f8f9fa}
+.sep{height:1px;background:linear-gradient(to right,transparent,var(--c2),transparent);margin:48px 0}
+.fig{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:20px 12px 10px;margin:24px 0;text-align:center;overflow-x:auto}
+.fig svg{max-width:100%;height:auto}
+.fig-cap{color:#555;font-size:.92em;margin-top:8px;font-style:italic}
+.katex-like{font-family:'Times New Roman',serif;font-style:italic}
+.badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:.82em;font-weight:600}
+.badge-t{background:#dff9fb;color:#0984e3}
+.badge-f{background:#ffeaa7;color:#d63031}
+.toc{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:22px 30px;margin-bottom:36px}
+.toc h3{margin-top:0;color:var(--c1)}
+.toc ul{list-style:none;padding-left:0}
+.toc li{margin:5px 0}
+.toc li a{color:var(--c1);text-decoration:none;border-bottom:1px dashed #ccc}
+.toc li a:hover{color:var(--c2);border-bottom-color:var(--c2)}
+.toc ul ul{padding-left:22px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>DINOSAM — SAM 主干方向方法论</h1>
+<p class="sub">DepthSam：基于 SAM ViT-B 的深度感知分割框架</p>
+
+<div class="toc">
+<h3>目录</h3>
+<ul>
+<li><a href="#s0">概述</a></li>
+<li><a href="#s1">3.1 图像编码器</a></li>
+<li><a href="#s2">3.2 掩码分支</a></li>
+<li><a href="#s3">3.3 深度分支</a></li>
+<li><a href="#s4">3.4 迭代提示精炼</a></li>
+<li><a href="#s5">3.5 训练策略</a></li>
+<li><a href="#s6">3.6 数据集与点提示生成</a></li>
+<li><a href="#s7">3.7 评估方法</a></li>
+</ul>
+</div>
+
+<!-- ======================================================== -->
+<h2 id="s0">概述</h2>
+
+<div class="card red">
+<p>DepthSam 在不修改或微调 SAM 图像编码器的前提下，将 SAM 扩展为同时预测实例级深度的联合框架。核心思路是在 SAM 的分割流水线上增加一个<strong>外部深度分支</strong>，该分支接收分割掩码作为中间表征，回归每个实例的标量深度值。</p>
+<p>架构包含三个组件：冻结的 SAM 图像编码器（3.1）、交互式分割的掩码分支（3.2）、以及基于掩码条件的深度回归分支（3.3）。迭代提示精炼机制（3.4）通过误差引导采点提升两个分支。模型采用两阶段训练（3.5）：第一阶段训练掩码分支，第二阶段冻结掩码分支并训练由 SAM 权重初始化的深度分支。</p>
+</div>
+
+<!-- 图 1：DepthSam 整体架构 -->
+<div class="fig">
+<svg viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="13">
+  <!-- 背景 -->
+  <rect x="0" y="0" width="900" height="520" fill="#fafbfe" rx="10"/>
+
+  <!-- 输入图像 -->
+  <rect x="30" y="220" width="110" height="50" rx="8" fill="#e8f4f8" stroke="#0f3460" stroke-width="1.5"/>
+  <text x="85" y="250" text-anchor="middle" fill="#0f3460" font-weight="600">输入图像</text>
+
+  <!-- 箭头 -->
+  <line x1="140" y1="245" x2="175" y2="245" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- 图像编码器 -->
+  <rect x="175" y="205" width="150" height="80" rx="8" fill="#ffeaa7" stroke="#d63031" stroke-width="1.5"/>
+  <text x="250" y="237" text-anchor="middle" fill="#d63031" font-weight="700" font-size="14">SAM ViT-B/16</text>
+  <text x="250" y="257" text-anchor="middle" fill="#d63031" font-size="11">图像编码器（冻结）</text>
+  <text x="250" y="275" text-anchor="middle" fill="#888" font-size="10">🔒 全程冻结</text>
+
+  <!-- 输出特征 -->
+  <line x1="325" y1="245" x2="395" y2="245" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="360" y="235" text-anchor="middle" fill="#666" font-size="10">(B,256,64,64)</text>
+
+  <!-- 分支点 -->
+  <circle cx="395" cy="245" r="5" fill="#333"/>
+  <line x1="395" y1="245" x2="395" y2="120" stroke="#333" stroke-width="1.5"/>
+  <line x1="395" y1="245" x2="395" y2="380" stroke="#333" stroke-width="1.5"/>
+  <line x1="395" y1="120" x2="440" y2="120" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="395" y1="380" x2="440" y2="380" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- 标签 -->
+  <text x="415" y="100" text-anchor="middle" fill="#0f3460" font-size="11" font-weight="600">掩码分支</text>
+  <text x="415" y="400" text-anchor="middle" fill="#533483" font-size="11" font-weight="600">深度分支</text>
+
+  <!-- ===== 掩码分支 ===== -->
+  <!-- Inner PromptEncoder -->
+  <rect x="440" y="50" width="135" height="55" rx="6" fill="#dff9fb" stroke="#0984e3" stroke-width="1.2"/>
+  <text x="507" y="73" text-anchor="middle" fill="#0984e3" font-size="12" font-weight="600">Inner PromptEncoder</text>
+  <text x="507" y="90" text-anchor="middle" fill="#666" font-size="10">点提示 → 嵌入</text>
+
+  <!-- 点提示输入 -->
+  <rect x="440" y="5" width="135" height="30" rx="6" fill="#fff" stroke="#0984e3" stroke-width="1" stroke-dasharray="4"/>
+  <text x="507" y="25" text-anchor="middle" fill="#0984e3" font-size="11">点提示 (x, y, label)</text>
+  <line x1="507" y1="35" x2="507" y2="50" stroke="#0984e3" stroke-width="1" marker-end="url(#arr-b)"/>
+
+  <line x1="575" y1="77" x2="615" y2="77" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- MaskDecoder -->
+  <rect x="615" y="50" width="120" height="55" rx="6" fill="#dff9fb" stroke="#0984e3" stroke-width="1.2"/>
+  <text x="675" y="73" text-anchor="middle" fill="#0984e3" font-size="12" font-weight="600">Mask Decoder</text>
+  <text x="675" y="90" text-anchor="middle" fill="#666" font-size="10">TwoWayTransformer</text>
+
+  <!-- 掩码输出 -->
+  <line x1="735" y1="65" x2="800" y2="45" stroke="#333" stroke-width="1.2" marker-end="url(#arr)"/>
+  <rect x="800" y="25" width="85" height="30" rx="6" fill="#55efc4" stroke="#00b894" stroke-width="1.2"/>
+  <text x="842" y="45" text-anchor="middle" fill="#00695c" font-size="11" font-weight="600">分割掩码</text>
+
+  <line x1="735" y1="85" x2="800" y2="100" stroke="#333" stroke-width="1.2" marker-end="url(#arr)"/>
+  <rect x="800" y="85" width="85" height="30" rx="6" fill="#81ecec" stroke="#00cec9" stroke-width="1.2"/>
+  <text x="842" y="105" text-anchor="middle" fill="#006266" font-size="11" font-weight="600">IoU 预测</text>
+
+  <!-- low_res_masks 连线到深度分支 -->
+  <line x1="675" y1="105" x2="675" y2="150" stroke="#e94560" stroke-width="1.5" stroke-dasharray="6,3"/>
+  <text x="695" y="143" fill="#e94560" font-size="10" font-weight="600">low_res_masks</text>
+  <text x="695" y="157" fill="#e94560" font-size="9">(detach)</text>
+  <line x1="675" y1="160" x2="675" y2="340" stroke="#e94560" stroke-width="1.5" stroke-dasharray="6,3"/>
+  <line x1="675" y1="340" x2="575" y2="340" stroke="#e94560" stroke-width="1.5" stroke-dasharray="6,3"/>
+  <line x1="575" y1="340" x2="575" y2="370" stroke="#e94560" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr-r)"/>
+
+  <!-- ===== 深度分支 ===== -->
+  <!-- Outer PromptEncoder -->
+  <rect x="440" y="355" width="135" height="55" rx="6" fill="#f0e6ff" stroke="#533483" stroke-width="1.2"/>
+  <text x="507" y="378" text-anchor="middle" fill="#533483" font-size="12" font-weight="600">Outer PromptEncoder</text>
+  <text x="507" y="395" text-anchor="middle" fill="#666" font-size="10">掩码 → 密集嵌入</text>
+
+  <line x1="575" y1="382" x2="615" y2="382" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- DepthMaskDecoder -->
+  <rect x="615" y="340" width="140" height="85" rx="6" fill="#f0e6ff" stroke="#533483" stroke-width="1.2"/>
+  <text x="685" y="365" text-anchor="middle" fill="#533483" font-size="12" font-weight="700">DepthMaskDecoder</text>
+  <text x="685" y="383" text-anchor="middle" fill="#666" font-size="10">depth_token + MLP</text>
+  <text x="685" y="398" text-anchor="middle" fill="#666" font-size="10">TwoWayTransformer</text>
+  <text x="685" y="413" text-anchor="middle" fill="#666" font-size="10">depth_head: 256→256→1</text>
+
+  <!-- 深度输出 -->
+  <line x1="755" y1="365" x2="800" y2="355" stroke="#333" stroke-width="1.2" marker-end="url(#arr)"/>
+  <rect x="800" y="340" width="85" height="30" rx="6" fill="#ffeaa7" stroke="#fdcb6e" stroke-width="1.2"/>
+  <text x="842" y="360" text-anchor="middle" fill="#6c5100" font-size="11" font-weight="600">深度标量</text>
+
+  <line x1="755" y1="400" x2="800" y2="410" stroke="#333" stroke-width="1.2" marker-end="url(#arr)"/>
+  <rect x="800" y="395" width="85" height="30" rx="6" fill="#fab1a0" stroke="#e17055" stroke-width="1.2"/>
+  <text x="842" y="415" text-anchor="middle" fill="#6b2d00" font-size="11" font-weight="600">辅助掩码</text>
+
+  <!-- 图例 -->
+  <rect x="30" y="460" width="840" height="45" rx="6" fill="#fff" stroke="#ddd" stroke-width="1"/>
+  <rect x="50" y="473" width="14" height="14" rx="2" fill="#ffeaa7" stroke="#d63031" stroke-width="1"/>
+  <text x="70" y="485" fill="#333" font-size="11">冻结组件</text>
+  <rect x="160" y="473" width="14" height="14" rx="2" fill="#dff9fb" stroke="#0984e3" stroke-width="1"/>
+  <text x="180" y="485" fill="#333" font-size="11">掩码分支（Phase 1 可训练）</text>
+  <rect x="370" y="473" width="14" height="14" rx="2" fill="#f0e6ff" stroke="#533483" stroke-width="1"/>
+  <text x="390" y="485" fill="#333" font-size="11">深度分支（Phase 2 可训练）</text>
+  <line x1="590" y1="480" x2="630" y2="480" stroke="#e94560" stroke-width="1.5" stroke-dasharray="6,3"/>
+  <text x="640" y="485" fill="#333" font-size="11">梯度截断 (detach)</text>
+
+  <!-- 箭头定义 -->
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#333"/></marker>
+    <marker id="arr-b" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#0984e3"/></marker>
+    <marker id="arr-r" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#e94560"/></marker>
+  </defs>
+</svg>
+<p class="fig-cap">图 1：DepthSam 整体架构。掩码分支的低分辨率输出经梯度截断后传入深度分支作为条件输入。</p>
+</div>
+
+<!-- ======================================================== -->
+<div class="sep"></div>
+<h2 id="s1">3.1 图像编码器</h2>
+
+<div class="card blue">
+<p>SAM 的图像编码器为在 SA-1B 数据集上预训练的 Vision Transformer Base（ViT-B/16）。在两个训练阶段中均<strong>完全冻结</strong>，作为固定特征提取器。</p>
+
+<h4>预处理流程</h4>
+<ol>
+<li>将图像最长边缩放至 1024 像素，保持宽高比</li>
+<li>使用 SAM 预训练的 pixel_mean 和 pixel_std 归一化</li>
+<li>零填充至 1024 × 1024</li>
+</ol>
+<p>编码器输出密集特征图，形状为 <code>(B, 256, 64, 64)</code>，该特征图由掩码分支和深度分支共享。</p>
+</div>
+
+<!-- 图 2：图像预处理流程 -->
+<div class="fig">
+<svg viewBox="0 0 820 140" xmlns="http://www.w3.org/2000/svg" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="12">
+  <rect x="0" y="0" width="820" height="140" fill="#fafbfe" rx="8"/>
+
+  <rect x="20" y="40" width="100" height="60" rx="6" fill="#fab1a0" stroke="#e17055" stroke-width="1.2"/>
+  <text x="70" y="66" text-anchor="middle" fill="#6b2d00" font-size="11">原始图像</text>
+  <text x="70" y="82" text-anchor="middle" fill="#888" font-size="10">(H×W×3)</text>
+
+  <line x1="120" y1="70" x2="155" y2="70" stroke="#333" stroke-width="1.2" marker-end="url(#a2)"/>
+
+  <rect x="155" y="35" width="120" height="70" rx="6" fill="#dfe6e9" stroke="#636e72" stroke-width="1"/>
+  <text x="215" y="60" text-anchor="middle" fill="#2d3436" font-size="11" font-weight="600">最长边缩放</text>
+  <text x="215" y="78" text-anchor="middle" fill="#636e72" font-size="10">→ 1024px</text>
+  <text x="215" y="93" text-anchor="middle" fill="#636e72" font-size="9">保持宽高比</text>
+
+  <line x1="275" y1="70" x2="310" y2="70" stroke="#333" stroke-width="1.2" marker-end="url(#a2)"/>
+
+  <rect x="310" y="35" width="120" height="70" rx="6" fill="#dfe6e9" stroke="#636e72" stroke-width="1"/>
+  <text x="370" y="60" text-anchor="middle" fill="#2d3436" font-size="11" font-weight="600">SAM 归一化</text>
+  <text x="370" y="78" text-anchor="middle" fill="#636e72" font-size="10">pixel_mean/std</text>
+
+  <line x1="430" y1="70" x2="465" y2="70" stroke="#333" stroke-width="1.2" marker-end="url(#a2)"/>
+
+  <rect x="465" y="35" width="100" height="70" rx="6" fill="#dfe6e9" stroke="#636e72" stroke-width="1"/>
+  <text x="515" y="60" text-anchor="middle" fill="#2d3436" font-size="11" font-weight="600">零填充</text>
+  <text x="515" y="78" text-anchor="middle" fill="#636e72" font-size="10">→ 1024²</text>
+
+  <line x1="565" y1="70" x2="600" y2="70" stroke="#333" stroke-width="1.2" marker-end="url(#a2)"/>
+
+  <rect x="600" y="35" width="105" height="70" rx="6" fill="#ffeaa7" stroke="#d63031" stroke-width="1.2"/>
+  <text x="652" y="58" text-anchor="middle" fill="#d63031" font-size="11" font-weight="600">ViT-B/16</text>
+  <text x="652" y="75" text-anchor="middle" fill="#d63031" font-size="10">🔒 冻结</text>
+
+  <line x1="705" y1="70" x2="740" y2="70" stroke="#333" stroke-width="1.2" marker-end="url(#a2)"/>
+
+  <rect x="740" y="40" width="65" height="60" rx="6" fill="#55efc4" stroke="#00b894" stroke-width="1.2"/>
+  <text x="772" y="64" text-anchor="middle" fill="#00695c" font-size="10" font-weight="600">(B,256,</text>
+  <text x="772" y="80" text-anchor="middle" fill="#00695c" font-size="10" font-weight="600">64,64)</text>
+
+  <defs><marker id="a2" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#333"/></marker></defs>
+</svg>
+<p class="fig-cap">图 2：SAM 编码器的图像预处理与特征提取流程。</p>
+</div>
+
+<div class="card">
+<h4>冻结编码器的设计考量</h4>
+<p><strong>保留先验</strong>：SA-1B 大规模分割预训练获得的空间先验难以从小规模深度数据集中恢复。<br/>
+<strong>消融隔离</strong>：冻结编码器使解码侧的修改可以被独立评估，不受编码器级效应的干扰。</p>
+</div>
+
+<p class="ref">depth_sam.py:134-146</p>
+
+<!-- ======================================================== -->
+<div class="sep"></div>
+<h2 id="s2">3.2 掩码分支</h2>
+
+<div class="card blue">
+<h4>设计动机</h4>
+<p>保留 SAM 的点提示→掩码交互接口，使深度分支可以利用分割掩码作为<strong>结构化空间先验</strong>，将病态的单目深度问题转化为逐实例的掩码条件回归。</p>
+
+<h4>结构</h4>
+<p>掩码分支由 SAM 的内部提示编码器和掩码解码器组成。提示编码器将点提示映射为稀疏嵌入和密集嵌入。掩码解码器基于双向 Transformer（TwoWayTransformer），在提示嵌入与图像特征之间进行交叉注意力，生成单个分割掩码（<code>multimask_output=False</code>）。</p>
+
+<h4>输出</h4>
+<ul>
+<li>低分辨率掩码：<code>(B, 1, 256, 256)</code> — 传递给深度分支</li>
+<li>IoU 预测分数：<code>(B, 1)</code> — 掩码质量自评估</li>
+<li>全分辨率掩码：<code>(B, 1, H, W)</code> — 用于损失计算和评估</li>
+</ul>
+
+<h4>在流水线中的角色</h4>
+<p>低分辨率掩码经梯度截断后作为深度分支的输入。在第一阶段训练中，掩码分支是唯一的可训练组件。</p>
+</div>
+
+<p class="ref">depth_sam.py:162-239</p>
+
+<!-- ======================================================== -->
+<div class="sep"></div>
+<h2 id="s3">3.3 深度分支</h2>
+
+<div class="card purple">
+<h4>设计动机</h4>
+<p>单目深度估计本质上是欠定问题。通过将深度预测<strong>条件化于分割掩码</strong>，将问题从密集逐像素回归简化为逐实例的标量预测——掩码界定目标的空间范围，允许解码器将容量集中于该区域内的深度判别特征。这一形式化还将分割误差与深度误差解耦：掩码分支可以在深度分支引入前独立训练和评估。</p>
+</div>
+
+<h3>DepthMaskDecoder 结构</h3>
+
+<p>DepthMaskDecoder 镜像 SAM MaskDecoder 的结构，但替换了预测头。与 SAM 的三处关键修改如下：</p>
+
+<!-- 图 3：DepthMaskDecoder vs SAM MaskDecoder -->
+<div class="fig">
+<svg viewBox="0 0 880 380" xmlns="http://www.w3.org/2000/svg" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="12">
+  <rect x="0" y="0" width="880" height="380" fill="#fafbfe" rx="8"/>
+
+  <!-- 标题 -->
+  <text x="220" y="30" text-anchor="middle" fill="#0984e3" font-size="14" font-weight="700">SAM MaskDecoder</text>
+  <text x="660" y="30" text-anchor="middle" fill="#533483" font-size="14" font-weight="700">DepthMaskDecoder</text>
+  <line x1="440" y1="10" x2="440" y2="370" stroke="#ccc" stroke-width="1" stroke-dasharray="4"/>
+
+  <!-- SAM 侧 -->
+  <!-- IoU Token -->
+  <rect x="40" y="55" width="130" height="35" rx="5" fill="#dff9fb" stroke="#0984e3" stroke-width="1.2"/>
+  <text x="105" y="78" text-anchor="middle" fill="#0984e3" font-size="11" font-weight="600">iou_token (1×256)</text>
+  <!-- 4 Mask Tokens -->
+  <rect x="190" y="55" width="160" height="35" rx="5" fill="#dff9fb" stroke="#0984e3" stroke-width="1.2"/>
+  <text x="270" y="78" text-anchor="middle" fill="#0984e3" font-size="11" font-weight="600">mask_tokens (4×256)</text>
+
+  <line x1="220" y1="90" x2="220" y2="115" stroke="#333" stroke-width="1.2" marker-end="url(#a3)"/>
+
+  <!-- TwoWayTransformer -->
+  <rect x="100" y="115" width="240" height="45" rx="6" fill="#74b9ff" stroke="#0984e3" stroke-width="1.2"/>
+  <text x="220" y="143" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">TwoWayTransformer (d=2, h=8)</text>
+
+  <line x1="150" y1="160" x2="150" y2="190" stroke="#333" stroke-width="1.2" marker-end="url(#a3)"/>
+  <line x1="300" y1="160" x2="300" y2="190" stroke="#333" stroke-width="1.2" marker-end="url(#a3)"/>
+
+  <!-- IoU Head -->
+  <rect x="70" y="190" width="160" height="35" rx="5" fill="#81ecec" stroke="#00cec9" stroke-width="1.2"/>
+  <text x="150" y="213" text-anchor="middle" fill="#006266" font-size="11" font-weight="600">IoU Prediction Head</text>
+  <!-- Upscaling + 4 HyperMLPs -->
+  <rect x="240" y="190" width="180" height="35" rx="5" fill="#dff9fb" stroke="#0984e3" stroke-width="1.2"/>
+  <text x="330" y="213" text-anchor="middle" fill="#0984e3" font-size="11" font-weight="600">Upscaling + 4×HyperMLP</text>
+
+  <line x1="150" y1="225" x2="150" y2="260" stroke="#333" stroke-width="1.2" marker-end="url(#a3)"/>
+  <line x1="330" y1="225" x2="330" y2="260" stroke="#333" stroke-width="1.2" marker-end="url(#a3)"/>
+
+  <!-- 输出 -->
+  <rect x="90" y="260" width="120" height="30" rx="5" fill="#81ecec" stroke="#00cec9" stroke-width="1.2"/>
+  <text x="150" y="280" text-anchor="middle" fill="#006266" font-size="11">IoU Score (B,1)</text>
+  <rect x="260" y="260" width="160" height="30" rx="5" fill="#55efc4" stroke="#00b894" stroke-width="1.2"/>
+  <text x="340" y="280" text-anchor="middle" fill="#00695c" font-size="11">4 Masks (B,4,H,W)</text>
+
+  <!-- DepthMaskDecoder 侧 -->
+  <!-- Depth Token -->
+  <rect x="480" y="55" width="150" height="35" rx="5" fill="#f0e6ff" stroke="#533483" stroke-width="1.2"/>
+  <text x="555" y="78" text-anchor="middle" fill="#533483" font-size="11" font-weight="600">depth_token (1×256)</text>
+  <!-- 1 Mask Token -->
+  <rect x="650" y="55" width="150" height="35" rx="5" fill="#f0e6ff" stroke="#533483" stroke-width="1.2"/>
+  <text x="725" y="78" text-anchor="middle" fill="#533483" font-size="11" font-weight="600">mask_tokens (1×256)</text>
+
+  <line x1="660" y1="90" x2="660" y2="115" stroke="#333" stroke-width="1.2" marker-end="url(#a3)"/>
+
+  <!-- TwoWayTransformer (same) -->
+  <rect x="540" y="115" width="240" height="45" rx="6" fill="#a29bfe" stroke="#533483" stroke-width="1.2"/>
+  <text x="660" y="143" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">TwoWayTransformer (d=2, h=8)</text>
+
+  <line x1="590" y1="160" x2="590" y2="190" stroke="#333" stroke-width="1.2" marker-end="url(#a3)"/>
+  <line x1="740" y1="160" x2="740" y2="190" stroke="#333" stroke-width="1.2" marker-end="url(#a3)"/>
+
+  <!-- Depth Head -->
+  <rect x="510" y="190" width="160" height="35" rx="5" fill="#ffeaa7" stroke="#fdcb6e" stroke-width="1.2"/>
+  <text x="590" y="213" text-anchor="middle" fill="#6c5100" font-size="11" font-weight="600">Depth Head (MLP 3层)</text>
+  <!-- Upscaling + 1 HyperMLP -->
+  <rect x="680" y="190" width="170" height="35" rx="5" fill="#f0e6ff" stroke="#533483" stroke-width="1.2"/>
+  <text x="765" y="213" text-anchor="middle" fill="#533483" font-size="11" font-weight="600">Upscaling + 1×HyperMLP</text>
+
+  <line x1="590" y1="225" x2="590" y2="260" stroke="#333" stroke-width="1.2" marker-end="url(#a3)"/>
+  <line x1="765" y1="225" x2="765" y2="260" stroke="#333" stroke-width="1.2" marker-end="url(#a3)"/>
+
+  <!-- 输出 -->
+  <rect x="520" y="260" width="140" height="30" rx="5" fill="#ffeaa7" stroke="#fdcb6e" stroke-width="1.2"/>
+  <text x="590" y="280" text-anchor="middle" fill="#6c5100" font-size="11">Depth Scalar (B,)</text>
+  <rect x="695" y="260" width="145" height="30" rx="5" fill="#fab1a0" stroke="#e17055" stroke-width="1.2"/>
+  <text x="767" y="280" text-anchor="middle" fill="#6b2d00" font-size="11">1 Mask (B,1,H,W)</text>
+
+  <!-- 修改标注 -->
+  <rect x="470" y="310" width="390" height="55" rx="6" fill="#fff3e0" stroke="#ff9800" stroke-width="1"/>
+  <text x="480" y="330" fill="#e65100" font-size="11" font-weight="600">三处关键修改：</text>
+  <text x="480" y="347" fill="#333" font-size="10">❶ iou_token → depth_token + depth_prediction_head (MLP: 256→256→1)</text>
+  <text x="480" y="360" fill="#333" font-size="10">❷ 4 mask_tokens → 1 mask_token + 1 HyperMLP  ❸ IoU head → Depth head</text>
+
+  <defs><marker id="a3" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#333"/></marker></defs>
+</svg>
+<p class="fig-cap">图 3：SAM MaskDecoder 与 DepthMaskDecoder 的结构对比。红色标注的 depth_prediction_head 是唯一随机初始化的组件。</p>
+</div>
+
+<h3>权重初始化策略</h3>
+
+<!-- 图 4：权重初始化映射 -->
+<div class="fig">
+<svg viewBox="0 0 800 310" xmlns="http://www.w3.org/2000/svg" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="12">
+  <rect x="0" y="0" width="800" height="310" fill="#fafbfe" rx="8"/>
+
+  <text x="165" y="28" text-anchor="middle" fill="#0984e3" font-size="13" font-weight="700">SAM 内部组件（源）</text>
+  <text x="635" y="28" text-anchor="middle" fill="#533483" font-size="13" font-weight="700">DepthSam 深度分支（目标）</text>
+
+  <!-- 连线 -->
+  <!-- prompt_encoder → outer_prompt_encoder -->
+  <rect x="30" y="48" width="270" height="30" rx="4" fill="#dff9fb" stroke="#0984e3" stroke-width="1"/>
+  <text x="165" y="68" text-anchor="middle" fill="#0984e3" font-size="11">SAM prompt_encoder</text>
+  <rect x="500" y="48" width="270" height="30" rx="4" fill="#f0e6ff" stroke="#533483" stroke-width="1"/>
+  <text x="635" y="68" text-anchor="middle" fill="#533483" font-size="11">outer_prompt_encoder</text>
+  <line x1="300" y1="63" x2="500" y2="63" stroke="#2ecc71" stroke-width="2" marker-end="url(#a4g)"/>
+  <text x="400" y="56" text-anchor="middle" fill="#2ecc71" font-size="9" font-weight="600">完全复制</text>
+
+  <!-- transformer -->
+  <rect x="30" y="88" width="270" height="30" rx="4" fill="#dff9fb" stroke="#0984e3" stroke-width="1"/>
+  <text x="165" y="108" text-anchor="middle" fill="#0984e3" font-size="11">mask_decoder.transformer</text>
+  <rect x="500" y="88" width="270" height="30" rx="4" fill="#f0e6ff" stroke="#533483" stroke-width="1"/>
+  <text x="635" y="108" text-anchor="middle" fill="#533483" font-size="11">depth_decoder.transformer</text>
+  <line x1="300" y1="103" x2="500" y2="103" stroke="#2ecc71" stroke-width="2" marker-end="url(#a4g)"/>
+  <text x="400" y="96" text-anchor="middle" fill="#2ecc71" font-size="9" font-weight="600">完全复制</text>
+
+  <!-- iou_token → depth_token -->
+  <rect x="30" y="128" width="270" height="30" rx="4" fill="#dff9fb" stroke="#0984e3" stroke-width="1"/>
+  <text x="165" y="148" text-anchor="middle" fill="#0984e3" font-size="11">iou_token (1×256)</text>
+  <rect x="500" y="128" width="270" height="30" rx="4" fill="#f0e6ff" stroke="#533483" stroke-width="1"/>
+  <text x="635" y="148" text-anchor="middle" fill="#533483" font-size="11">depth_token (1×256)</text>
+  <line x1="300" y1="143" x2="500" y2="143" stroke="#0984e3" stroke-width="2" marker-end="url(#a4b)"/>
+  <text x="400" y="136" text-anchor="middle" fill="#0984e3" font-size="9" font-weight="600">相同形状</text>
+
+  <!-- mask_tokens[0] -->
+  <rect x="30" y="168" width="270" height="30" rx="4" fill="#dff9fb" stroke="#0984e3" stroke-width="1"/>
+  <text x="165" y="188" text-anchor="middle" fill="#0984e3" font-size="11">mask_tokens[0] (取第1个/共4个)</text>
+  <rect x="500" y="168" width="270" height="30" rx="4" fill="#f0e6ff" stroke="#533483" stroke-width="1"/>
+  <text x="635" y="188" text-anchor="middle" fill="#533483" font-size="11">mask_tokens (1×256)</text>
+  <line x1="300" y1="183" x2="500" y2="183" stroke="#0984e3" stroke-width="2" marker-end="url(#a4b)"/>
+  <text x="400" y="176" text-anchor="middle" fill="#0984e3" font-size="9" font-weight="600">取第 1 个</text>
+
+  <!-- upscaling + hyper -->
+  <rect x="30" y="208" width="270" height="30" rx="4" fill="#dff9fb" stroke="#0984e3" stroke-width="1"/>
+  <text x="165" y="228" text-anchor="middle" fill="#0984e3" font-size="11">output_upscaling + hyper_mlps[0]</text>
+  <rect x="500" y="208" width="270" height="30" rx="4" fill="#f0e6ff" stroke="#533483" stroke-width="1"/>
+  <text x="635" y="228" text-anchor="middle" fill="#533483" font-size="11">output_upscaling + hyper_mlps[0]</text>
+  <line x1="300" y1="223" x2="500" y2="223" stroke="#2ecc71" stroke-width="2" marker-end="url(#a4g)"/>
+  <text x="400" y="216" text-anchor="middle" fill="#2ecc71" font-size="9" font-weight="600">完全复制</text>
+
+  <!-- depth_prediction_head -->
+  <rect x="500" y="248" width="270" height="30" rx="4" fill="#fff3e0" stroke="#ff9800" stroke-width="1.5"/>
+  <text x="635" y="268" text-anchor="middle" fill="#e65100" font-size="11" font-weight="600">depth_prediction_head (MLP 256→256→1)</text>
+  <text x="400" y="262" text-anchor="middle" fill="#e65100" font-size="10" font-weight="600">⟵ 随机初始化（无 SAM 对应结构）</text>
+
+  <!-- 总结 -->
+  <rect x="100" y="286" width="600" height="20" rx="4" fill="#e8f8f5" stroke="#2ecc71" stroke-width="1"/>
+  <text x="400" y="301" text-anchor="middle" fill="#00695c" font-size="10">目的：使深度分支初始即理解如何注意 SAM 图像特征和提示嵌入，仅需 depth_head 学习新映射</text>
+
+  <defs>
+    <marker id="a4g" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#2ecc71"/></marker>
+    <marker id="a4b" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#0984e3"/></marker>
+  </defs>
+</svg>
+<p class="fig-cap">图 4：从 SAM 到 DepthSam 深度分支的结构化权重初始化映射。</p>
+</div>
+
+<p class="ref">depth_sam.py:61-112, depth_decoder.py:10-92</p>
+
+<!-- ======================================================== -->
+<div class="sep"></div>
+<h2 id="s4">3.4 迭代提示精炼</h2>
+
+<div class="card green">
+<h4>设计动机</h4>
+<p>单组点提示可能不足以捕获目标物体，尤其当初始提示落在物体边界或模糊区域附近时。迭代精炼通过从当前预测的误差区域中采样新提示来逐步修正分割错误。</p>
+</div>
+
+<!-- 图 5：迭代提示精炼流程 -->
+<div class="fig">
+<svg viewBox="0 0 860 420" xmlns="http://www.w3.org/2000/svg" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="12">
+  <rect x="0" y="0" width="860" height="420" fill="#fafbfe" rx="8"/>
+
+  <!-- 迭代循环标题 -->
+  <text x="430" y="25" text-anchor="middle" fill="#0f3460" font-size="14" font-weight="700">迭代提示精炼流程（每个训练步内 n_sub_iterations 轮）</text>
+
+  <!-- 第 1 轮 -->
+  <rect x="20" y="45" width="820" height="105" rx="8" fill="#e8f4f8" stroke="#0984e3" stroke-width="1" opacity="0.3"/>
+  <text x="35" y="65" fill="#0984e3" font-size="12" font-weight="700">迭代轮 t=0</text>
+
+  <rect x="40" y="80" width="110" height="40" rx="5" fill="#fff" stroke="#0984e3" stroke-width="1"/>
+  <text x="95" y="105" text-anchor="middle" fill="#0984e3" font-size="10">初始点提示 P₀</text>
+
+  <line x1="150" y1="100" x2="180" y2="100" stroke="#333" stroke-width="1.2" marker-end="url(#a5)"/>
+
+  <rect x="180" y="75" width="140" height="50" rx="5" fill="#dff9fb" stroke="#0984e3" stroke-width="1.2"/>
+  <text x="250" y="100" text-anchor="middle" fill="#0984e3" font-size="11" font-weight="600">forward_mask(P₀)</text>
+  <text x="250" y="116" text-anchor="middle" fill="#666" font-size="9">→ masks₀, low_res₀</text>
+
+  <line x1="320" y1="100" x2="350" y2="100" stroke="#333" stroke-width="1.2" marker-end="url(#a5)"/>
+
+  <rect x="350" y="75" width="170" height="50" rx="5" fill="#fff3e0" stroke="#ff9800" stroke-width="1"/>
+  <text x="435" y="96" text-anchor="middle" fill="#e65100" font-size="11" font-weight="600">误差分析</text>
+  <text x="435" y="114" text-anchor="middle" fill="#666" font-size="9">masks₀ vs GT → FN/FP 区域</text>
+
+  <line x1="520" y1="100" x2="550" y2="100" stroke="#333" stroke-width="1.2" marker-end="url(#a5)"/>
+
+  <rect x="550" y="75" width="140" height="50" rx="5" fill="#55efc4" stroke="#00b894" stroke-width="1"/>
+  <text x="620" y="96" text-anchor="middle" fill="#00695c" font-size="11" font-weight="600">采样修正点</text>
+  <text x="620" y="114" text-anchor="middle" fill="#666" font-size="9">+1 正点 (FN) +1 负点 (FP)</text>
+
+  <line x1="690" y1="100" x2="720" y2="100" stroke="#333" stroke-width="1.2" marker-end="url(#a5)"/>
+
+  <rect x="720" y="80" width="110" height="40" rx="5" fill="#fff" stroke="#0984e3" stroke-width="1"/>
+  <text x="775" y="105" text-anchor="middle" fill="#0984e3" font-size="10">P₁ = P₀ + Δ₀</text>
+
+  <!-- 第 2 轮 -->
+  <rect x="20" y="165" width="820" height="105" rx="8" fill="#f0e6ff" stroke="#533483" stroke-width="1" opacity="0.2"/>
+  <text x="35" y="185" fill="#533483" font-size="12" font-weight="700">迭代轮 t=1</text>
+
+  <rect x="40" y="200" width="110" height="40" rx="5" fill="#fff" stroke="#533483" stroke-width="1"/>
+  <text x="95" y="225" text-anchor="middle" fill="#533483" font-size="10">P₁（增长的提示）</text>
+
+  <line x1="150" y1="220" x2="180" y2="220" stroke="#333" stroke-width="1.2" marker-end="url(#a5)"/>
+
+  <rect x="180" y="195" width="140" height="50" rx="5" fill="#dff9fb" stroke="#0984e3" stroke-width="1.2"/>
+  <text x="250" y="218" text-anchor="middle" fill="#0984e3" font-size="11" font-weight="600">forward_mask(P₁)</text>
+  <text x="250" y="234" text-anchor="middle" fill="#666" font-size="9">可选 +mask_input₀</text>
+
+  <line x1="320" y1="220" x2="350" y2="220" stroke="#333" stroke-width="1.2" marker-end="url(#a5)"/>
+
+  <rect x="350" y="195" width="170" height="50" rx="5" fill="#fff3e0" stroke="#ff9800" stroke-width="1"/>
+  <text x="435" y="216" text-anchor="middle" fill="#e65100" font-size="11" font-weight="600">误差分析</text>
+  <text x="435" y="234" text-anchor="middle" fill="#666" font-size="9">masks₁ vs GT → 更小误差区域</text>
+
+  <line x1="520" y1="220" x2="550" y2="220" stroke="#333" stroke-width="1.2" marker-end="url(#a5)"/>
+
+  <rect x="550" y="195" width="140" height="50" rx="5" fill="#55efc4" stroke="#00b894" stroke-width="1"/>
+  <text x="620" y="216" text-anchor="middle" fill="#00695c" font-size="11" font-weight="600">采样修正点</text>
+  <text x="620" y="234" text-anchor="middle" fill="#666" font-size="9">+1 正 +1 负 → P₂</text>
+
+  <line x1="690" y1="220" x2="720" y2="220" stroke="#333" stroke-width="1.2" marker-end="url(#a5)"/>
+
+  <text x="775" y="225" text-anchor="middle" fill="#333" font-size="13">⋯</text>
+
+  <!-- mask_prob 注释 -->
+  <rect x="180" y="250" width="280" height="26" rx="4" fill="#ffeaa7" stroke="#fdcb6e" stroke-width="1"/>
+  <text x="320" y="268" text-anchor="middle" fill="#6c5100" font-size="10">以概率 mask_prob 将 low_res₀ 作为 mask_input 传入</text>
+
+  <!-- 最终轮 -->
+  <rect x="20" y="290" width="820" height="115" rx="8" fill="#e8f8f5" stroke="#2ecc71" stroke-width="1" opacity="0.3"/>
+  <text x="35" y="310" fill="#2ecc71" font-size="12" font-weight="700">最终轮 t = n_sub - 1</text>
+
+  <rect x="40" y="325" width="200" height="40" rx="5" fill="#dff9fb" stroke="#0984e3" stroke-width="1.2"/>
+  <text x="140" y="350" text-anchor="middle" fill="#0984e3" font-size="11">forward_mask(P_final) → final masks</text>
+
+  <line x1="240" y1="345" x2="270" y2="345" stroke="#333" stroke-width="1.2" marker-end="url(#a5)"/>
+
+  <rect x="270" y="325" width="190" height="40" rx="5" fill="#ffeaa7" stroke="#fdcb6e" stroke-width="1.2"/>
+  <text x="365" y="350" text-anchor="middle" fill="#6c5100" font-size="11" font-weight="600">loss = Σ(dice+iou) / n_sub</text>
+
+  <line x1="460" y1="345" x2="510" y2="345" stroke="#e94560" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#a5r)"/>
+  <text x="485" y="336" text-anchor="middle" fill="#e94560" font-size="9">detach</text>
+
+  <rect x="510" y="320" width="180" height="50" rx="5" fill="#f0e6ff" stroke="#533483" stroke-width="1.2"/>
+  <text x="600" y="342" text-anchor="middle" fill="#533483" font-size="11" font-weight="600">forward_depth</text>
+  <text x="600" y="360" text-anchor="middle" fill="#666" font-size="9">final_low_res → depth</text>
+
+  <line x1="690" y1="345" x2="720" y2="345" stroke="#333" stroke-width="1.2" marker-end="url(#a5)"/>
+
+  <rect x="720" y="325" width="110" height="40" rx="5" fill="#ffeaa7" stroke="#fdcb6e" stroke-width="1.2"/>
+  <text x="775" y="350" text-anchor="middle" fill="#6c5100" font-size="11" font-weight="600">深度标量</text>
+
+  <defs>
+    <marker id="a5" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#333"/></marker>
+    <marker id="a5r" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#e94560"/></marker>
+  </defs>
+</svg>
+<p class="fig-cap">图 5：迭代提示精炼流程。每轮从误差区域采样 1 正 + 1 负修正点，逐步增长提示集；最终轮的输出传入深度分支。</p>
+</div>
+
+<div class="card">
+<h4>误差采点策略详细说明</h4>
+<table>
+<tr><th>点类型</th><th>首选采样区域</th><th>回退策略 1</th><th>回退策略 2</th><th>最终回退</th></tr>
+<tr><td>正点（前景）</td><td>False Negative 区域</td><td>pred∩GT 重叠区域</td><td>GT 前景任意位置</td><td>图像中心</td></tr>
+<tr><td>负点（背景）</td><td>False Positive 区域</td><td>物体边界附近背景 (dilate 3px)</td><td>任意背景位置</td><td>(0,0)</td></tr>
+</table>
+</div>
+
+<p class="ref">prompt/iterative.py:6-126</p>
+
+<!-- ======================================================== -->
+<div class="sep"></div>
+<h2 id="s5">3.5 训练策略</h2>
+
+<!-- 图 6：两阶段训练 -->
+<div class="fig">
+<svg viewBox="0 0 860 300" xmlns="http://www.w3.org/2000/svg" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="12">
+  <rect x="0" y="0" width="860" height="300" fill="#fafbfe" rx="8"/>
+
+  <!-- Phase 1 -->
+  <rect x="20" y="15" width="400" height="270" rx="10" fill="#e8f4f830" stroke="#0984e3" stroke-width="1.5"/>
+  <text x="220" y="40" text-anchor="middle" fill="#0984e3" font-size="15" font-weight="700">Phase 1：掩码训练</text>
+
+  <rect x="45" y="55" width="160" height="28" rx="4" fill="#ffeaa7" stroke="#d63031" stroke-width="1"/>
+  <text x="125" y="74" text-anchor="middle" fill="#d63031" font-size="11">🔒 Image Encoder</text>
+  <rect x="215" y="55" width="185" height="28" rx="4" fill="#ffeaa7" stroke="#d63031" stroke-width="1"/>
+  <text x="307" y="74" text-anchor="middle" fill="#d63031" font-size="11">🔒 深度分支 (outer PE + DD)</text>
+
+  <rect x="45" y="95" width="160" height="28" rx="4" fill="#55efc4" stroke="#00b894" stroke-width="1.5"/>
+  <text x="125" y="114" text-anchor="middle" fill="#00695c" font-size="11" font-weight="600">✏️ PromptEncoder</text>
+  <rect x="215" y="95" width="185" height="28" rx="4" fill="#55efc4" stroke="#00b894" stroke-width="1.5"/>
+  <text x="307" y="114" text-anchor="middle" fill="#00695c" font-size="11" font-weight="600">✏️ MaskDecoder</text>
+
+  <rect x="45" y="140" width="355" height="55" rx="6" fill="#fff" stroke="#0984e3" stroke-width="1"/>
+  <text x="222" y="162" text-anchor="middle" fill="#0f3460" font-size="12" font-weight="600">损失函数</text>
+  <text x="222" y="182" text-anchor="middle" fill="#333" font-size="11" font-style="italic">L = L_dice(masks, GT) + MSE(IoU_pred, IoU_true)</text>
+
+  <rect x="45" y="210" width="170" height="28" rx="4" fill="#dfe6e9" stroke="#636e72" stroke-width="1"/>
+  <text x="130" y="229" text-anchor="middle" fill="#2d3436" font-size="10">AdamW lr=1e-5</text>
+  <rect x="225" y="210" width="175" height="28" rx="4" fill="#dfe6e9" stroke="#636e72" stroke-width="1"/>
+  <text x="312" y="229" text-anchor="middle" fill="#2d3436" font-size="10">StepLR(step=10, γ=0.5)</text>
+
+  <rect x="45" y="250" width="355" height="25" rx="4" fill="#e8f4f8" stroke="#0984e3" stroke-width="1"/>
+  <text x="222" y="268" text-anchor="middle" fill="#0984e3" font-size="10">迭代模式：多轮 forward_mask + 误差采点，loss 取各轮平均</text>
+
+  <!-- 箭头 Phase1 → Phase2 -->
+  <line x1="420" y1="150" x2="440" y2="150" stroke="#e94560" stroke-width="2" marker-end="url(#a6r)"/>
+  <text x="430" y="140" text-anchor="middle" fill="#e94560" font-size="10" font-weight="700">→</text>
+
+  <!-- Phase 2 -->
+  <rect x="440" y="15" width="400" height="270" rx="10" fill="#f0e6ff30" stroke="#533483" stroke-width="1.5"/>
+  <text x="640" y="40" text-anchor="middle" fill="#533483" font-size="15" font-weight="700">Phase 2：深度训练</text>
+
+  <rect x="465" y="55" width="160" height="28" rx="4" fill="#ffeaa7" stroke="#d63031" stroke-width="1"/>
+  <text x="545" y="74" text-anchor="middle" fill="#d63031" font-size="11">🔒 Image Encoder</text>
+  <rect x="635" y="55" width="185" height="28" rx="4" fill="#ffeaa7" stroke="#d63031" stroke-width="1"/>
+  <text x="727" y="74" text-anchor="middle" fill="#d63031" font-size="11">🔒 掩码分支 (PE + MD)</text>
+
+  <rect x="465" y="95" width="170" height="28" rx="4" fill="#55efc4" stroke="#00b894" stroke-width="1.5"/>
+  <text x="550" y="114" text-anchor="middle" fill="#00695c" font-size="11" font-weight="600">✏️ Outer PromptEncoder</text>
+  <rect x="645" y="95" width="175" height="28" rx="4" fill="#55efc4" stroke="#00b894" stroke-width="1.5"/>
+  <text x="732" y="114" text-anchor="middle" fill="#00695c" font-size="11" font-weight="600">✏️ DepthMaskDecoder</text>
+
+  <rect x="465" y="140" width="355" height="55" rx="6" fill="#fff" stroke="#533483" stroke-width="1"/>
+  <text x="642" y="162" text-anchor="middle" fill="#0f3460" font-size="12" font-weight="600">损失函数</text>
+  <text x="642" y="182" text-anchor="middle" fill="#333" font-size="11" font-style="italic">L = λ × MSE(depth_pred, depth_GT)</text>
+
+  <rect x="465" y="210" width="355" height="28" rx="4" fill="#fff3e0" stroke="#ff9800" stroke-width="1"/>
+  <text x="642" y="229" text-anchor="middle" fill="#e65100" font-size="10">加载 Phase 1 检查点后重新 init_depth_from_sam()</text>
+
+  <rect x="465" y="250" width="355" height="25" rx="4" fill="#f0e6ff" stroke="#533483" stroke-width="1"/>
+  <text x="642" y="268" text-anchor="middle" fill="#533483" font-size="10">掩码分支在 no_grad 下运行，low_res_masks 经 detach 传入深度分支</text>
+
+  <defs><marker id="a6r" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#e94560"/></marker></defs>
+</svg>
+<p class="fig-cap">图 6：两阶段互补冻结训练策略。Phase 1 专注分割，Phase 2 专注深度。</p>
+</div>
+
+<div class="card">
+<h4>两阶段设计逻辑</h4>
+<p>两阶段设计确保掩码分支收敛到可靠分割<strong>之后</strong>才引入深度分支。由于深度分支由 SAM 解码器权重初始化，它继承了对图像特征的有意义的注意力结构，仅 depth_prediction_head 需要从头学习。</p>
+</div>
+
+<p class="ref">trainer.py:357-478</p>
+
+<!-- ======================================================== -->
+<div class="sep"></div>
+<h2 id="s6">3.6 数据集与点提示生成</h2>
+
+<div class="card">
+<h4>数据组织</h4>
+<p>训练和评估数据按深度类别组织。每个类别文件夹的名称编码真实深度值（如 <code>"f10"</code> 表示 -10，<code>"10"</code> 表示 +10）。每个文件夹包含配对的 RGB 图像（.jpg）和二值分割掩码（.png）。深度值归一化到 [-1, 1] 范围（除以 100）。</p>
+
+<h4>点提示生成</h4>
+<p>自动从 GT 掩码生成点提示：对掩码进行连通域分析，按面积降序排列，取最大 <code>max_points</code>（默认 3）个连通域的质心作为前景点提示。自定义 <code>collate_fn</code> 通过 label=-1 填充处理批次内的变长提示。</p>
+</div>
+
+<p class="ref">dataset/depth_dataset.py:1-155</p>
+
+<!-- ======================================================== -->
+<div class="sep"></div>
+<h2 id="s7">3.7 评估方法</h2>
+
+<div class="card">
+<h4>分割指标</h4>
+<table>
+<tr><th>指标</th><th>公式</th><th>含义</th></tr>
+<tr><td>Dice</td><td>2|pred∩gt| / (|pred|+|gt|+ε)</td><td>掩码重叠度</td></tr>
+<tr><td>IoU</td><td>|pred∩gt| / |pred∪gt|+ε)</td><td>交并比</td></tr>
+<tr><td>IoU Prediction</td><td>模型预测的 IoU 值</td><td>掩码置信自评估</td></tr>
+<tr><td>IoU Pred MAE</td><td>|IoU_pred - IoU_true| 均值</td><td>自评估校准误差</td></tr>
+</table>
+
+<h4>深度指标</h4>
+<table>
+<tr><th>指标</th><th>公式</th><th>说明</th></tr>
+<tr><td>Depth MAE</td><td>|pred - gt| 均值</td><td>原始尺度（×100）</td></tr>
+<tr><td>Depth MSE</td><td>(pred - gt)² 均值</td><td>原始尺度</td></tr>
+<tr><td>Depth RMSE</td><td>√MSE</td><td>原始尺度</td></tr>
+<tr><td>R²</td><td>1 - SS_res / SS_tot</td><td>决定系数</td></tr>
+</table>
+
+<p>评估同时报告按深度类别分类的 MAE，支持与训练相同的迭代推理协议。</p>
+</div>
+
+<p class="ref">evaluate.py:22-366</p>
+
+</div>
+</body>
+</html>

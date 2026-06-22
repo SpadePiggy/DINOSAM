@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DINOSAM 代码深度研究报告</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif; line-height: 1.7; color: #1a1a2e; background: #f8f9fa; }
+.container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+h1 { font-size: 2.2em; color: #0f3460; border-bottom: 4px solid #e94560; padding-bottom: 12px; margin-bottom: 8px; }
+.subtitle { color: #666; font-size: 1.1em; margin-bottom: 40px; }
+h2 { font-size: 1.6em; color: #16213e; margin-top: 48px; margin-bottom: 16px; padding-left: 12px; border-left: 4px solid #e94560; }
+h3 { font-size: 1.25em; color: #0f3460; margin-top: 28px; margin-bottom: 12px; }
+h4 { font-size: 1.1em; color: #533483; margin-top: 20px; margin-bottom: 8px; }
+p { margin-bottom: 12px; }
+.toc { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 24px 32px; margin-bottom: 40px; }
+.toc h3 { margin-top: 0; color: #0f3460; }
+.toc ul { list-style: none; padding-left: 0; }
+.toc li { margin: 6px 0; }
+.toc li a { color: #0f3460; text-decoration: none; border-bottom: 1px dashed #ccc; }
+.toc li a:hover { color: #e94560; border-bottom-color: #e94560; }
+.toc ul ul { padding-left: 24px; }
+.card { background: #fff; border-radius: 8px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.card.highlight { border-left: 4px solid #e94560; }
+.card.blue { border-left: 4px solid #0f3460; }
+.card.green { border-left: 4px solid #2ecc71; }
+.card.purple { border-left: 4px solid #533483; }
+.file-ref { display: inline-block; background: #e8f4f8; color: #0f3460; padding: 2px 8px; border-radius: 4px; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.88em; }
+pre { background: #1e1e2e; color: #cdd6f4; padding: 20px; border-radius: 8px; overflow-x: auto; margin: 12px 0 20px; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.9em; line-height: 1.6; }
+pre .kw { color: #cba6f7; }
+pre .fn { color: #89b4fa; }
+pre .str { color: #a6e3a1; }
+pre .cm { color: #6c7086; font-style: italic; }
+pre .num { color: #fab387; }
+pre .op { color: #89dceb; }
+pre .cls { color: #f9e2af; }
+pre .dec { color: #f38ba8; }
+code { background: #eef; color: #333; padding: 2px 6px; border-radius: 3px; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.9em; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+th { background: #0f3460; color: #fff; padding: 10px 14px; text-align: left; font-weight: 600; }
+td { padding: 10px 14px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) td { background: #f8f9fa; }
+.diagram { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 24px; margin: 16px 0; font-family: 'Fira Code', monospace; font-size: 0.9em; line-height: 1.8; white-space: pre; overflow-x: auto; text-align: center; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.82em; font-weight: 600; }
+.badge-train { background: #dff9fb; color: #0984e3; }
+.badge-freeze { background: #ffeaa7; color: #d63031; }
+.badge-loss { background: #fab1a0; color: #d63031; }
+.compare-row { display: flex; gap: 20px; }
+.compare-col { flex: 1; }
+@media (max-width: 768px) { .compare-row { flex-direction: column; } }
+.separator { height: 1px; background: linear-gradient(to right, transparent, #e94560, transparent); margin: 48px 0; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>DINOSAM 代码深度研究报告</h1>
+<p class="subtitle">基于 <code>/home/admin/workspace/SEU/DINOSAM</code> 代码库的系统性分析 — SAM 主干 vs DINOv3 主干</p>
+
+<!-- 目录 -->
+<div class="toc">
+<h3>目录</h3>
+<ul>
+<li><a href="#overview">一、项目总览与架构概述</a></li>
+<li><a href="#sam-backbone">二、SAM 主干方向</a>
+  <ul>
+    <li><a href="#sam-model">2.1 模型结构</a></li>
+    <li><a href="#sam-ablation">2.2 消融模块详解</a></li>
+    <li><a href="#sam-config">2.3 消融模块配置</a></li>
+    <li><a href="#sam-train">2.4 训练流程</a></li>
+    <li><a href="#sam-test">2.5 测试方法</a></li>
+  </ul>
+</li>
+<li><a href="#dino-backbone">三、DINO 主干方向</a>
+  <ul>
+    <li><a href="#dino-model">3.1 模型结构</a></li>
+    <li><a href="#dino-ablation">3.2 消融模块详解</a></li>
+    <li><a href="#dino-config">3.3 消融模块配置</a></li>
+    <li><a href="#dino-train">3.4 训练流程</a></li>
+    <li><a href="#dino-test">3.5 测试方法</a></li>
+  </ul>
+</li>
+<li><a href="#compare">四、两种主干对比分析</a></li>
+<li><a href="#data">五、数据集与提示生成</a></li>
+<li><a href="#summary">六、技术总结</a></li>
+</ul>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="overview">一、项目总览与架构概述</h2>
+
+<div class="card highlight">
+<p><strong>DINOSAM</strong>（Depth-aware SAM）在 SAM (ViT-B) 的基础上扩展了深度预测能力。核心思路是：在 SAM 的分割掩码分支之外，增加一个<strong>外部深度分支</strong>（outer prompt encoder + depth decoder），利用分割掩码作为中间表征来预测目标的深度值。</p>
+<p>项目支持两种图像编码器主干：</p>
+<ul>
+<li><strong>SAM 主干</strong>（<code>--encoder sam</code>）：使用 SAM 原生的 ViT-B/16 图像编码器，冻结编码器参数</li>
+<li><strong>DINOv3 主干</strong>（<code>--encoder dinov3</code>）：将 SAM 的图像编码器替换为 DINOv3 ViT-B/16 + 可训练适配器</li>
+</ul>
+</div>
+
+<div class="diagram">
+                    ┌──────────────────────────────────────────────────┐
+                    │              DepthSam 整体架构                      │
+                    └──────────────────────────────────────────────────┘
+
+        Image ──► Image Encoder (冻结) ──► Image Embeddings (B,256,64,64)
+                  ┌── SAM ViT-B ──┐               │
+                  │  或 DINOv3    │               │
+                  │  + Adapters   │      ┌────────┴────────┐
+                  └───────────────┘      │                 │
+                                   Point Prompts    Low-res Mask
+                                         │           (detached)
+                                         ▼                 │
+                                Inner PromptEncoder   Outer PromptEncoder
+                                         │                 │
+                                         ▼                 ▼
+                                   Mask Decoder      Depth Decoder
+                                     │     │               │
+                                  Masks  IoU Pred    Depth Scalar
+</div>
+
+<p class="file-ref">dinosam/model/depth_sam.py:13-338</p>
+
+<!-- ============================================================ -->
+<div class="separator"></div>
+<h2 id="sam-backbone">二、SAM 主干方向</h2>
+
+<h3 id="sam-model">2.1 模型结构</h3>
+
+<div class="card blue">
+<h4>图像编码器：SAM ViT-B/16（冻结）</h4>
+<p>当 <code>encoder_type="sam"</code> 时，使用 SAM 原生的 ViT-B/16 图像编码器。编码器参数在训练过程中<strong>始终冻结</strong>。</p>
+<p>输入预处理流程（<code>DepthSam.preprocess()</code>）：</p>
+<ol>
+<li>将图像最长边缩放到 1024px（保持宽高比）</li>
+<li>使用 SAM 的 pixel_mean/pixel_std 进行归一化</li>
+<li>填充到 1024×1024</li>
+</ol>
+<p>输出：<code>(B, 256, 64, 64)</code> 的图像特征</p>
+</div>
+
+<pre><span class="cm"># depth_sam.py:134-146 — 预处理流程</span>
+<span class="kw">def</span> <span class="fn">preprocess</span>(self, x: torch.Tensor) -> Tuple[torch.Tensor, Tuple[int, int]]:
+    oldh, oldw = x.shape[<span class="num">2</span>], x.shape[<span class="num">3</span>]
+    newh, neww = ResizeLongestSide.get_preprocess_shape(oldh, oldw, self.img_size)
+    x = F.interpolate(x, size=(newh, neww), mode=<span class="str">"bilinear"</span>, align_corners=<span class="kw">False</span>,
+                      antialias=<span class="kw">True</span>)
+    input_size = (newh, neww)
+    x = (x - self.sam.pixel_mean.unsqueeze(<span class="num">0</span>)) / self.sam.pixel_std.unsqueeze(<span class="num">0</span>)
+    padh = self.img_size - newh
+    padw = self.img_size - neww
+    x = F.pad(x, (<span class="num">0</span>, padw, <span class="num">0</span>, padh))
+    <span class="kw">return</span> x, input_size</pre>
+
+<div class="card blue">
+<h4>掩码分支（Mask Branch）— SAM 内部</h4>
+<p>掩码分支直接使用 SAM 的原始 <code>prompt_encoder</code> + <code>mask_decoder</code>：</p>
+<ul>
+<li><strong>Inner PromptEncoder</strong>：将点提示（point_coords, point_labels）编码为稀疏嵌入和密集嵌入</li>
+<li><strong>MaskDecoder</strong>：基于 TwoWayTransformer，输出 4 个掩码候选 + IoU 预测（此处使用 <code>multimask_output=False</code>，只取 1 个掩码）</li>
+</ul>
+<p>输出：<code>low_res_masks (B,1,256,256)</code>、<code>iou_pred (B,1)</code>、<code>masks (B,1,H,W)</code></p>
+</div>
+
+<pre><span class="cm"># depth_sam.py:162-239 — 掩码分支前向传播（核心逻辑）</span>
+<span class="cm"># 逐样本处理，避免 MaskDecoder 的 repeat_interleave B² 问题</span>
+<span class="kw">for</span> i <span class="kw">in</span> range(B):
+    low_res_i, iou_i = self.sam.mask_decoder(
+        image_embeddings=image_embeddings[i:<span class="num">i+1</span>],
+        image_pe=inner_pe,
+        sparse_prompt_embeddings=sparse_emb[i:<span class="num">i+1</span>],
+        dense_prompt_embeddings=dense_emb[i:<span class="num">i+1</span>],
+        multimask_output=<span class="kw">False</span>,
+    )</pre>
+
+<div class="card blue">
+<h4>深度分支（Depth Branch）— 外部扩展</h4>
+<p>深度分支是 DINOSAM 的核心创新，结构上模仿 SAM 的掩码分支，但用于深度回归：</p>
+<ul>
+<li><strong>Outer PromptEncoder</strong>：与 SAM 内部 PromptEncoder 结构完全相同，但接收<strong>低分辨率掩码</strong>（来自掩码分支的输出，经过 detach）作为 mask input</li>
+<li><strong>DepthMaskDecoder</strong>：修改自 SAM MaskDecoder，区别如下表：</li>
+</ul>
+
+<table>
+<tr><th>组件</th><th>SAM MaskDecoder</th><th>DepthMaskDecoder</th></tr>
+<tr><td>IoU Token</td><td>iou_token → IoU 预测头</td><td><strong>depth_token</strong> → 深度回归头</td></tr>
+<tr><td>Mask Tokens</td><td>4 个 mask tokens（multimask）</td><td><strong>1 个</strong> mask token（单掩码）</td></tr>
+<tr><td>Transformer</td><td>TwoWayTransformer(depth=2, dim=256, mlp=2048, heads=8)</td><td>相同结构</td></tr>
+<tr><td>Upscaling</td><td>ConvTranspose2d 两级上采样 (256→64→32)</td><td>相同结构</td></tr>
+<tr><td>Hypernetwork MLP</td><td>4 个 MLP（对应 4 个 mask token）</td><td><strong>1 个</strong> MLP</td></tr>
+<tr><td>输出</td><td>masks + IoU scores</td><td>masks + <strong>depth scalar</strong></td></tr>
+</table>
+</div>
+
+<pre><span class="cm"># depth_decoder.py:10-92 — DepthMaskDecoder 定义</span>
+<span class="kw">class</span> <span class="cls">DepthMaskDecoder</span>(nn.Module):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, *, transformer_dim=<span class="num">256</span>, transformer=<span class="kw">None</span>,
+                 activation=nn.GELU, depth_head_depth=<span class="num">3</span>, depth_head_hidden_dim=<span class="num">256</span>):
+        <span class="cm"># ...</span>
+        self.depth_token = nn.Embedding(<span class="num">1</span>, transformer_dim)   <span class="cm"># 替换 iou_token</span>
+        self.num_mask_tokens = <span class="num">1</span>                              <span class="cm"># 只用 1 个 mask token</span>
+        self.mask_tokens = nn.Embedding(self.num_mask_tokens, transformer_dim)
+        <span class="cm"># ...</span>
+        self.depth_prediction_head = MLP(
+            transformer_dim, depth_head_hidden_dim, <span class="num">1</span>, depth_head_depth,  <span class="cm"># 256→256→1, 3层MLP</span>
+        )</pre>
+
+<p class="file-ref">dinosam/model/depth_decoder.py:10-92</p>
+
+<div class="card green">
+<h4>权重初始化策略</h4>
+<p><code>init_depth_from_sam()</code> 将 SAM 内部分支的权重<strong>复制</strong>到外部深度分支：</p>
+<table>
+<tr><th>深度分支组件</th><th>初始化来源</th></tr>
+<tr><td>outer_prompt_encoder</td><td>SAM prompt_encoder（完全复制）</td></tr>
+<tr><td>depth_decoder.transformer</td><td>SAM mask_decoder.transformer（完全复制）</td></tr>
+<tr><td>depth_token</td><td>SAM iou_token（相同形状）</td></tr>
+<tr><td>mask_tokens[0]</td><td>SAM mask_decoder.mask_tokens[0]（取第一个）</td></tr>
+<tr><td>output_upscaling</td><td>SAM mask_decoder.output_upscaling（完全复制）</td></tr>
+<tr><td>output_hypernetworks_mlps[0]</td><td>SAM mask_decoder.output_hypernetworks_mlps[0]（取第一个）</td></tr>
+<tr><td>depth_prediction_head</td><td><strong>随机初始化</strong>（SAM 中无对应结构）</td></tr>
+</table>
+</div>
+
+<p class="file-ref">dinosam/model/depth_sam.py:61-112</p>
+
+<h3 id="sam-ablation">2.2 消融模块详解</h3>
+
+<div class="card purple">
+<h4>消融模块 1：迭代式提示生成（Iterative Prompt Generator）</h4>
+<p>基于 micro-SAM 的思路简化实现，用于迭代训练和推理。每次迭代：</p>
+<ol>
+<li>将预测掩码与 GT 掩码对比，计算误差区域</li>
+<li>从<strong>遗漏前景</strong>（missed foreground = GT 有但预测没有）采样 1 个正点</li>
+<li>从<strong>假阳性区域</strong>（false positive = 预测有但 GT 没有）采样 1 个负点</li>
+<li>将新点追加到已有提示中</li>
+<li>以概率 <code>mask_prob</code> 将上一轮低分辨率掩码作为 mask input</li>
+</ol>
+</div>
+
+<pre><span class="cm"># prompt/iterative.py:16-91 — 迭代提示生成核心逻辑</span>
+<span class="kw">class</span> <span class="cls">DepthIterativePromptGenerator</span>:
+    <span class="kw">def</span> <span class="fn">__call__</span>(self, gt_masks, pred_masks):
+        expected_diff = pred_masks - gt_masks
+        pos_region = (expected_diff == <span class="num">-1</span>)   <span class="cm"># 遗漏前景区域</span>
+        neg_region = (expected_diff == <span class="num">1</span>)    <span class="cm"># 假阳性区域</span>
+        <span class="cm"># 对每个样本采样 1 正 + 1 负点</span>
+        <span class="cm"># 回退策略：若无误差区域，则从重叠区域/GT前景/背景边界采样</span></pre>
+
+<p class="file-ref">dinosam/prompt/iterative.py:6-126</p>
+
+<div class="card purple">
+<h4>消融模块 2：深度解码器掩码（Decoder Mask Output）</h4>
+<p>DepthMaskDecoder 除了输出深度标量，还输出一个辅助掩码。这个掩码在 Phase 2 的迭代训练中用于：</p>
+<ul>
+<li>计算辅助 dice_loss（监控深度分支的掩码质量）</li>
+<li>在迭代深度训练中，基于 decoder mask 与 GT 的误差生成新的点提示</li>
+</ul>
+</div>
+
+<div class="card purple">
+<h4>消融模块 3：Mask Input 机制</h4>
+<p>在迭代训练中，可选地将上一轮的低分辨率掩码传递给下一轮作为 <code>mask_input</code>。这通过 PromptEncoder 的 mask 编码通道（<code>mask_in_chans=16</code>）实现。控制参数为 <code>--mask_prob</code>，以概率随机决定是否传递。</p>
+</div>
+
+<h3 id="sam-config">2.3 消融模块配置</h3>
+
+<table>
+<tr><th>参数</th><th>默认值</th><th>控制的消融维度</th><th>作用</th></tr>
+<tr><td><code>--n_sub_iterations</code></td><td>1</td><td>迭代次数</td><td>1=无迭代；8=标准迭代训练</td></tr>
+<tr><td><code>--mask_prob</code></td><td>0.5</td><td>Mask Input 概率</td><td>0=不使用mask input；0.5=50%概率使用</td></tr>
+<tr><td><code>--depth_loss_weight</code></td><td>1.0</td><td>深度损失权重</td><td>Phase 2 中深度 MSE 损失的权重</td></tr>
+<tr><td><code>--max_points</code></td><td>3</td><td>初始点数</td><td>从 GT mask 连通域提取的最大初始点数</td></tr>
+<tr><td><code>--train_phase</code></td><td>both</td><td>训练阶段</td><td>"1"=仅掩码，"2"=仅深度，"both"=两阶段顺序</td></tr>
+</table>
+
+<h3 id="sam-train">2.4 训练流程</h3>
+
+<div class="card highlight">
+<h4>Phase 1：掩码训练 <span class="badge badge-train">可训练</span></h4>
+<p><strong>冻结</strong>：Image Encoder + Outer PromptEncoder + DepthDecoder</p>
+<p><strong>训练</strong>：SAM PromptEncoder + MaskDecoder</p>
+<p><strong>损失函数</strong>：<code>loss = dice_loss(masks, gt_masks) + MSE(iou_pred, true_iou)</code></p>
+<p><strong>优化器</strong>：AdamW, lr=1e-5</p>
+<p><strong>学习率调度</strong>：StepLR(step_size=10, gamma=0.5)</p>
+</div>
+
+<pre><span class="cm"># trainer.py:24-100 — Phase 1 训练一个 epoch</span>
+<span class="cm"># 非迭代路径：</span>
+image_embeddings, input_size = model.encode_images(images)
+low_res_masks, iou_pred, masks_fullres = model.forward_mask(...)
+mask_loss = dice_loss(masks_fullres, gt_masks)
+true_iou = compute_iou(masks_fullres, gt_masks)
+iou_loss = F.mse_loss(iou_pred.squeeze(<span class="num">1</span>), true_iou.squeeze(<span class="num">1</span>))
+loss = mask_loss + iou_loss
+
+<span class="cm"># 迭代路径（n_sub_iterations > 1）：</span>
+<span class="cm"># 调用 iterative_mask_step()，多轮 forward_mask + 误差采点</span></pre>
+
+<div class="card highlight">
+<h4>Phase 2：深度训练 <span class="badge badge-train">可训练</span></h4>
+<p><strong>冻结</strong>：Image Encoder + SAM PromptEncoder + MaskDecoder</p>
+<p><strong>训练</strong>：Outer PromptEncoder + DepthDecoder</p>
+<p><strong>损失函数</strong>：<code>loss = depth_loss_weight × depth_mse_loss(depth_pred, depth_labels)</code></p>
+<p><strong>关键细节</strong>：</p>
+<ul>
+<li>掩码分支在 <code>no_grad</code> 下运行，其输出的 <code>low_res_masks</code> 作为深度分支的输入</li>
+<li>非迭代模式下，深度分支额外接收原始点提示坐标（<code>depth_point_coords</code>）</li>
+<li>Phase 2 开始时，如果从 Phase 1 检查点加载，会重新调用 <code>init_depth_from_sam()</code></li>
+</ul>
+</div>
+
+<pre><span class="cm"># trainer.py:144-247 — Phase 2 训练核心流程</span>
+<span class="cm"># 非迭代路径：</span>
+image_embeddings, input_size = model.encode_images(images)
+low_res_masks, iou_pred, masks_fullres = model.forward_mask(
+    ..., return_fullres=is_log_batch,  <span class="cm"># 非日志批次跳过全分辨率后处理（优化）</span>
+)
+depth_pred, decoder_masks = model.forward_depth(
+    image_embeddings=image_embeddings,
+    low_res_masks=low_res_masks,       <span class="cm"># 掩码分支输出作为深度分支输入</span>
+    depth_point_coords=point_coords,   <span class="cm"># 原始点提示</span>
+    depth_point_labels=point_labels,
+)
+depth_loss = depth_mse_loss(depth_pred, depth_labels)
+loss = args.depth_loss_weight * depth_loss</pre>
+
+<div class="card green">
+<h4>迭代训练流程（Phase 1 & Phase 2）</h4>
+
+<div class="diagram">
+┌─────────────────────────────────────────────────────────────────┐
+│                    Phase 1 迭代掩码训练                           │
+│                                                                 │
+│  for sub_iter in range(n_sub):                                  │
+│    1. forward_mask(points, mask_input) → masks, iou              │
+│    2. 计算 dice_loss + iou_loss，累加到 total                     │
+│    3. if sub_iter < n_sub-1:                                    │
+│       a. 比较 pred vs GT → 采样 1 正 + 1 负点                    │
+│       b. 追加新点到 cur_point_coords                              │
+│       c. 以概率 mask_prob 将 low_res_masks 传为 mask_input        │
+│  loss = avg_mask_loss + avg_iou_loss                             │
+│  反向传播 + 优化                                                  │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                    Phase 2 迭代深度训练                           │
+│                                                                 │
+│  1. forward_mask(原始points) → low_res_masks（一次性）            │
+│  2. for sub_iter in range(n_sub):                               │
+│       a. forward_depth(low_res_masks, depth_points) → depth, mask │
+│       b. 计算 depth_loss + decoder_mask_dice_loss                │
+│       c. if sub_iter < n_sub-1:                                 │
+│          比较 decoder_mask vs GT → 采样新点 → 追加到 depth_points │
+│  loss = depth_loss_weight × avg_depth_loss                      │
+│  反向传播 + 优化                                                  │
+└─────────────────────────────────────────────────────────────────┘
+</div>
+</div>
+
+<p class="file-ref">dinosam/train/iterative.py:111-294</p>
+
+<h3 id="sam-test">2.5 测试方法</h3>
+
+<div class="card blue">
+<p>评估流程在 <code>evaluate.py</code> 中实现，支持 Phase 1 和 Phase 2 模型分别评估和对比：</p>
+
+<h4>评估指标</h4>
+<table>
+<tr><th>类别</th><th>指标</th><th>计算方式</th></tr>
+<tr><td rowspan="4">分割</td><td>Dice</td><td>2×|pred∩gt| / (|pred|+|gt|)</td></tr>
+<tr><td>IoU</td><td>|pred∩gt| / |pred∪gt|</td></tr>
+<tr><td>IoU Prediction</td><td>模型预测的 IoU 值</td></tr>
+<tr><td>IoU Pred MAE</td><td>|iou_pred - true_iou| 的平均值</td></tr>
+<tr><td rowspan="4">深度</td><td>Depth MAE</td><td>|pred - gt| 的平均值（原始尺度）</td></tr>
+<tr><td>Depth MSE</td><td>(pred - gt)² 的平均值</td></tr>
+<tr><td>Depth RMSE</td><td>√MSE</td></tr>
+<tr><td>Depth R²</td><td>1 - SS_res/SS_tot</td></tr>
+</table>
+
+<h4>评估流程</h4>
+<ol>
+<li>加载 Phase 1 检查点 → 评估分割和深度指标 → 输出结果</li>
+<li>释放 GPU 内存</li>
+<li>加载 Phase 2 检查点 → 评估分割和深度指标 → 输出结果</li>
+<li>输出 Phase 1 vs Phase 2 对比（Dice/IoU/Depth MAE 变化量）</li>
+<li>可选：保存预测掩码图像 + 深度散点图（GT vs Pred、Residual vs GT）</li>
+<li>按深度类别（文件夹）输出分类 MAE</li>
+</ol>
+
+<h4>迭代推理</h4>
+<p>评估时同样支持迭代推理（<code>--n_sub_iterations</code>），使用与训练相同的误差采点策略进行多轮掩码细化。</p>
+</div>
+
+<pre><span class="cm"># evaluate.py:264-366 — 测试入口</span>
+<span class="cm"># 命令行示例：</span>
+python -m dinosam.evaluate \
+    --sam_checkpoint /path/to/sam_vit_b.pth \
+    --phase1_checkpoint /path/to/phase1_best.pt \
+    --phase2_checkpoint /path/to/phase2_best.pt \
+    --n_sub_iterations <span class="num">8</span> \
+    --save_masks_dir /path/to/output \
+    --encoder sam</pre>
+
+<p class="file-ref">dinosam/evaluate.py:22-366</p>
+
+<!-- ============================================================ -->
+<div class="separator"></div>
+<h2 id="dino-backbone">三、DINO 主干方向</h2>
+
+<h3 id="dino-model">3.1 模型结构</h3>
+
+<div class="card blue">
+<h4>图像编码器：DINOv3 ViT-B/16 + 适配器</h4>
+<p>当 <code>encoder_type="dinov3"</code> 时，使用 DINOv3MonaEncoder 替代 SAM 的图像编码器：</p>
+<ul>
+<li><strong>DINOv3 骨干</strong>：ViT-B/16，12层 Transformer，embed_dim=768，使用 RoPE 位置编码</li>
+<li><strong>骨干参数完全冻结</strong>，只有适配器和投影层可训练</li>
+<li><strong>适配器</strong>：两个串联的适配器（adapter1 + adapter2），类型可选</li>
+<li><strong>投影层</strong>：Linear(768 → 256)，将 DINOv3 输出维度对齐到 SAM 的 256 维</li>
+</ul>
+<p>输出与 SAM 编码器完全对齐：<code>(B, 256, 64, 64)</code></p>
+</div>
+
+<pre><span class="cm"># dinov3_encoder.py:16-110 — DINOv3MonaEncoder</span>
+<span class="kw">class</span> <span class="cls">DINOv3MonaEncoder</span>(nn.Module):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, checkpoint_path, img_size=<span class="num">1024</span>, embed_dim=<span class="num">768</span>, out_dim=<span class="num">256</span>,
+                 adapter_type=<span class="str">"mona"</span>):
+        <span class="cm"># 加载预训练 DINOv3 ViT-B/16 并冻结</span>
+        self.backbone = DinoVisionTransformer(
+            img_size=img_size, patch_size=<span class="num">16</span>, embed_dim=<span class="num">768</span>, depth=<span class="num">12</span>,
+            num_heads=<span class="num">12</span>, ffn_ratio=<span class="num">4</span>,
+            pos_embed_rope_base=<span class="num">100</span>,        <span class="cm"># RoPE 位置编码</span>
+            n_storage_tokens=<span class="num">4</span>,              <span class="cm"># 存储 token</span>
+            <span class="cm"># ...</span>
+        )
+        <span class="cm"># 两个串联适配器</span>
+        self.adapter1 = get_adapter(adapter_type, embed_dim, factor=<span class="num">8</span>)
+        self.adapter2 = get_adapter(adapter_type, embed_dim, factor=<span class="num">8</span>)
+        <span class="cm"># 维度投影</span>
+        self.projection = nn.Linear(embed_dim, out_dim)  <span class="cm"># 768 → 256</span>
+
+    <span class="kw">def</span> <span class="fn">forward</span>(self, images):
+        x = F.interpolate(images, size=(self.img_size, self.img_size), ...)
+        x = (x - self.pixel_mean) / self.pixel_std
+        features = self.backbone.forward_features(x)
+        patch_tokens = features[<span class="str">"x_norm_patchtokens"</span>]  <span class="cm"># (B, N, 768)</span>
+        x = self.adapter1(patch_tokens, (H, W))
+        x = self.adapter2(x, (H, W))
+        x = self.projection(x)  <span class="cm"># (B, H*W, 256)</span>
+        x = x.view(B, H, W, -<span class="num">1</span>).permute(<span class="num">0, 3, 1, 2</span>)  <span class="cm"># (B, 256, H, W)</span>
+        <span class="kw">return</span> x, input_size</pre>
+
+<p class="file-ref">dinosam/model/dinov3_encoder.py:16-110</p>
+
+<div class="card blue">
+<h4>掩码分支 & 深度分支</h4>
+<p>在 DINOv3 主干方向，掩码分支和深度分支与 SAM 主干方向<strong>完全相同</strong>。区别仅在于图像编码器部分。DINOv3 编码器的输出通过适配器和投影层映射到 (B, 256, 64, 64)，后续所有处理逻辑不变。</p>
+</div>
+
+<h3 id="dino-ablation">3.2 消融模块详解</h3>
+
+<p>DINOv3 方向有 3 种可选适配器，是核心的消融维度：</p>
+
+<div class="compare-row">
+<div class="compare-col">
+<div class="card purple">
+<h4>适配器 A：MoNA（默认）</h4>
+<p><strong>多尺度深度卷积适配器 + 瓶颈 MLP</strong></p>
+<p>结构：<code>LayerNorm*γ + x*γx → Linear(768→96) → MonaOp → GELU → Dropout(0.1) → Linear(96→768) → 残差</code></p>
+<p><strong>MonaOp</strong>：3 路深度卷积（3×3, 5×5, 7×7）取均值 + 恒等 → 1×1 投影</p>
+<p>特点：引入<strong>多尺度空间信息</strong>，参数量适中</p>
+</div>
+</div>
+<div class="compare-col">
+<div class="card purple">
+<h4>适配器 B：FC（纯全连接）</h4>
+<p><strong>纯 MLP 瓶颈适配器，无空间卷积</strong></p>
+<p>结构：<code>LayerNorm*γ + x*γx → Linear(768→96) → GELU → Dropout(0.1) → Linear(96→768) → 残差</code></p>
+<p>特点：<strong>无空间操作</strong>，仅通道维度变换。<code>hw_shapes</code> 参数被接受但不使用（接口兼容）</p>
+</div>
+</div>
+</div>
+
+<div class="card purple">
+<h4>适配器 C：Dual Attention（双重注意力）</h4>
+<p><strong>基于 DANet 的位置注意力 + 通道注意力并行适配器</strong></p>
+<p>结构：将序列特征 reshape 为 2D → PAM + CAM 并行 → 取均值 → 全局残差</p>
+
+<table>
+<tr><th>组件</th><th>结构</th><th>作用</th></tr>
+<tr><td>PAM（Position Attention）</td><td>Q/K: Conv1x1(768→96), V: Conv1x1(768→768) → softmax 注意力</td><td>建模空间位置间的长程依赖</td></tr>
+<tr><td>CAM（Channel Attention）</td><td>直接计算通道间注意力矩阵 → max-subtract 稳定化 → softmax</td><td>建模通道间语义关联</td></tr>
+</table>
+
+<p>注意：PAM 和 CAM 内部<strong>不包含残差连接</strong>（由 DualAttnAdapter.forward() 统一添加），这与原始 DANet 有所不同。</p>
+</div>
+
+<pre><span class="cm"># adapters/dual_attn_adapter.py:55-79 — DualAttnAdapter</span>
+<span class="kw">class</span> <span class="cls">DualAttnAdapter</span>(nn.Module):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, in_dim, factor=<span class="num">8</span>):
+        self.pam = PAM_Module(in_dim, factor)
+        self.cam = CAM_Module(in_dim)
+
+    <span class="kw">def</span> <span class="fn">forward</span>(self, x, hw_shapes=<span class="kw">None</span>):
+        B, N, C = x.shape
+        H, W = hw_shapes
+        identity = x
+        x_2d = x.reshape(B, H, W, C).permute(<span class="num">0, 3, 1, 2</span>)
+        attn_out = (self.pam(x_2d) + self.cam(x_2d)) / <span class="num">2.0</span>
+        out = attn_out.permute(<span class="num">0, 2, 3, 1</span>).reshape(B, N, C)
+        <span class="kw">return</span> identity + out</pre>
+
+<p class="file-ref">dinosam/model/adapters/dual_attn_adapter.py:1-79</p>
+
+<div class="card green">
+<h4>适配器注册与选择机制</h4>
+<pre><span class="cm"># adapters/__init__.py:21-32 — 适配器工厂函数</span>
+<span class="kw">def</span> <span class="fn">get_adapter</span>(name: str, in_dim: int, factor: int = <span class="num">8</span>) -> nn.Module:
+    <span class="kw">if</span> name == <span class="str">"mona"</span>:     <span class="kw">return</span> Mona(in_dim, factor)
+    <span class="kw">elif</span> name == <span class="str">"fc"</span>:     <span class="kw">return</span> FCAdapter(in_dim, factor)
+    <span class="kw">elif</span> name == <span class="str">"dual_attn"</span>: <span class="kw">return</span> DualAttnAdapter(in_dim, factor)
+    <span class="kw">else</span>: <span class="kw">raise</span> ValueError(...)</pre>
+<p>通过 <code>--adapter_type</code> 参数选择，在 DINOv3MonaEncoder 构造时传入。</p>
+<p>兼容性：<code>_remap_legacy_state_dict()</code> 自动将旧的 <code>mona1/mona2</code> 键名重映射为 <code>adapter1/adapter2</code>。</p>
+</div>
+
+<p class="file-ref">dinosam/model/adapters/__init__.py:1-32</p>
+
+<h3 id="dino-config">3.3 消融模块配置</h3>
+
+<table>
+<tr><th>参数</th><th>可选值</th><th>控制的消融维度</th></tr>
+<tr><td><code>--encoder</code></td><td>sam, dinov3</td><td>编码器主干选择</td></tr>
+<tr><td><code>--adapter_type</code></td><td>mona, fc, dual_attn</td><td>DINOv3 适配器类型（仅 dinov3 模式有效）</td></tr>
+<tr><td><code>--dinov3_checkpoint</code></td><td>路径</td><td>DINOv3 预训练权重</td></tr>
+</table>
+
+<div class="card">
+<h4>DINOv3 骨干详细配置（硬编码）</h4>
+<table>
+<tr><th>参数</th><th>值</th></tr>
+<tr><td>patch_size</td><td>16</td></tr>
+<tr><td>embed_dim</td><td>768</td></tr>
+<tr><td>depth（层数）</td><td>12</td></tr>
+<tr><td>num_heads</td><td>12</td></tr>
+<tr><td>ffn_ratio</td><td>4</td></tr>
+<tr><td>pos_embed_rope_base</td><td>100</td></tr>
+<tr><td>n_storage_tokens</td><td>4</td></tr>
+<tr><td>drop_path_rate</td><td>0.0</td></tr>
+<tr><td>layerscale_init</td><td>1e-5</td></tr>
+<tr><td>norm_layer</td><td>layernormbf16</td></tr>
+<tr><td>适配器 factor</td><td>8（瓶颈比 768/8=96）</td></tr>
+</table>
+</div>
+
+<h3 id="dino-train">3.4 训练流程</h3>
+
+<div class="card highlight">
+<p>DINOv3 方向的训练流程与 SAM 方向<strong>完全共享同一套代码路径</strong>（<code>trainer.py</code>），唯一的差异在于：</p>
+
+<h4>差异点 1：冻结策略</h4>
+<table>
+<tr><th>阶段</th><th>SAM 主干</th><th>DINOv3 主干</th></tr>
+<tr><td>Phase 1</td><td>冻结 SAM ViT-B + 深度分支</td><td>冻结 DINOv3 骨干 + SAM ViT-B + 深度分支；<strong>适配器 + 投影层可训练</strong></td></tr>
+<tr><td>Phase 2</td><td>冻结所有，只训练深度分支</td><td>冻结所有，只训练深度分支（适配器也冻结）</td></tr>
+</table>
+
+<h4>差异点 2：图像预处理</h4>
+<table>
+<tr><th>步骤</th><th>SAM 主干</th><th>DINOv3 主干</th></tr>
+<tr><td>缩放方式</td><td>保持宽高比，最长边 1024px</td><td>直接 resize 到 1024×1024（不保持宽高比）</td></tr>
+<tr><td>归一化参数</td><td>SAM pixel_mean/std</td><td>ImageNet mean/std × 255</td></tr>
+<tr><td>填充</td><td>需要填充到 1024×1024</td><td>不需要（已是正方形）</td></tr>
+<tr><td>input_size</td><td>(newh, neww) 缩放后实际尺寸</td><td>(1024, 1024) 固定</td></tr>
+</table>
+
+<h4>差异点 3：可训练参数</h4>
+<p>DINOv3 模式下 Phase 1 的可训练参数包括：</p>
+<ul>
+<li>SAM PromptEncoder + MaskDecoder（与 SAM 模式相同）</li>
+<li>DINOv3 adapter1 + adapter2（两个适配器）</li>
+<li>DINOv3 projection（线性投影层 768→256）</li>
+</ul>
+</div>
+
+<pre><span class="cm"># depth_sam.py:114-118 — DINOv3 模式的冻结</span>
+<span class="kw">def</span> <span class="fn">freeze_image_encoder</span>(self):
+    <span class="kw">if</span> self.encoder_type == <span class="str">"dinov3"</span>:
+        self.dinov3_encoder.freeze_backbone()  <span class="cm"># 仅冻结 DINOv3 骨干，适配器不冻结</span>
+    <span class="kw">for</span> param <span class="kw">in</span> self.sam.image_encoder.parameters():
+        param.requires_grad = <span class="kw">False</span>            <span class="cm"># SAM ViT-B 总是冻结</span></pre>
+
+<h3 id="dino-test">3.5 测试方法</h3>
+
+<div class="card blue">
+<p>DINOv3 方向的测试方法与 SAM 方向<strong>完全一致</strong>，通过 <code>--encoder dinov3</code> 和 <code>--adapter_type</code> 切换：</p>
+
+<pre><span class="cm"># 测试 DINOv3 + MoNA 适配器</span>
+python -m dinosam.evaluate \
+    --sam_checkpoint /path/to/sam_vit_b.pth \
+    --encoder dinov3 \
+    --dinov3_checkpoint /path/to/dinov3_vit_b.pth \
+    --adapter_type mona \
+    --phase1_checkpoint /path/to/phase1_best.pt \
+    --phase2_checkpoint /path/to/phase2_best.pt
+
+<span class="cm"># 测试 DINOv3 + Dual Attention 适配器</span>
+python -m dinosam.evaluate \
+    --encoder dinov3 \
+    --adapter_type dual_attn \
+    ...</pre>
+</div>
+
+<!-- ============================================================ -->
+<div class="separator"></div>
+<h2 id="compare">四、两种主干对比分析</h2>
+
+<table>
+<tr><th>维度</th><th>SAM 主干</th><th>DINOv3 主干</th></tr>
+<tr><td><strong>编码器</strong></td><td>SAM ViT-B/16（原生）</td><td>DINOv3 ViT-B/16 + 适配器 + 投影层</td></tr>
+<tr><td><strong>预训练来源</strong></td><td>SAM 分割任务</td><td>DINOv3 自监督（ImageNet）</td></tr>
+<tr><td><strong>编码器可训练部分</strong></td><td>无（完全冻结）</td><td>适配器 + 投影层（骨干冻结）</td></tr>
+<tr><td><strong>适配器消融</strong></td><td>不适用</td><td>MoNA / FC / Dual Attention</td></tr>
+<tr><td><strong>输出维度</strong></td><td>(B, 256, 64, 64)</td><td>(B, 256, 64, 64)（投影对齐）</td></tr>
+<tr><td><strong>归一化</strong></td><td>SAM pixel mean/std</td><td>ImageNet mean/std × 255</td></tr>
+<tr><td><strong>缩放方式</strong></td><td>保持宽高比 + 填充</td><td>直接 resize 正方形</td></tr>
+<tr><td><strong>掩码/深度分支</strong></td><td colspan="2" style="text-align:center;">完全相同（共享代码）</td></tr>
+<tr><td><strong>训练流程</strong></td><td colspan="2" style="text-align:center;">完全相同（两阶段迭代训练）</td></tr>
+<tr><td><strong>评估方法</strong></td><td colspan="2" style="text-align:center;">完全相同（共享代码）</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<div class="separator"></div>
+<h2 id="data">五、数据集与提示生成</h2>
+
+<div class="card">
+<h4>DepthDataset 数据格式</h4>
+<p>目录结构：根目录下按深度值分子文件夹，每个文件夹包含同名的 <code>.jpg</code> 图像和 <code>.png</code> 掩码。</p>
+<p>深度值编码：文件夹名 <code>"0"</code> → depth=0，<code>"10"</code> → depth=10，<code>"f10"</code> → depth=-10（前缀 f 表示负数）</p>
+<p>深度归一化：<code>depth / 100.0</code>（训练时使用归一化值，评估时还原到原始尺度）</p>
+
+<h4>点提示提取</h4>
+<ol>
+<li>对 GT 掩码进行连通域分析（<code>scipy.ndimage.label</code>）</li>
+<li>按面积降序排列连通域</li>
+<li>取最大的 <code>max_points</code> 个连通域的<strong>质心</strong>作为正点提示</li>
+<li>回退策略：无前景区域时使用图像中心</li>
+</ol>
+
+<h4>批次处理</h4>
+<p>自定义 <code>collate_fn</code> 处理变长点提示：将每个样本的点数补齐到批次内最大值，padding 使用 label=-1 标记。</p>
+</div>
+
+<p class="file-ref">dinosam/dataset/depth_dataset.py:1-155</p>
+
+<!-- ============================================================ -->
+<div class="separator"></div>
+<h2 id="summary">六、技术总结</h2>
+
+<div class="card highlight">
+<h3>核心创新点</h3>
+<ol>
+<li><strong>双分支架构</strong>：在 SAM 的分割掩码分支之外，增加外部深度分支（Outer PromptEncoder + DepthMaskDecoder），利用分割掩码作为深度预测的条件输入</li>
+<li><strong>权重初始化策略</strong>：深度分支从 SAM 内部分支复制权重初始化，加速收敛</li>
+<li><strong>两阶段交替训练</strong>：Phase 1 训练掩码分支，Phase 2 冻结掩码训练深度分支，避免两个任务相互干扰</li>
+<li><strong>迭代式误差采点</strong>：多轮 forward → 比较误差 → 采样新点提示 → 追加到下一轮，逐步细化分割/深度预测</li>
+<li><strong>可插拔编码器</strong>：通过统一的 <code>(B, 256, 64, 64)</code> 接口，支持 SAM ViT-B 和 DINOv3 + 适配器两种编码器</li>
+</ol>
+</div>
+
+<div class="card">
+<h3>消融实验设计空间</h3>
+<table>
+<tr><th>消融维度</th><th>可选配置</th><th>对应参数</th></tr>
+<tr><td>编码器主干</td><td>SAM ViT-B / DINOv3 ViT-B</td><td><code>--encoder</code></td></tr>
+<tr><td>适配器类型</td><td>MoNA / FC / Dual Attention</td><td><code>--adapter_type</code></td></tr>
+<tr><td>迭代次数</td><td>1（无迭代） / 8（标准）</td><td><code>--n_sub_iterations</code></td></tr>
+<tr><td>Mask Input</td><td>0（不使用） / 0.5（50%概率）</td><td><code>--mask_prob</code></td></tr>
+<tr><td>深度损失权重</td><td>0.01 / 0.1 / 1.0</td><td><code>--depth_loss_weight</code></td></tr>
+<tr><td>训练阶段</td><td>仅 Phase 1 / 仅 Phase 2 / 两阶段</td><td><code>--train_phase</code></td></tr>
+<tr><td>初始点数</td><td>1 / 3 / 5</td><td><code>--max_points</code></td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3>关键文件索引</h3>
+<table>
+<tr><th>文件</th><th>核心类/函数</th><th>行数</th><th>职责</th></tr>
+<tr><td>model/depth_sam.py</td><td>DepthSam</td><td>13-338</td><td>主模型：双分支架构 + 编码器选择</td></tr>
+<tr><td>model/depth_decoder.py</td><td>DepthMaskDecoder</td><td>10-92</td><td>深度解码器：depth_token + depth_head</td></tr>
+<tr><td>model/dinov3_encoder.py</td><td>DINOv3MonaEncoder</td><td>16-110</td><td>DINOv3 编码器 + 适配器 + 投影</td></tr>
+<tr><td>model/mona.py</td><td>Mona, MonaOp</td><td>1-65</td><td>MoNA 多尺度卷积适配器</td></tr>
+<tr><td>model/adapters/fc_adapter.py</td><td>FCAdapter</td><td>1-38</td><td>纯 FC 瓶颈适配器</td></tr>
+<tr><td>model/adapters/dual_attn_adapter.py</td><td>DualAttnAdapter</td><td>1-79</td><td>PAM+CAM 双重注意力适配器</td></tr>
+<tr><td>model/adapters/__init__.py</td><td>get_adapter()</td><td>21-32</td><td>适配器工厂 + 旧键重映射</td></tr>
+<tr><td>train/trainer.py</td><td>run_phase1, run_phase2</td><td>357-533</td><td>两阶段训练入口</td></tr>
+<tr><td>train/iterative.py</td><td>iterative_mask_step, iterative_depth_step</td><td>111-294</td><td>迭代训练步骤</td></tr>
+<tr><td>loss/dice.py</td><td>dice_loss, compute_iou</td><td>1-21</td><td>Dice 损失 + IoU 计算</td></tr>
+<tr><td>loss/depth_loss.py</td><td>depth_mse_loss</td><td>1-7</td><td>深度 MSE 损失</td></tr>
+<tr><td>prompt/iterative.py</td><td>DepthIterativePromptGenerator</td><td>6-126</td><td>误差采点提示生成器</td></tr>
+<tr><td>dataset/depth_dataset.py</td><td>DepthDataset, collate_fn</td><td>1-155</td><td>数据集 + 自定义批次化</td></tr>
+<tr><td>evaluate.py</td><td>evaluate(), main()</td><td>22-366</td><td>评估流程 + 指标计算 + 可视化</td></tr>
+</table>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DINOSAM 评估指标扩展 — 变更文档</title>
+<style>
+  :root { --bg: #fafbfc; --card: #fff; --border: #e1e4e8; --text: #24292e; --text2: #586069; --accent: #0366d6; --green: #22863a; --red: #cb2431; --code-bg: #f6f8fa; --added: #e6ffed; --removed: #ffeef0; --added-line: #acf2bd; --removed-line: #fdb8c0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 2rem; max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 1.8rem; border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem; margin-bottom: 1.5rem; }
+  h2 { font-size: 1.35rem; margin: 2rem 0 0.8rem; color: var(--accent); border-left: 4px solid var(--accent); padding-left: 0.8rem; }
+  h3 { font-size: 1.1rem; margin: 1.2rem 0 0.5rem; }
+  p, li { margin-bottom: 0.5rem; }
+  ul { padding-left: 1.5rem; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 1.2rem 1.5rem; margin: 1rem 0; }
+  .meta { display: flex; gap: 2rem; flex-wrap: wrap; font-size: 0.9rem; color: var(--text2); margin-bottom: 1.5rem; }
+  .meta span { background: var(--code-bg); padding: 0.2rem 0.6rem; border-radius: 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 0.8rem 0; font-size: 0.92rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.8rem; text-align: left; }
+  th { background: var(--code-bg); font-weight: 600; }
+  code { background: var(--code-bg); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.88em; font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 0.8rem 0; font-family: "SFMono-Regular", Consolas, monospace; }
+  .diff-add { background: var(--added); }
+  .diff-del { background: var(--removed); }
+  .tag { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 12px; font-size: 0.8rem; font-weight: 500; }
+  .tag-green { background: #dcffe4; color: var(--green); }
+  .tag-red { background: #ffdce0; color: var(--red); }
+  .tag-blue { background: #dbedff; color: var(--accent); }
+  .formula { background: var(--code-bg); border-left: 3px solid var(--accent); padding: 0.8rem 1.2rem; margin: 0.8rem 0; font-family: "SFMono-Regular", Consolas, monospace; }
+  .review-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  .review-card { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; }
+  .review-card h4 { font-size: 0.95rem; margin-bottom: 0.5rem; }
+  .pass { border-left: 4px solid var(--green); }
+  svg { display: block; margin: 1rem auto; }
+  @media (max-width: 768px) { .review-grid { grid-template-columns: 1fr; } body { padding: 1rem; } }
+</style>
+</head>
+<body>
+
+<h1>DINOSAM 评估指标扩展 — 变更文档</h1>
+
+<div class="meta">
+  <span>提交: <code>cbd5244</code></span>
+  <span>分支: <code>DINO</code></span>
+  <span>文件: <code>dinosam/evaluate.py</code></span>
+  <span>变更: <code>+41 / -4</code></span>
+  <span>日期: 2026-06-22</span>
+</div>
+
+<!-- ==================== 1. 概述 ==================== -->
+<h2>1. 变更概述</h2>
+
+<div class="card">
+  <p>在 DINOSAM 评估流程中新增三个分割质量指标：<strong>Boundary IoU</strong>、<strong>Precision</strong>、<strong>Recall</strong>，用于更全面地评估分割掩码质量。</p>
+  <table>
+    <tr><th>属性</th><th>值</th></tr>
+    <tr><td>修改文件</td><td><code>dinosam/evaluate.py</code>（单文件）</td></tr>
+    <tr><td>新增依赖</td><td>无（纯 PyTorch 实现）</td></tr>
+    <tr><td>新增文件</td><td>无</td></tr>
+    <tr><td>CLI 变更</td><td>无新参数</td></tr>
+    <tr><td>兼容性</td><td>完全向后兼容，仅追加输出</td></tr>
+  </table>
+</div>
+
+<!-- ==================== 2. 设计决策 ==================== -->
+<h2>2. 设计决策与审查过程</h2>
+
+<h3>2.1 决策经过</h3>
+<p>本次变更经过三轮、每轮三路并行 review 审查（共 9 次 review），逐步收敛到最终方案：</p>
+
+<table>
+  <tr><th>轮次</th><th>审查方式</th><th>关键决策</th></tr>
+  <tr><td>第 1 轮</td><td>通用 Review + Harness Review + Ponytail Review</td><td>初始方案：4 个指标放 dice.py + scipy 实现</td></tr>
+  <tr><td>第 2 轮</td><td>三路 review 修订方案</td><td>砍 HD95、改放 evaluate.py、用 F.max_pool2d、内联 precision/recall</td></tr>
+  <tr><td>第 3 轮</td><td>三路 review 实现代码</td><td>确认实现正确，修复 overlap 冗余</td></tr>
+</table>
+
+<h3>2.2 关键设计决策</h3>
+
+<table>
+  <tr><th>议题</th><th>决策</th><th>理由</th></tr>
+  <tr><td>HD95 是否添加</td><td><span class="tag tag-red">砍掉</span></td><td>YAGNI — 非医学分割场景，审稿人要求时再加（~10行）</td></tr>
+  <tr><td>函数放置位置</td><td><code>evaluate.py</code> 顶部</td><td>仅评估时使用，不污染训练用的 <code>loss/dice.py</code>，不值得新建文件</td></tr>
+  <tr><td>边界提取实现</td><td><code>F.max_pool2d</code></td><td>纯 PyTorch、留在 GPU、无 scipy 依赖、无 GPU→CPU 转换开销</td></tr>
+  <tr><td>Boundary IoU 边界类型</td><td>腐蚀取内边界</td><td>与标准论文（Cheng et al., CVPR 2021）一致</td></tr>
+  <tr><td>边界宽度</td><td><code>BOUNDARY_WIDTH = 2</code> 硬编码</td><td>论文默认值，避免不必要的参数化</td></tr>
+  <tr><td>空 mask 处理</td><td><code>eps = 1e-7</code> 防除零</td><td>与现有 Dice/IoU 处理方式一致</td></tr>
+  <tr><td>precision/recall 封装</td><td>内联（复用已有 <code>intersection</code>）</td><td>单调用点的两个除法，不值得独立函数</td></tr>
+</table>
+
+<!-- ==================== 3. 新增指标详解 ==================== -->
+<h2>3. 新增指标详解</h2>
+
+<h3>3.1 Boundary IoU（边界交并比）</h3>
+
+<div class="card">
+  <p><strong>来源：</strong> Cheng et al., "Boundary IoU: Improving Object-Centric Image Segmentation Evaluation", CVPR 2021</p>
+  <p><strong>动机：</strong> 标准 IoU 对大面积掩码的边缘误差不敏感。Boundary IoU 仅在边界带内计算 IoU，直接反映边缘精度。</p>
+</div>
+
+<p><strong>计算步骤：</strong></p>
+
+<div class="formula">
+  1. 形态学腐蚀：eroded = 1 − MaxPool2d(1 − mask, kernel=5, stride=1, padding=2)<br>
+  2. 提取内边界：boundary = mask − eroded<br>
+  3. 边界 IoU = |boundary_pred ∩ boundary_gt| / |boundary_pred ∪ boundary_gt|
+</div>
+
+<!-- SVG: Boundary IoU 示意图 -->
+<svg width="700" height="200" viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 原始 mask -->
+  <rect x="20" y="30" width="140" height="140" rx="8" fill="#e8f4fd" stroke="#0366d6" stroke-width="2"/>
+  <ellipse cx="90" cy="100" rx="50" ry="55" fill="#0366d6" fill-opacity="0.3" stroke="#0366d6" stroke-width="2"/>
+  <text x="90" y="190" text-anchor="middle" font-size="13" fill="#586069">原始 mask</text>
+
+  <!-- 箭头 -->
+  <line x1="175" y1="100" x2="215" y2="100" stroke="#586069" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="195" y="88" text-anchor="middle" font-size="11" fill="#586069">腐蚀</text>
+
+  <!-- 腐蚀后 -->
+  <rect x="230" y="30" width="140" height="140" rx="8" fill="#e8f4fd" stroke="#0366d6" stroke-width="2"/>
+  <ellipse cx="300" cy="100" rx="50" ry="55" fill="none" stroke="#0366d6" stroke-width="2" stroke-dasharray="4,3"/>
+  <ellipse cx="300" cy="100" rx="40" ry="45" fill="#0366d6" fill-opacity="0.2" stroke="#22863a" stroke-width="2"/>
+  <text x="300" y="190" text-anchor="middle" font-size="13" fill="#586069">腐蚀后 (eroded)</text>
+
+  <!-- 箭头 -->
+  <line x1="385" y1="100" x2="425" y2="100" stroke="#586069" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="405" y="88" text-anchor="middle" font-size="11" fill="#586069">相减</text>
+
+  <!-- 边界带 -->
+  <rect x="440" y="30" width="140" height="140" rx="8" fill="#e8f4fd" stroke="#0366d6" stroke-width="2"/>
+  <ellipse cx="510" cy="100" rx="50" ry="55" fill="none" stroke="#0366d6" stroke-width="2"/>
+  <ellipse cx="510" cy="100" rx="40" ry="45" fill="none" stroke="#22863a" stroke-width="2"/>
+  <!-- 边界带着色 -->
+  <path d="M510,45 a50,55 0 1,1 -0.01,0 Z" fill="#ff6b6b" fill-opacity="0.3"/>
+  <path d="M510,55 a40,45 0 1,1 -0.01,0 Z" fill="#e8f4fd"/>
+  <text x="510" y="190" text-anchor="middle" font-size="13" fill="#586069">内边界带 (boundary)</text>
+  <text x="510" y="105" text-anchor="middle" font-size="11" fill="#cb2431" font-weight="bold">w=2px</text>
+
+  <!-- 最终计算 -->
+  <text x="630" y="90" text-anchor="middle" font-size="13" fill="#24292e" font-weight="bold">Boundary</text>
+  <text x="630" y="110" text-anchor="middle" font-size="13" fill="#24292e" font-weight="bold">IoU</text>
+  <line x1="595" y1="100" x2="600" y2="100" stroke="none"/>
+
+  <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#586069"/></marker></defs>
+</svg>
+
+<h3>3.2 Precision（精确率）</h3>
+
+<div class="card">
+  <p><strong>定义：</strong> 预测为前景的像素中，实际为前景的比例。</p>
+  <div class="formula">Precision = TP / (TP + FP) = intersection / pred_sum</div>
+  <p><strong>意义：</strong> 高 Precision 表示模型预测的前景区域很少有误报（假阳性）。</p>
+</div>
+
+<h3>3.3 Recall（召回率）</h3>
+
+<div class="card">
+  <p><strong>定义：</strong> 实际为前景的像素中，被正确预测的比例。</p>
+  <div class="formula">Recall = TP / (TP + FN) = intersection / gt_sum</div>
+  <p><strong>意义：</strong> 高 Recall 表示模型很少遗漏前景区域（假阴性）。</p>
+</div>
+
+<h3>3.4 指标体系对比</h3>
+
+<table>
+  <tr><th>指标</th><th>评估维度</th><th>对什么敏感</th><th>来源</th></tr>
+  <tr><td>Dice</td><td>整体重叠度</td><td>面积匹配</td><td>已有</td></tr>
+  <tr><td>IoU</td><td>整体重叠度</td><td>面积匹配（比 Dice 更严格）</td><td>已有</td></tr>
+  <tr><td><span class="tag tag-green">Boundary IoU</span></td><td>边缘精度</td><td>边界偏移、毛刺、模糊</td><td><strong>新增</strong></td></tr>
+  <tr><td><span class="tag tag-green">Precision</span></td><td>误报率</td><td>过分割（预测过大）</td><td><strong>新增</strong></td></tr>
+  <tr><td><span class="tag tag-green">Recall</span></td><td>漏检率</td><td>欠分割（预测过小）</td><td><strong>新增</strong></td></tr>
+</table>
+
+<!-- ==================== 4. 实现细节 ==================== -->
+<h2>4. 实现细节</h2>
+
+<h3>4.1 修改位置总览</h3>
+
+<table>
+  <tr><th>位置</th><th>行号</th><th>变更内容</th></tr>
+  <tr><td>辅助函数 + 常量</td><td>L21–28</td><td><code>BOUNDARY_WIDTH=2</code>、<code>_boundary()</code> 函数定义</td></tr>
+  <tr><td>列表初始化</td><td>L49–51</td><td>新增 <code>all_boundary_iou</code>、<code>all_precision</code>、<code>all_recall</code></td></tr>
+  <tr><td>逐样本计算</td><td>L135–145</td><td>Boundary IoU 计算 + Precision/Recall 内联计算</td></tr>
+  <tr><td>冗余消除</td><td>L129–131</td><td>删除重复的 <code>overlap</code> 变量，IoU 直接复用 <code>intersection</code></td></tr>
+  <tr><td>返回 dict</td><td>L178–180</td><td>追加 3 个 key</td></tr>
+  <tr><td>print_metrics()</td><td>L205–207</td><td>追加 3 行打印（含 mean 和 median）</td></tr>
+  <tr><td>Phase 比较</td><td>L391–397</td><td>追加 3 个指标的 Phase 1→2 delta 对比</td></tr>
+</table>
+
+<h3>4.2 核心代码</h3>
+
+<p><strong>边界提取辅助函数</strong>（<code>evaluate.py:23-28</code>）：</p>
+<pre><span style="color:#586069"># ---- 评估专用指标函数 ----</span>
+BOUNDARY_WIDTH = 2
+
+<span style="color:#6f42c1">def</span> <span style="color:#005cc5">_boundary</span>(m, w=BOUNDARY_WIDTH):
+    <span style="color:#586069">"""提取二值 mask 的内边界带（mask - erode(mask)）"""</span>
+    k = 2 * w + 1
+    eroded = 1 - F.max_pool2d(1 - m[None, None], k, 1, w)[0, 0]
+    <span style="color:#d73a49">return</span> m - eroded</pre>
+
+<p><strong>逐样本指标计算</strong>（<code>evaluate.py:135-145</code>）：</p>
+<pre><span style="color:#586069"># Boundary IoU</span>
+pred_bd = _boundary(pred_i)
+gt_bd = _boundary(gt_i)
+bd_inter = (pred_bd * gt_bd).sum()
+bd_union = ((pred_bd + gt_bd) > 0).float().sum()
+all_boundary_iou.append((bd_inter / (bd_union + 1e-7)).item())
+
+<span style="color:#586069"># Precision / Recall（复用已有 intersection）</span>
+all_precision.append((intersection / (pred_i.sum() + 1e-7)).item())
+all_recall.append((intersection / (gt_i.sum() + 1e-7)).item())</pre>
+
+<p><strong>冗余消除</strong>（删除重复的 <code>overlap</code> 变量）：</p>
+<pre><span class="diff-del">-            overlap = (pred_i * gt_i).sum()</span>
+             union_mask = ((pred_i + gt_i) > 0).float().sum()
+<span class="diff-del">-            iou = (overlap / (union_mask + 1e-7)).item()</span>
+<span class="diff-add">+            iou = (intersection / (union_mask + 1e-7)).item()</span></pre>
+
+<h3>4.3 实现要点</h3>
+
+<div class="card">
+  <ul>
+    <li><strong>F.max_pool2d 的 4D 输入要求：</strong> <code>pred_i</code> 是 2D <code>(H, W)</code>，通过 <code>m[None, None]</code> 升维到 <code>(1, 1, H, W)</code>，计算后 <code>[0, 0]</code> 降维回来。</li>
+    <li><strong>腐蚀实现：</strong> 对 <code>1 - mask</code> 做 max_pool2d 等价于对 <code>mask</code> 做 min_pool2d（形态学腐蚀）。</li>
+    <li><strong>intersection 复用：</strong> Precision 和 Recall 的分子 TP 就是 <code>intersection = (pred_i * gt_i).sum()</code>，已在 L126 计算过。</li>
+    <li><strong>空 mask 安全：</strong> 全零 mask 的 boundary 也全零，<code>eps=1e-7</code> 防止除零，返回 ≈0。与现有 Dice/IoU 的处理方式一致。</li>
+  </ul>
+</div>
+
+<!-- ==================== 5. 输出示例 ==================== -->
+<h2>5. 输出示例</h2>
+
+<h3>5.1 单阶段评估输出</h3>
+<pre>============================================================
+  Phase 1 Model (mask-only trained)
+============================================================
+  Segmentation Dice:  0.9234  (median: 0.9456)
+  Segmentation IoU:   0.8612  (median: 0.8951)
+  IoU Prediction:     0.8834
+  IoU Pred MAE:       0.0312
+  <span style="color:#22863a; font-weight:bold">Boundary IoU:       0.7845  (median: 0.8102)    ← 新增</span>
+  <span style="color:#22863a; font-weight:bold">Precision:          0.9456  (median: 0.9612)    ← 新增</span>
+  <span style="color:#22863a; font-weight:bold">Recall:             0.9012  (median: 0.9234)    ← 新增</span>
+  Depth MSE:          12.3456
+  ...</pre>
+
+<h3>5.2 Phase 1 vs Phase 2 对比输出</h3>
+<pre>============================================================
+  Phase 1 vs Phase 2 Comparison
+============================================================
+  Dice:       0.9234 -> 0.9198  (-0.0036)
+  IoU:        0.8612 -> 0.8589  (-0.0023)
+  <span style="color:#22863a; font-weight:bold">BoundIoU:   0.7845 -> 0.7801  (-0.0044)         ← 新增</span>
+  <span style="color:#22863a; font-weight:bold">Precision:  0.9456 -> 0.9423  (-0.0033)         ← 新增</span>
+  <span style="color:#22863a; font-weight:bold">Recall:     0.9012 -> 0.8998  (-0.0014)         ← 新增</span>
+  Depth MAE:  25.1200 -> 8.3400  (-16.7800)</pre>
+
+<!-- ==================== 6. Review 汇总 ==================== -->
+<h2>6. Review 审查记录</h2>
+
+<div class="review-grid">
+  <div class="review-card pass">
+    <h4>通用 Code Review</h4>
+    <p><span class="tag tag-green">通过</span></p>
+    <ul>
+      <li>_boundary 腐蚀实现正确</li>
+      <li>空 mask 处理安全</li>
+      <li>intersection 复用正确</li>
+      <li>发现 overlap 冗余（已修复）</li>
+    </ul>
+  </div>
+  <div class="review-card pass">
+    <h4>Harness 多角度 Review</h4>
+    <p><span class="tag tag-green">通过</span></p>
+    <ul>
+      <li>设计方案一致性 ✓</li>
+      <li>代码风格一致性 ✓</li>
+      <li>无遗漏修改点 ✓</li>
+      <li>无安全风险 ✓</li>
+    </ul>
+  </div>
+  <div class="review-card pass">
+    <h4>Ponytail 过度工程 Review</h4>
+    <p><span class="tag tag-green">通过</span></p>
+    <ul>
+      <li>无多余抽象</li>
+      <li>最短路径实现</li>
+      <li>发现 overlap 冗余（已修复）</li>
+      <li>总评：足够精简</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ==================== 7. 附加变更 ==================== -->
+<h2>7. 附加变更</h2>
+
+<div class="card">
+  <p>本次提交同时包含一项此前未暂存的改动（与指标无关）：</p>
+  <table>
+    <tr><th>变更</th><th>行号</th><th>内容</th></tr>
+    <tr><td>新增 CLI 参数</td><td>L312–314</td><td><code>--depth_transformer_type</code>（twoway / dual_attn）</td></tr>
+    <tr><td>传参给 DepthSam</td><td>L334, L364</td><td>Phase 1 / Phase 2 模型构造时传入 <code>depth_transformer_type</code></td></tr>
+  </table>
+  <p>此改动支持在评估时选择不同的深度解码器 Transformer 类型，与此前 <code>e96ebe8</code> 提交的 DualAttnTransformer 功能配套。</p>
+</div>
+
+<!-- ==================== 8. 未来可选扩展 ==================== -->
+<h2>8. 未来可选扩展</h2>
+
+<table>
+  <tr><th>指标</th><th>实现难度</th><th>添加时机</th></tr>
+  <tr><td>F1-Score</td><td>1 行（<code>2*P*R/(P+R)</code>）</td><td>需要时从已有 Precision/Recall 直接算</td></tr>
+  <tr><td>HD95（Hausdorff Distance 95%）</td><td>~10 行 + scipy</td><td>审稿人要求医学分割指标时</td></tr>
+  <tr><td>ASSD（平均对称表面距离）</td><td>~15 行 + scipy</td><td>与 HD95 同时添加</td></tr>
+  <tr><td>per-class Boundary IoU</td><td>~5 行</td><td>需要按深度类别分析边界质量时</td></tr>
+</table>
+
+<hr style="margin: 2rem 0; border: none; border-top: 1px solid var(--border);">
+<p style="text-align: center; color: var(--text2); font-size: 0.85rem;">
+  DINOSAM 评估指标扩展文档 · 提交 <code>cbd5244</code> · 2026-06-22
+</p>
+
+</body>
+</html>
