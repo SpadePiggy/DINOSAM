@@ -17,6 +17,15 @@ from dinosam.prompt import DepthIterativePromptGenerator
 
 DEPTH_SCALE = 100.0  # dataset normalizes depth by dividing by this
 
+# ---- 评估专用指标函数 ----
+BOUNDARY_WIDTH = 2
+
+def _boundary(m, w=BOUNDARY_WIDTH):
+    """提取二值 mask 的内边界带（mask - erode(mask)）"""
+    k = 2 * w + 1
+    eroded = 1 - F.max_pool2d(1 - m[None, None], k, 1, w)[0, 0]
+    return m - eroded
+
 
 @torch.no_grad()
 def evaluate(model, dataset, device, batch_size=4, n_sub_iterations=1, mask_prob=0.0, save_masks_dir=None):
@@ -37,6 +46,9 @@ def evaluate(model, dataset, device, batch_size=4, n_sub_iterations=1, mask_prob
     all_depth_mae = []
     all_depth_pred = []
     all_depth_gt = []
+    all_boundary_iou = []
+    all_precision = []
+    all_recall = []
 
     # Process one sample at a time for mask saving simplicity
     dataloader = DataLoader(
@@ -116,12 +128,20 @@ def evaluate(model, dataset, device, batch_size=4, n_sub_iterations=1, mask_prob
             dice = (2 * intersection / (union + 1e-7)).item()
             all_dice.append(dice)
 
-            overlap = (pred_i * gt_i).sum()
             union_mask = ((pred_i + gt_i) > 0).float().sum()
-            iou = (overlap / (union_mask + 1e-7)).item()
+            iou = (intersection / (union_mask + 1e-7)).item()
             all_iou.append(iou)
 
             all_iou_pred.append(iou_pred[i, 0].item())
+
+            pred_bd = _boundary(pred_i)
+            gt_bd = _boundary(gt_i)
+            bd_inter = (pred_bd * gt_bd).sum()
+            bd_union = ((pred_bd + gt_bd) > 0).float().sum()
+            all_boundary_iou.append((bd_inter / (bd_union + 1e-7)).item())
+
+            all_precision.append((intersection / (pred_i.sum() + 1e-7)).item())
+            all_recall.append((intersection / (gt_i.sum() + 1e-7)).item())
 
             # Store in original scale [-100, 100]
             pred_orig = depth_pred[i].item() * DEPTH_SCALE
@@ -155,6 +175,9 @@ def evaluate(model, dataset, device, batch_size=4, n_sub_iterations=1, mask_prob
         "dice": np.array(all_dice),
         "iou": np.array(all_iou),
         "iou_pred": np.array(all_iou_pred),
+        "boundary_iou": np.array(all_boundary_iou),
+        "precision": np.array(all_precision),
+        "recall": np.array(all_recall),
         "depth_mae": np.array(all_depth_mae),
         "depth_pred": np.array(all_depth_pred),
         "depth_gt": np.array(all_depth_gt),
@@ -179,6 +202,9 @@ def print_metrics(name, metrics):
     print(f"  Segmentation IoU:   {metrics['iou'].mean():.4f}  (median: {np.median(metrics['iou']):.4f})")
     print(f"  IoU Prediction:     {metrics['iou_pred'].mean():.4f}")
     print(f"  IoU Pred MAE:       {abs(metrics['iou_pred'] - metrics['iou']).mean():.4f}")
+    print(f"  Boundary IoU:       {metrics['boundary_iou'].mean():.4f}  (median: {np.median(metrics['boundary_iou']):.4f})")
+    print(f"  Precision:          {metrics['precision'].mean():.4f}  (median: {np.median(metrics['precision']):.4f})")
+    print(f"  Recall:             {metrics['recall'].mean():.4f}  (median: {np.median(metrics['recall']):.4f})")
     print(f"  Depth MSE:          {mse:.4f}")
     print(f"  Depth MAE:          {depth_mae.mean():.4f}")
     print(f"  Depth RMSE:         {rmse:.4f}")
@@ -283,6 +309,9 @@ def main():
     parser.add_argument("--adapter_type", type=str, default="mona",
                         choices=["mona", "fc", "dual_attn"],
                         help="Feature adapter type for DINOv3 encoder (default: mona)")
+    parser.add_argument("--depth_transformer_type", type=str, default="twoway",
+                        choices=["twoway", "dual_attn"],
+                        help="Depth decoder transformer type. dual_attn requires training from scratch.")
     parser.add_argument("--dinov3_checkpoint", type=str, default=None,
                         help="Path to DINOv3 ViT-B/16 checkpoint (required when --encoder dinov3)")
     args = parser.parse_args()
@@ -302,7 +331,8 @@ def main():
         print(f"\nLoading Phase 1 model: {args.phase1_checkpoint}")
         sam = sam_model_registry["vit_b"](checkpoint=args.sam_checkpoint)
         model = DepthSam(sam, encoder_type=args.encoder, dinov3_checkpoint=args.dinov3_checkpoint,
-                         adapter_type=args.adapter_type)
+                         adapter_type=args.adapter_type,
+                         depth_transformer_type=args.depth_transformer_type)
         _load_model_state_dict(model, args.phase1_checkpoint, device)
         model.freeze_image_encoder()
         model.to(device)
@@ -330,7 +360,8 @@ def main():
         print(f"\nLoading Phase 2 model: {args.phase2_checkpoint}")
         sam = sam_model_registry["vit_b"](checkpoint=args.sam_checkpoint)
         model = DepthSam(sam, encoder_type=args.encoder, dinov3_checkpoint=args.dinov3_checkpoint,
-                         adapter_type=args.adapter_type)
+                         adapter_type=args.adapter_type,
+                         depth_transformer_type=args.depth_transformer_type)
         _load_model_state_dict(model, args.phase2_checkpoint, device)
         model.freeze_image_encoder()
         model.to(device)
@@ -357,6 +388,12 @@ def main():
             d_depth = metrics_p2['depth_mae'].mean() - metrics_p1['depth_mae'].mean()
             print(f"  Dice:       {metrics_p1['dice'].mean():.4f} -> {metrics_p2['dice'].mean():.4f}  ({d_dice:+.4f})")
             print(f"  IoU:        {metrics_p1['iou'].mean():.4f} -> {metrics_p2['iou'].mean():.4f}  ({d_iou:+.4f})")
+            d_biou = metrics_p2['boundary_iou'].mean() - metrics_p1['boundary_iou'].mean()
+            d_prec = metrics_p2['precision'].mean() - metrics_p1['precision'].mean()
+            d_rec = metrics_p2['recall'].mean() - metrics_p1['recall'].mean()
+            print(f"  BoundIoU:   {metrics_p1['boundary_iou'].mean():.4f} -> {metrics_p2['boundary_iou'].mean():.4f}  ({d_biou:+.4f})")
+            print(f"  Precision:  {metrics_p1['precision'].mean():.4f} -> {metrics_p2['precision'].mean():.4f}  ({d_prec:+.4f})")
+            print(f"  Recall:     {metrics_p1['recall'].mean():.4f} -> {metrics_p2['recall'].mean():.4f}  ({d_rec:+.4f})")
             print(f"  Depth MAE:  {metrics_p1['depth_mae'].mean():.4f} -> {metrics_p2['depth_mae'].mean():.4f}  ({d_depth:+.4f})")
     else:
         print(f"\nPhase 2 checkpoint not found: {args.phase2_checkpoint} (skip)")
