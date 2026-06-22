@@ -20,11 +20,12 @@ class DepthSam(nn.Module):
       image_embeddings + outer embeddings → depth_decoder → depth prediction
     """
 
-    def __init__(self, sam: Sam, encoder_type: str = "sam", dinov3_checkpoint: str = None, adapter_type: str = "mona"):
+    def __init__(self, sam: Sam, encoder_type: str = "sam", dinov3_checkpoint: str = None, adapter_type: str = "mona", depth_transformer_type: str = "twoway"):
         super().__init__()
         self.sam = sam
         self.encoder_type = encoder_type
         self.adapter_type = adapter_type
+        self.depth_transformer_type = depth_transformer_type
         self.img_size = sam.image_encoder.img_size
         self.transform = ResizeLongestSide(self.img_size)
 
@@ -45,18 +46,37 @@ class DepthSam(nn.Module):
         else:
             self.dinov3_encoder = None
 
-        self.outer_prompt_encoder = PromptEncoder(
-            embed_dim=prompt_embed_dim,
-            image_embedding_size=(image_embedding_size, image_embedding_size),
-            input_image_size=(image_size, image_size),
-            mask_in_chans=16,
-        )
-        self.depth_decoder = DepthMaskDecoder(
-            transformer_dim=prompt_embed_dim,
-            transformer=TwoWayTransformer(
-                depth=2, embedding_dim=prompt_embed_dim, mlp_dim=2048, num_heads=8,
-            ),
-        )
+        # simple 模式：仅用全局池化 + MLP 预测深度，不需要 decoder
+        if depth_transformer_type == "simple":
+            self.simple_depth_head = nn.Sequential(
+                nn.AdaptiveAvgPool2d(1), nn.Flatten(),
+                nn.Linear(256, 1024), nn.ReLU(),
+                nn.Linear(1024, 256), nn.ReLU(),
+                nn.Linear(256, 1),
+            )
+            self.outer_prompt_encoder = None
+            self.depth_decoder = None
+        else:
+            self.outer_prompt_encoder = PromptEncoder(
+                embed_dim=prompt_embed_dim,
+                image_embedding_size=(image_embedding_size, image_embedding_size),
+                input_image_size=(image_size, image_size),
+                mask_in_chans=16,
+            )
+            # 根据 depth_transformer_type 选择 transformer
+            if depth_transformer_type == "dual_attn":
+                from .dual_attn_transformer import DualAttnTransformer
+                transformer = DualAttnTransformer(
+                    embedding_dim=prompt_embed_dim, num_heads=8,
+                    mlp_dim=2048, depth=2,
+                )
+            else:
+                transformer = TwoWayTransformer(
+                    depth=2, embedding_dim=prompt_embed_dim, mlp_dim=2048, num_heads=8,
+                )
+            self.depth_decoder = DepthMaskDecoder(
+                transformer_dim=prompt_embed_dim, transformer=transformer,
+            )
 
     def init_depth_from_sam(self):
         """Initialize depth branch weights from SAM's inner prompt_encoder + mask_decoder.
@@ -70,6 +90,10 @@ class DepthSam(nn.Module):
           - output_hypernetworks_mlps[0] ← mask_decoder.output_hypernetworks_mlps[0] (take first)
           - depth_prediction_head: randomly initialized (no SAM equivalent)
         """
+        if self.depth_transformer_type == "simple":
+            print("Simple mode: no depth decoder to initialize from SAM")
+            return
+
         sam_pe = self.sam.prompt_encoder
         sam_md = self.sam.mask_decoder
 
@@ -80,12 +104,15 @@ class DepthSam(nn.Module):
         dd_sd = self.depth_decoder.state_dict()
         md_sd = sam_md.state_dict()
 
-        # Transformer (identical structure)
-        for key in list(dd_sd.keys()):
-            if key.startswith("transformer."):
-                md_key = key  # same key name in mask_decoder
-                if md_key in md_sd:
-                    dd_sd[key] = md_sd[md_key].clone()
+        # Transformer 权重迁移（dual_attn 模式跳过，使用随机初始化）
+        if self.depth_transformer_type != "dual_attn":
+            for key in list(dd_sd.keys()):
+                if key.startswith("transformer."):
+                    md_key = key  # same key name in mask_decoder
+                    if md_key in md_sd:
+                        dd_sd[key] = md_sd[md_key].clone()
+        else:
+            print("DualAttn mode: skipping transformer weight migration (random init)")
 
         # depth_token ← iou_token
         dd_sd["depth_token.weight"] = md_sd["iou_token.weight"].clone()
@@ -119,6 +146,11 @@ class DepthSam(nn.Module):
 
     def freeze_depth_branch(self):
         """Freeze outer_prompt_encoder + depth_decoder (for phase 1: mask-only training)."""
+        if self.outer_prompt_encoder is None:
+            # simple 模式：冻结 simple_depth_head
+            for param in self.simple_depth_head.parameters():
+                param.requires_grad = False
+            return
         for param in self.outer_prompt_encoder.parameters():
             param.requires_grad = False
         for param in self.depth_decoder.parameters():
@@ -261,6 +293,11 @@ class DepthSam(nn.Module):
             depth_pred: (B,)
             decoder_masks: (B, 1, H, W) postprocessed to original resolution
         """
+        # simple 模式：全局池化 + MLP，跳过 decoder
+        if self.depth_transformer_type == "simple":
+            depth = self.simple_depth_head(image_embeddings)
+            return depth.squeeze(-1), None
+
         B = image_embeddings.shape[0]
         outer_pe = self.outer_prompt_encoder.get_dense_pe()
 

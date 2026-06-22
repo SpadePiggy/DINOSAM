@@ -310,7 +310,7 @@ def main():
                         choices=["mona", "fc", "dual_attn"],
                         help="Feature adapter type for DINOv3 encoder (default: mona)")
     parser.add_argument("--depth_transformer_type", type=str, default="twoway",
-                        choices=["twoway", "dual_attn"],
+                        choices=["twoway", "dual_attn", "simple"],
                         help="Depth decoder transformer type. dual_attn requires training from scratch.")
     parser.add_argument("--dinov3_checkpoint", type=str, default=None,
                         help="Path to DINOv3 ViT-B/16 checkpoint (required when --encoder dinov3)")

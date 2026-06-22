@@ -159,7 +159,7 @@ def train_one_epoch_phase2(model, dataloader, optimizer, device, epoch, writer, 
         original_sizes = batch["original_size"].to(device)
         is_log_batch = (batch_idx + 1) % args.log_interval == 0
 
-        if args.n_sub_iterations > 1:
+        if args.depth_transformer_type != "simple" and args.n_sub_iterations > 1:
             # Iterative depth training
             loss_val, mask_val, depth_val = iterative_depth_step(
                 model=model,
@@ -214,7 +214,10 @@ def train_one_epoch_phase2(model, dataloader, optimizer, device, epoch, writer, 
             depth_val = depth_loss.item()
             if is_log_batch:
                 inner_mask_loss = dice_loss(masks_fullres, gt_masks)
-                decoder_mask_loss = dice_loss(decoder_masks, gt_masks)
+                if decoder_masks is not None:
+                    decoder_mask_loss = dice_loss(decoder_masks, gt_masks)
+                else:
+                    decoder_mask_loss = 0.0
                 mask_val = inner_mask_loss.item()
             else:
                 mask_val = 0.0
@@ -310,6 +313,7 @@ def _build_model_and_data(args, device):
         encoder_type=args.encoder,
         dinov3_checkpoint=args.dinov3_checkpoint,
         adapter_type=args.adapter_type,
+        depth_transformer_type=args.depth_transformer_type,
     )
     model.freeze_image_encoder()
     model.init_depth_from_sam()
@@ -423,10 +427,15 @@ def run_phase2(model, train_loader, val_loader, device, args, phase1_checkpoint=
     # Freeze everything, then only unfreeze depth branch
     for param in model.parameters():
         param.requires_grad = False
-    for param in model.outer_prompt_encoder.parameters():
-        param.requires_grad = True
-    for param in model.depth_decoder.parameters():
-        param.requires_grad = True
+    if args.depth_transformer_type == "simple":
+        # simple 模式：解冻 simple_depth_head
+        for param in model.simple_depth_head.parameters():
+            param.requires_grad = True
+    else:
+        for param in model.outer_prompt_encoder.parameters():
+            param.requires_grad = True
+        for param in model.depth_decoder.parameters():
+            param.requires_grad = True
 
     optimizer = torch.optim.AdamW(
         filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr,
@@ -510,6 +519,9 @@ def main():
     parser.add_argument("--adapter_type", type=str, default="mona",
                         choices=["mona", "fc", "dual_attn"],
                         help="Feature adapter type for DINOv3 encoder (default: mona)")
+    parser.add_argument("--depth_transformer_type", type=str, default="twoway",
+                        choices=["twoway", "dual_attn", "simple"],
+                        help="Depth decoder transformer type. dual_attn requires training from scratch.")
     args = parser.parse_args()
 
     if args.encoder == "sam" and args.adapter_type != "mona":
