@@ -11,7 +11,7 @@ from segment_anything.build_sam import sam_model_registry
 
 from dinosam.model import DepthSam
 from dinosam.dataset import DepthDataset, collate_fn
-from dinosam.loss.dice import dice_loss, compute_iou
+from dinosam.loss.dice import dice_loss, boundary_loss, compute_iou
 from dinosam.loss.depth_loss import depth_mse_loss
 from dinosam.prompt import DepthIterativePromptGenerator
 from dinosam.train.iterative import iterative_train_step, iterative_mask_step, iterative_depth_step
@@ -26,8 +26,10 @@ def train_one_epoch_phase1(model, dataloader, optimizer, device, epoch, writer, 
     total_loss = 0.0
     total_mask_loss = 0.0
     total_iou_loss = 0.0
+    total_boundary_loss = 0.0
     n_batches = 0
 
+    use_bl = getattr(args, "boundary_loss", False)
     prompt_generator = DepthIterativePromptGenerator() if args.n_sub_iterations > 1 else None
 
     for batch_idx, batch in enumerate(dataloader):
@@ -38,7 +40,7 @@ def train_one_epoch_phase1(model, dataloader, optimizer, device, epoch, writer, 
         original_sizes = batch["original_size"].to(device)
 
         if args.n_sub_iterations > 1:
-            loss_val, mask_val, iou_val = iterative_mask_step(
+            loss_val, mask_val, iou_val, bd_val = iterative_mask_step(
                 model=model,
                 images=images,
                 point_coords=point_coords,
@@ -65,6 +67,14 @@ def train_one_epoch_phase1(model, dataloader, optimizer, device, epoch, writer, 
             iou_loss = nn.functional.mse_loss(
                 iou_pred.squeeze(1), true_iou.squeeze(1)
             )
+
+            if use_bl:
+                bl = boundary_loss(masks_fullres, gt_masks, boundary_width=args.boundary_width)
+                mask_loss = mask_loss + args.boundary_loss_weight * bl
+                bd_val = bl.item()
+            else:
+                bd_val = 0.0
+
             loss = mask_loss + iou_loss
 
             optimizer.zero_grad()
@@ -78,6 +88,7 @@ def train_one_epoch_phase1(model, dataloader, optimizer, device, epoch, writer, 
         total_loss += loss_val
         total_mask_loss += mask_val
         total_iou_loss += iou_val
+        total_boundary_loss += bd_val
         n_batches += 1
 
         global_step = epoch * len(dataloader) + batch_idx
@@ -85,18 +96,22 @@ def train_one_epoch_phase1(model, dataloader, optimizer, device, epoch, writer, 
             writer.add_scalar("train/loss", total_loss / n_batches, global_step)
             writer.add_scalar("train/mask_loss", total_mask_loss / n_batches, global_step)
             writer.add_scalar("train/iou_loss", total_iou_loss / n_batches, global_step)
+            if use_bl:
+                writer.add_scalar("train/boundary_loss", total_boundary_loss / n_batches, global_step)
 
         if (batch_idx + 1) % args.log_interval == 0:
+            bd_str = f" bd={total_boundary_loss/n_batches:.4f}" if use_bl else ""
             print(
                 f"  Epoch {epoch} [{batch_idx+1}/{len(dataloader)}] "
                 f"loss={total_loss/n_batches:.4f} mask={total_mask_loss/n_batches:.4f} "
-                f"iou={total_iou_loss/n_batches:.4f}"
+                f"iou={total_iou_loss/n_batches:.4f}{bd_str}"
             )
 
     return {
         "loss": total_loss / n_batches,
         "mask_loss": total_mask_loss / n_batches,
         "iou_loss": total_iou_loss / n_batches,
+        "boundary_loss": total_boundary_loss / n_batches,
     }
 
 
@@ -104,7 +119,9 @@ def train_one_epoch_phase1(model, dataloader, optimizer, device, epoch, writer, 
 def validate_phase1(model, dataloader, device, epoch, writer, args):
     model.eval()
     total_loss = 0.0
+    total_boundary_loss = 0.0
     n_batches = 0
+    use_bl = getattr(args, "boundary_loss", False)
 
     for batch in dataloader:
         images = batch["image"].to(device)
@@ -127,13 +144,22 @@ def validate_phase1(model, dataloader, device, epoch, writer, args):
         iou_loss = nn.functional.mse_loss(
             iou_pred.squeeze(1), true_iou.squeeze(1)
         )
+
+        if use_bl:
+            bl = boundary_loss(masks_fullres, gt_masks, boundary_width=args.boundary_width)
+            mask_loss = mask_loss + args.boundary_loss_weight * bl
+            total_boundary_loss += bl.item()
+
         total_loss += (mask_loss + iou_loss).item()
         n_batches += 1
 
     avg_loss = total_loss / n_batches
-    print(f"  Val epoch {epoch}: loss={avg_loss:.4f}")
+    bd_str = f" boundary={total_boundary_loss/n_batches:.4f}" if use_bl else ""
+    print(f"  Val epoch {epoch}: loss={avg_loss:.4f}{bd_str}")
     if writer is not None:
         writer.add_scalar("val/loss", avg_loss, epoch)
+        if use_bl:
+            writer.add_scalar("val/boundary_loss", total_boundary_loss / n_batches, epoch)
     return avg_loss
 
 
@@ -392,8 +418,10 @@ def run_phase1(model, train_loader, val_loader, device, args):
         metrics = train_one_epoch_phase1(model, train_loader, optimizer, device, epoch, writer, args)
         scheduler.step()
         elapsed = time.time() - t0
+        use_bl = getattr(args, "boundary_loss", False)
+        bd_str = f" bd={metrics['boundary_loss']:.4f}" if use_bl else ""
         print(f"  Train: loss={metrics['loss']:.4f} mask={metrics['mask_loss']:.4f} "
-              f"iou={metrics['iou_loss']:.4f} time={elapsed:.1f}s")
+              f"iou={metrics['iou_loss']:.4f}{bd_str} time={elapsed:.1f}s")
 
         val_loss = validate_phase1(model, val_loader, device, epoch, writer, args)
 
@@ -505,6 +533,12 @@ def main():
                         help="Number of iterative mask refinement sub-iterations. 1 = no iteration")
     parser.add_argument("--mask_prob", type=float, default=0.5,
                         help="Probability of using mask input from previous prediction in each sub-iteration")
+    parser.add_argument("--boundary_loss", action="store_true",
+                        help="Enable boundary-aware loss (Dice + DT-weighted BCE) for smoother mask edges")
+    parser.add_argument("--boundary_loss_weight", type=float, default=1.0,
+                        help="Weight of boundary loss added to total loss (default: 1.0)")
+    parser.add_argument("--boundary_width", type=int, default=3,
+                        help="Half-width (px) of the morphological boundary band used by boundary_loss")
     parser.add_argument("--train_phase", type=str, default="both",
                         choices=["1", "2", "both"],
                         help="Training phase: '1' = mask-only, '2' = depth-only, 'both' = sequential")
