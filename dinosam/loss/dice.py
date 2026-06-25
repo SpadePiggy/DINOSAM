@@ -60,20 +60,11 @@ def boundary_loss(
 
     # --- Term 2: Distance-weighted BCE (high weight near boundary) ---
     B, _, H, W = target.shape
-    device = pred.device
-    dt = torch.zeros_like(target)
-    for i in range(B):
-        mask_np = target[i, 0].detach().cpu().numpy().astype('float32')
-        inv_np = 1.0 - mask_np
-        try:
-            from scipy.ndimage import distance_transform_edt
-            dt_fg = distance_transform_edt(mask_np)   # distance to background (inside mask)
-            dt_bg = distance_transform_edt(inv_np)     # distance to foreground (outside mask)
-            dt_combined = dt_fg * mask_np + dt_bg * inv_np
-        except ImportError:
-            import numpy as np
-            dt_combined = np.ones_like(mask_np)
-        dt[i, 0] = torch.from_numpy(dt_combined).to(device)
+    from kornia.contrib import distance_transform
+    # GPU batched distance transform — replaces scipy per-sample CPU loop
+    dt_fg = distance_transform(target)             # distance to background (inside mask)
+    dt_bg = distance_transform(1.0 - target)        # distance to foreground (outside mask)
+    dt = dt_fg * target + dt_bg * (1.0 - target)   # combined signed distance
 
     # Normalize to [0, 1] per sample; weight = max_w * (1 - dt_norm) → high near boundary
     dt_flat = dt.view(B, -1)

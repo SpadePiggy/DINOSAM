@@ -58,7 +58,5 @@
 {"id":"event-000001","type":"session.stop","ts":"2026-06-22T02:25:47Z","state":"stopped"}
 {"id":"event-000001","type":"session.stop","ts":"2026-06-22T02:26:39Z","state":"stopped"}
 {"id":"event-000001","type":"session.stop","ts":"2026-06-22T02:30:08Z","state":"stopped"}
-{"id":"event-000001","type":"session.stop","ts":"2026-06-22T09:55:30Z","state":"stopped"}
-{"id":"event-000001","type":"session.stop","ts":"2026-06-22T09:56:06Z","state":"stopped"}
-{"id":"event-000001","type":"session.stop","ts":"2026-06-22T09:58:11Z","state":"stopped"}
-{"id":"event-000001","type":"session.stop","ts":"2026-06-22T09:59:06Z","state":"stopped"}
+{"id":"event-000001","type":"session.stop","ts":"2026-06-22T02:31:35Z","state":"stopped"}
+{"id":"event-000001","type":"session.stop","ts":"2026-06-23T13:53:58Z","state":"stopped"}
