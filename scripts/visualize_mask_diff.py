@@ -66,6 +66,8 @@ def main() -> None:
     yellow = make_overlay(both, (255, 255, 0))
     blue = make_overlay(only_mask2, (0, 0, 255))
     red = make_overlay(only_mask1, (255, 0, 0))
+    full_m1 = make_overlay(mask1, (255, 0, 0))
+    full_m2 = make_overlay(mask2, (0, 0, 255))
 
     # Combined overlay for composite (non-overlapping regions, single blend)
     combined = Image.new("RGB", base.size, (0, 0, 0))
@@ -89,8 +91,12 @@ def main() -> None:
         os.path.join(args.outdir, "mask1_only.jpg"), "JPEG", quality=95)
     blend(base, combined, any_mask).save(
         os.path.join(args.outdir, "composite.jpg"), "JPEG", quality=95)
+    blend(base, full_m1, mask1).save(
+        os.path.join(args.outdir, "mask1_full.jpg"), "JPEG", quality=95)
+    blend(base, full_m2, mask2).save(
+        os.path.join(args.outdir, "mask2_full.jpg"), "JPEG", quality=95)
 
-    print(f"Saved 4 images to {args.outdir}")
+    print(f"Saved 6 images to {args.outdir}")
 
 
 if __name__ == "__main__":
