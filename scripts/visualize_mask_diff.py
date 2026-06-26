@@ -20,6 +20,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mask2", required=True, help="Path to second binary mask PNG")
     parser.add_argument("--outdir", required=True, help="Output directory for JPG files")
     parser.add_argument("--alpha", type=float, default=0.5, help="Blend factor (default: 0.5)")
+    parser.add_argument("--blend_bg", action="store_true",
+                        help="Also blend non-mask regions with black overlay (darkens background)")
     return parser.parse_args()
 
 
@@ -75,14 +77,17 @@ def main() -> None:
     # Output directory
     os.makedirs(args.outdir, exist_ok=True)
 
-    # Save all four outputs — blend only within each mask region
-    blend_mask(base, yellow, both, args.alpha).save(
+    # Save all four outputs
+    blend = (lambda b, o, m: Image.blend(b, o, args.alpha)) if args.blend_bg else (
+        lambda b, o, m: blend_mask(b, o, m, args.alpha))
+
+    blend(base, yellow, both).save(
         os.path.join(args.outdir, "intersection.jpg"), "JPEG", quality=95)
-    blend_mask(base, blue, only_mask2, args.alpha).save(
+    blend(base, blue, only_mask2).save(
         os.path.join(args.outdir, "mask2_only.jpg"), "JPEG", quality=95)
-    blend_mask(base, red, only_mask1, args.alpha).save(
+    blend(base, red, only_mask1).save(
         os.path.join(args.outdir, "mask1_only.jpg"), "JPEG", quality=95)
-    blend_mask(base, combined, any_mask, args.alpha).save(
+    blend(base, combined, any_mask).save(
         os.path.join(args.outdir, "composite.jpg"), "JPEG", quality=95)
 
     print(f"Saved 4 images to {args.outdir}")
