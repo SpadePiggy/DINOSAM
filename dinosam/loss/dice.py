@@ -75,7 +75,7 @@ def boundary_loss(
     bce = F.binary_cross_entropy_with_logits(pred, target, reduction='none')
     dt_bce = (bce * weights).mean()
 
-    return dice_weight * boundary_dice + bce_weight * dt_bce
+    return dice_weight * boundary_dice
 
 
 def compute_iou(pred: torch.Tensor, target: torch.Tensor, eps: float = 1e-7) -> torch.Tensor:
