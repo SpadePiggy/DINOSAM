@@ -511,6 +511,8 @@ def run_phase2(model, train_loader, val_loader, device, args, phase1_checkpoint=
         result = model.load_state_dict(ckpt["model_state_dict"], strict=False)
         if result.missing_keys:
             print(f"Missing keys: {result.missing_keys}")
+        if result.unexpected_keys:
+            print(f"Unexpected keys: {result.unexpected_keys}")
 
         # Re-init depth branch from SAM (phase1 checkpoint has random depth weights)
         model.init_depth_from_sam()
