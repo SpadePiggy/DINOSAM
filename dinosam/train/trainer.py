@@ -334,12 +334,20 @@ def _log_trainable_params(model, label=""):
 
 def _build_model_and_data(args, device):
     sam = sam_model_registry["vit_b"](checkpoint=args.sam_checkpoint)
+
+    # Parse dpt_layers (only for dpt_simple)
+    dpt_layers = (
+        [int(x.strip()) for x in args.dpt_layers.split(",")]
+        if args.adapter_type == "dpt_simple" else None
+    )
+
     model = DepthSam(
         sam,
         encoder_type=args.encoder,
         dinov3_checkpoint=args.dinov3_checkpoint,
         adapter_type=args.adapter_type,
         depth_transformer_type=args.depth_transformer_type,
+        dpt_layers=dpt_layers,
     )
     model.freeze_image_encoder()
     model.init_depth_from_sam()
@@ -360,13 +368,14 @@ def _build_model_and_data(args, device):
     return model, train_loader, val_loader
 
 
-def _save_checkpoint(path, model, optimizer, scheduler, epoch, best_val_loss):
+def _save_checkpoint(path, model, optimizer, scheduler, epoch, best_val_loss, adapter_type):
     torch.save({
         "model_state_dict": model.state_dict(),
         "optimizer_state_dict": optimizer.state_dict(),
         "scheduler_state_dict": scheduler.state_dict(),
         "epoch": epoch,
         "best_val_loss": best_val_loss,
+        "adapter_type": adapter_type,
     }, path)
 
 
@@ -375,7 +384,14 @@ def _load_checkpoint(path, model, optimizer, scheduler, device):
     # Remap legacy mona1/mona2 -> adapter1/adapter2 keys
     from dinosam.model.adapters import _remap_legacy_state_dict
     ckpt["model_state_dict"] = _remap_legacy_state_dict(ckpt["model_state_dict"])
-    model.load_state_dict(ckpt["model_state_dict"])
+
+    # Use strict=False to allow cross-adapter_type loading
+    result = model.load_state_dict(ckpt["model_state_dict"], strict=False)
+    if result.missing_keys:
+        print(f"Checkpoint missing keys (expected when switching adapter_type): {result.missing_keys}")
+    if result.unexpected_keys:
+        print(f"Checkpoint unexpected keys (ignored): {result.unexpected_keys}")
+
     optimizer.load_state_dict(ckpt["optimizer_state_dict"])
     scheduler.load_state_dict(ckpt["scheduler_state_dict"])
     start_epoch = ckpt["epoch"] + 1
@@ -428,15 +444,15 @@ def run_phase1(model, train_loader, val_loader, device, args):
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             path = os.path.join(args.output_dir, "phase1_best.pt")
-            _save_checkpoint(path, model, optimizer, scheduler, epoch, best_val_loss)
+            _save_checkpoint(path, model, optimizer, scheduler, epoch, best_val_loss, args.adapter_type)
             print(f"  Saved best phase1 model (val_loss={val_loss:.4f})")
 
         if (epoch + 1) % args.save_interval == 0:
             path = os.path.join(args.output_dir, f"phase1_epoch_{epoch}.pt")
-            _save_checkpoint(path, model, optimizer, scheduler, epoch, best_val_loss)
+            _save_checkpoint(path, model, optimizer, scheduler, epoch, best_val_loss, args.adapter_type)
 
         # Always save latest for resume
-        _save_checkpoint(resume_path, model, optimizer, scheduler, epoch, best_val_loss)
+        _save_checkpoint(resume_path, model, optimizer, scheduler, epoch, best_val_loss, args.adapter_type)
 
     writer.close()
     print(f"\nPhase 1 complete. Best val loss: {best_val_loss:.4f}")
@@ -478,7 +494,24 @@ def run_phase2(model, train_loader, val_loader, device, args, phase1_checkpoint=
         )
     elif phase1_checkpoint and os.path.exists(phase1_checkpoint):
         print(f"Loading phase 1 checkpoint: {phase1_checkpoint}")
-        model.load_state_dict(torch.load(phase1_checkpoint, map_location=device)["model_state_dict"])
+        ckpt = torch.load(phase1_checkpoint, map_location=device)
+
+        # Check adapter_type compatibility
+        ckpt_adapter_type = ckpt.get("adapter_type", "unknown")
+        if ckpt_adapter_type != args.adapter_type:
+            print(f"Warning: Phase 1 checkpoint adapter_type='{ckpt_adapter_type}' "
+                  f"differs from current '{args.adapter_type}'. "
+                  f"Some weights may not transfer.")
+
+        # Remap legacy keys
+        from dinosam.model.adapters import _remap_legacy_state_dict
+        ckpt["model_state_dict"] = _remap_legacy_state_dict(ckpt["model_state_dict"])
+
+        # Use strict=False for cross-adapter compatibility
+        result = model.load_state_dict(ckpt["model_state_dict"], strict=False)
+        if result.missing_keys:
+            print(f"Missing keys: {result.missing_keys}")
+
         # Re-init depth branch from SAM (phase1 checkpoint has random depth weights)
         model.init_depth_from_sam()
 
@@ -501,15 +534,15 @@ def run_phase2(model, train_loader, val_loader, device, args, phase1_checkpoint=
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             path = os.path.join(args.output_dir, "phase2_best.pt")
-            _save_checkpoint(path, model, optimizer, scheduler, epoch, best_val_loss)
+            _save_checkpoint(path, model, optimizer, scheduler, epoch, best_val_loss, args.adapter_type)
             print(f"  Saved best phase2 model (val_loss={val_loss:.4f})")
 
         if (epoch + 1) % args.save_interval == 0:
             path = os.path.join(args.output_dir, f"phase2_epoch_{epoch}.pt")
-            _save_checkpoint(path, model, optimizer, scheduler, epoch, best_val_loss)
+            _save_checkpoint(path, model, optimizer, scheduler, epoch, best_val_loss, args.adapter_type)
 
         # Always save latest for resume
-        _save_checkpoint(resume_path, model, optimizer, scheduler, epoch, best_val_loss)
+        _save_checkpoint(resume_path, model, optimizer, scheduler, epoch, best_val_loss, args.adapter_type)
 
     writer.close()
     print(f"\nPhase 2 complete. Best val loss: {best_val_loss:.4f}")
@@ -551,8 +584,12 @@ def main():
     parser.add_argument("--dinov3_checkpoint", type=str, default=None,
                         help="Path to DINOv3 ViT-B/16 checkpoint (required when --encoder dinov3)")
     parser.add_argument("--adapter_type", type=str, default="mona",
-                        choices=["mona", "fc", "dual_attn"],
-                        help="Feature adapter type for DINOv3 encoder (default: mona)")
+                        choices=["mona", "fc", "dual_attn", "dpt_simple"],
+                        help="Adapter type: mona/fc/dual_attn (single-layer) or "
+                             "dpt_simple (multi-level DPT fusion)")
+    parser.add_argument("--dpt_layers", type=str, default="2,5,8,11",
+                        help="Comma-separated intermediate layer indices for DPT "
+                             "(e.g., '2,5,8,11'). Only used with --adapter_type dpt_simple")
     parser.add_argument("--depth_transformer_type", type=str, default="twoway",
                         choices=["twoway", "dual_attn", "simple"],
                         help="Depth decoder transformer type. dual_attn requires training from scratch.")
