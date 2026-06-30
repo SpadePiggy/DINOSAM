@@ -20,11 +20,13 @@ class DINOv3MonaEncoder(nn.Module):
     Output shape matches SAM image_encoder: (B, 256, 64, 64) for 1024×1024 input.
     """
 
-    def __init__(self, checkpoint_path, img_size=1024, embed_dim=768, out_dim=256, adapter_type="mona"):
+    def __init__(self, checkpoint_path, img_size=1024, embed_dim=768, out_dim=256,
+                 adapter_type="mona", dpt_layers=None):
         super().__init__()
         self.img_size = img_size
         self.embed_dim = embed_dim
         self.out_dim = out_dim
+        self.adapter_type = adapter_type
 
         from dinov3.models.vision_transformer import DinoVisionTransformer
 
@@ -58,8 +60,21 @@ class DINOv3MonaEncoder(nn.Module):
         for param in self.backbone.parameters():
             param.requires_grad = False
 
-        self.adapter1 = get_adapter(adapter_type, embed_dim, factor=8)
-        self.adapter2 = get_adapter(adapter_type, embed_dim, factor=8)
+        # DPT head (only for dpt_simple)
+        if adapter_type == "dpt_simple":
+            from .dpt_heads import DPTSimpleHead
+            self.dpt_head = DPTSimpleHead(embed_dim=embed_dim)
+            self.dpt_layers = dpt_layers or [2, 5, 8, 11]
+        else:
+            self.dpt_head = None
+
+        # adapter1/adapter2: always Mona for dpt_simple (encoder-internal decision)
+        if adapter_type == "dpt_simple":
+            self.adapter1 = get_adapter("mona", embed_dim, factor=8)
+            self.adapter2 = get_adapter("mona", embed_dim, factor=8)
+        else:
+            self.adapter1 = get_adapter(adapter_type, embed_dim, factor=8)
+            self.adapter2 = get_adapter(adapter_type, embed_dim, factor=8)
 
         self.projection = nn.Linear(embed_dim, out_dim)
 
@@ -94,13 +109,23 @@ class DINOv3MonaEncoder(nn.Module):
 
         x = (x - self.pixel_mean) / self.pixel_std
 
-        features = self.backbone.forward_features(x)
-        patch_tokens = features["x_norm_patchtokens"]  # (B, N, 768)
+        # Critical: define all variables before if/else branch
+        B = x.shape[0]
+        patch_h = patch_w = self.img_size // 16
+        H, W = patch_h, patch_w
 
-        B, N, C = patch_tokens.shape
-        H = W = int(N ** 0.5)
+        if self.dpt_head is not None:
+            # DPT path: multi-level features, all at 64×64
+            features = self.backbone.get_intermediate_layers(
+                x, n=self.dpt_layers
+            )
+            x_2d = self.dpt_head(features, patch_h, patch_w)  # (B, 768, 64, 64)
+            x = x_2d.flatten(2).transpose(1, 2)                # (B, N, 768)
+        else:
+            # Existing path: single-layer features
+            features = self.backbone.forward_features(x)
+            x = features["x_norm_patchtokens"]
 
-        x = patch_tokens.view(B, H * W, C)
         x = self.adapter1(x, (H, W))
         x = self.adapter2(x, (H, W))
 
