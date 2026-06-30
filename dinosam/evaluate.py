@@ -279,12 +279,18 @@ def plot_depth_scatter(metrics, save_dir, prefix=""):
 def _load_model_state_dict(model, checkpoint_path, device):
     ckpt = torch.load(checkpoint_path, map_location=device)
     from dinosam.model.adapters import _remap_legacy_state_dict
+
     if isinstance(ckpt, dict) and "model_state_dict" in ckpt:
         ckpt["model_state_dict"] = _remap_legacy_state_dict(ckpt["model_state_dict"])
-        model.load_state_dict(ckpt["model_state_dict"])
+        result = model.load_state_dict(ckpt["model_state_dict"], strict=False)
     else:
         ckpt = _remap_legacy_state_dict(ckpt)
-        model.load_state_dict(ckpt)
+        result = model.load_state_dict(ckpt, strict=False)
+
+    if result.missing_keys:
+        print(f"Missing keys: {result.missing_keys}")
+    if result.unexpected_keys:
+        print(f"Unexpected keys: {result.unexpected_keys}")
 
 
 def main():
@@ -307,8 +313,11 @@ def main():
     parser.add_argument("--encoder", type=str, default="sam", choices=["sam", "dinov3"],
                         help="Image encoder type: 'sam' (default) or 'dinov3' (DINOv3+Mona)")
     parser.add_argument("--adapter_type", type=str, default="mona",
-                        choices=["mona", "fc", "dual_attn"],
+                        choices=["mona", "fc", "dual_attn", "dpt_simple"],
                         help="Feature adapter type for DINOv3 encoder (default: mona)")
+    parser.add_argument("--dpt_layers", type=str, default="2,5,8,11",
+                        help="Comma-separated intermediate layer indices for DPT "
+                             "(e.g., '2,5,8,11'). Only used with --adapter_type dpt_simple")
     parser.add_argument("--depth_transformer_type", type=str, default="twoway",
                         choices=["twoway", "dual_attn", "simple"],
                         help="Depth decoder transformer type. dual_attn requires training from scratch.")
@@ -330,9 +339,17 @@ def main():
     if os.path.exists(args.phase1_checkpoint):
         print(f"\nLoading Phase 1 model: {args.phase1_checkpoint}")
         sam = sam_model_registry["vit_b"](checkpoint=args.sam_checkpoint)
+
+        # Parse dpt_layers (only for dpt_simple)
+        dpt_layers = (
+            [int(x.strip()) for x in args.dpt_layers.split(",")]
+            if args.adapter_type == "dpt_simple" else None
+        )
+
         model = DepthSam(sam, encoder_type=args.encoder, dinov3_checkpoint=args.dinov3_checkpoint,
                          adapter_type=args.adapter_type,
-                         depth_transformer_type=args.depth_transformer_type)
+                         depth_transformer_type=args.depth_transformer_type,
+                         dpt_layers=dpt_layers)
         _load_model_state_dict(model, args.phase1_checkpoint, device)
         model.freeze_image_encoder()
         model.to(device)
@@ -359,9 +376,17 @@ def main():
     if os.path.exists(args.phase2_checkpoint):
         print(f"\nLoading Phase 2 model: {args.phase2_checkpoint}")
         sam = sam_model_registry["vit_b"](checkpoint=args.sam_checkpoint)
+
+        # Parse dpt_layers (only for dpt_simple)
+        dpt_layers = (
+            [int(x.strip()) for x in args.dpt_layers.split(",")]
+            if args.adapter_type == "dpt_simple" else None
+        )
+
         model = DepthSam(sam, encoder_type=args.encoder, dinov3_checkpoint=args.dinov3_checkpoint,
                          adapter_type=args.adapter_type,
-                         depth_transformer_type=args.depth_transformer_type)
+                         depth_transformer_type=args.depth_transformer_type,
+                         dpt_layers=dpt_layers)
         _load_model_state_dict(model, args.phase2_checkpoint, device)
         model.freeze_image_encoder()
         model.to(device)
