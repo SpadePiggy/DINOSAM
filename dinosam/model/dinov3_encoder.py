@@ -28,6 +28,14 @@ class DINOv3MonaEncoder(nn.Module):
         self.out_dim = out_dim
         self.adapter_type = adapter_type
 
+        # Validate dpt_layers usage
+        if dpt_layers is not None and adapter_type != "dpt_simple":
+            raise ValueError(
+                f"dpt_layers parameter is only valid when adapter_type='dpt_simple'. "
+                f"Got adapter_type='{adapter_type}', dpt_layers={dpt_layers}. "
+                f"Either set adapter_type='dpt_simple' or remove dpt_layers."
+            )
+
         from dinov3.models.vision_transformer import DinoVisionTransformer
 
         self.backbone = DinoVisionTransformer(
@@ -60,19 +68,15 @@ class DINOv3MonaEncoder(nn.Module):
         for param in self.backbone.parameters():
             param.requires_grad = False
 
-        # DPT head (only for dpt_simple)
+        # DPT head + adapters
         if adapter_type == "dpt_simple":
             from .dpt_heads import DPTSimpleHead
             self.dpt_head = DPTSimpleHead(embed_dim=embed_dim)
             self.dpt_layers = dpt_layers or [2, 5, 8, 11]
-        else:
-            self.dpt_head = None
-
-        # adapter1/adapter2: always Mona for dpt_simple (encoder-internal decision)
-        if adapter_type == "dpt_simple":
             self.adapter1 = get_adapter("mona", embed_dim, factor=8)
             self.adapter2 = get_adapter("mona", embed_dim, factor=8)
         else:
+            self.dpt_head = None
             self.adapter1 = get_adapter(adapter_type, embed_dim, factor=8)
             self.adapter2 = get_adapter(adapter_type, embed_dim, factor=8)
 
