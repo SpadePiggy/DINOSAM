@@ -1,0 +1,1 @@
+python scripts/visualize_mask_diff.py  --base   /data3/LXT/DINOv3-SAM/1724_test/0/seq302350.jpg --mask1  /data3/LXT/DINOv3-SAM/1724_test/0/seq302350.png --mask2  /data3/LXT/DINOv3-SAM/model_sam/SAM_1724/eval_ite8_1724/phase1/0/seq302350_pred.png --outdir /data3/LXT/DINOv3-SAM/model_paper_img/302350 --alpha  0.5 --blend_bg 
