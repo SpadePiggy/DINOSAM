@@ -130,3 +130,16 @@ def test_dpt_head_return_fused():
     with torch.no_grad():
         out_from_fused = head.output_conv(fused)
     assert torch.allclose(out, out_from_fused, atol=1e-6)
+
+
+def test_dpt_head_wrong_feature_count_raises():
+    """DPTHead raises AssertionError when len(features) != n_layers."""
+    head = DPTHead(embed_dim=768, features=256, n_layers=4)
+
+    B, N = 1, 4096
+    patch_h = patch_w = 64
+    # Pass 3 features instead of expected 4
+    feats = [torch.randn(B, N, 768) for _ in range(3)]
+
+    with pytest.raises(AssertionError, match="Expected 4 features, got 3"):
+        head(feats, patch_h, patch_w)
