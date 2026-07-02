@@ -70,9 +70,9 @@ class DINOv3MonaEncoder(nn.Module):
 
         # DPT head + adapters
         if adapter_type == "dpt_simple":
-            from .dpt_heads import DPTSimpleHead
-            self.dpt_head = DPTSimpleHead(embed_dim=embed_dim)
+            from .dpt_heads import DPTHead
             self.dpt_layers = dpt_layers or [2, 5, 8, 11]
+            self.dpt_head = DPTHead(embed_dim=embed_dim, n_layers=len(self.dpt_layers))
             self.adapter1 = get_adapter("mona", embed_dim, factor=8)
             self.adapter2 = get_adapter("mona", embed_dim, factor=8)
         else:
