@@ -1,5 +1,9 @@
+import os
+
 import numpy as np
 import torch
+import torch.nn.functional as F
+from PIL import Image
 
 
 def pca_visualize(
@@ -64,3 +68,67 @@ def pca_visualize(
         results[b] = img
 
     return results
+
+
+@torch.no_grad()
+def visualize_model_features(
+    model,
+    images: torch.Tensor,
+    device: torch.device,
+    save_dir: str,
+    prefix: str = "",
+    mask: torch.Tensor = None,
+):
+    """Generate PCA visualizations for backbone layers + fused features.
+
+    Only works with DINOv3 encoder path (encoder_type == "dinov3") and
+    requires dpt_head (adapter_type == "dpt_simple").
+
+    Args:
+        model: DepthSam instance.
+        images: (B, 3, H, W) raw [0, 255] range.
+        device: Torch device.
+        save_dir: Directory to save PNG files.
+        prefix: Filename prefix for saved PNGs.
+        mask: Optional (B, 1, H, W) binary mask passed to pca_visualize.
+    """
+    # Guards
+    if model.encoder_type != "dinov3" or model.dinov3_encoder is None:
+        print("visualize_model_features: only works with dinov3 encoder, skipping")
+        return
+
+    encoder = model.dinov3_encoder
+    if encoder.dpt_head is None:
+        print("visualize_model_features: dpt_head is None (non-dpt_simple adapter), skipping")
+        return
+
+    os.makedirs(save_dir, exist_ok=True)
+
+    # Preprocessing — inline copy of DINOv3MonaEncoder.forward() preprocessing
+    x = F.interpolate(
+        images.to(device), size=(encoder.img_size, encoder.img_size),
+        mode="bilinear", align_corners=False,
+    )
+    x = (x - encoder.pixel_mean) / encoder.pixel_std
+
+    patch_h = patch_w = encoder.img_size // 16
+
+    # Get intermediate features — same call as training path
+    raw_features = encoder.backbone.get_intermediate_layers(x, n=encoder.dpt_layers)
+
+    # Per-layer PCA
+    for i, feat in enumerate(raw_features):
+        # feat: (B, N, C) → (B, C, patch_h, patch_w)
+        B, N, C = feat.shape
+        feat_2d = feat.permute(0, 2, 1).reshape(B, C, patch_h, patch_w)
+        vis = pca_visualize(feat_2d, mask=mask)
+        for b in range(B):
+            fname = f"{prefix}layer{i}_b{b}.png" if prefix else f"layer{i}_b{b}.png"
+            Image.fromarray(vis[b]).save(os.path.join(save_dir, fname))
+
+    # Fused PCA
+    _, fused = encoder.dpt_head(raw_features, patch_h, patch_w, return_fused=True)
+    vis_fused = pca_visualize(fused, mask=mask)
+    for b in range(B):
+        fname = f"{prefix}fused_b{b}.png" if prefix else f"fused_b{b}.png"
+        Image.fromarray(vis_fused[b]).save(os.path.join(save_dir, fname))
