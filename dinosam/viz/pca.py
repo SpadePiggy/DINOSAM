@@ -1,9 +1,10 @@
 import numpy as np
+import torch
 
 
 def pca_visualize(
-    features: np.ndarray,
-    mask: np.ndarray = None,
+    features: torch.Tensor,
+    mask: torch.Tensor = None,
     n_components: int = 3,
     sigmoid_scale: float = 2.0,
 ) -> np.ndarray:
@@ -21,6 +22,12 @@ def pca_visualize(
     """
     # ponytail: lazy import — sklearn is optional
     from sklearn.decomposition import PCA
+
+    # Convert to numpy if torch tensors
+    if isinstance(features, torch.Tensor):
+        features = features.cpu().numpy()
+    if mask is not None and isinstance(mask, torch.Tensor):
+        mask = mask.cpu().numpy()
 
     B, C, H, W = features.shape
     results = np.zeros((B, H, W, 3), dtype=np.uint8)
