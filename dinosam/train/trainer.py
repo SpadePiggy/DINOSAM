@@ -160,6 +160,17 @@ def validate_phase1(model, dataloader, device, epoch, writer, args):
         writer.add_scalar("val/loss", avg_loss, epoch)
         if use_bl:
             writer.add_scalar("val/boundary_loss", total_boundary_loss / n_batches, epoch)
+
+    # ponytail: lazy import keeps viz optional; next(iter()) is deterministic on unshuffled val_loader
+    if args.pca_viz and epoch % args.pca_interval == 0:
+        from dinosam.viz.pca import visualize_model_features
+        sample_batch = next(iter(dataloader))
+        save_dir = os.path.join(args.pca_dir, f"epoch_{epoch:03d}")
+        visualize_model_features(
+            model, sample_batch["image"][:args.pca_samples],
+            device, save_dir, prefix=f"ep{epoch:03d}_",
+        )
+
     return avg_loss
 
 
@@ -574,6 +585,14 @@ def main():
                         help="Weight of boundary loss added to total loss (default: 1.0)")
     parser.add_argument("--boundary_width", type=int, default=3,
                         help="Half-width (px) of the morphological boundary band used by boundary_loss")
+    parser.add_argument("--pca_viz", action="store_true",
+                        help="Enable PCA visualization during validation")
+    parser.add_argument("--pca_interval", type=int, default=1,
+                        help="Generate PCA visualizations every N epochs")
+    parser.add_argument("--pca_dir", type=str, default="./pca_viz",
+                        help="Directory to save PCA visualization images")
+    parser.add_argument("--pca_samples", type=int, default=4,
+                        help="Number of validation samples to visualize")
     parser.add_argument("--train_phase", type=str, default="both",
                         choices=["1", "2", "both"],
                         help="Training phase: '1' = mask-only, '2' = depth-only, 'both' = sequential")
