@@ -59,6 +59,8 @@ class LearnedLayerFusion(nn.Module):
                 fused = fused + weights[l] * f_proj
             return fused
         else:
+            assert len(features) == self.k, \
+                f"Eval expects {self.k} features (top-k), got {len(features)}"
             topk_indices = self.layer_weights.topk(self.k).indices
             topk_weights = F.softmax(self.layer_weights[topk_indices], dim=0)
             fused = torch.zeros(B, C, patch_h, patch_w, device=features[0].device)
