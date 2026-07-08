@@ -28,7 +28,9 @@ def iterative_train_step(
     model.train()
     B = images.shape[0]
 
-    image_embeddings, input_size = model.encode_images(images)
+    # Dual encode for fusion mode
+    mask_embeddings, input_size = model.encode_images(images, branch="mask")
+    depth_embeddings, _ = model.encode_images(images, branch="depth")
 
     n_sub = args.n_sub_iterations
     total_mask_loss = 0.0
@@ -42,7 +44,7 @@ def iterative_train_step(
 
     for sub_iter in range(n_sub):
         low_res_masks, iou_pred, masks_fullres = model.forward_mask(
-            image_embeddings=image_embeddings,
+            image_embeddings=mask_embeddings,
             point_coords=cur_point_coords,
             point_labels=cur_point_labels,
             original_sizes=original_sizes,
@@ -90,7 +92,7 @@ def iterative_train_step(
     # by iterative_mask_step logic at the top of the loop). forward_depth does
     # per-sample apply_coords_torch internally — fixes original_sizes[0] bug.
     depth_pred, decoder_masks_fullres = model.forward_depth(
-        image_embeddings=image_embeddings,
+        image_embeddings=depth_embeddings,
         low_res_masks=final_low_res_masks.detach(),
         input_size=input_size,
         original_sizes=original_sizes,
@@ -222,10 +224,12 @@ def iterative_depth_step(
     model.train()
     B = images.shape[0]
 
-    # Mask branch: get low_res_masks
-    image_embeddings, input_size = model.encode_images(images)
+    # Dual encode for fusion mode
+    mask_embeddings, input_size = model.encode_images(images, branch="mask")
+    depth_embeddings, _ = model.encode_images(images, branch="depth")
+
     low_res_masks, _, masks_fullres = model.forward_mask(
-        image_embeddings=image_embeddings,
+        image_embeddings=mask_embeddings,
         point_coords=point_coords,
         point_labels=point_labels,
         original_sizes=original_sizes,
@@ -244,7 +248,7 @@ def iterative_depth_step(
 
     for sub_iter in range(n_sub):
         depth_pred, decoder_masks_fullres = model.forward_depth(
-            image_embeddings=image_embeddings,
+            image_embeddings=depth_embeddings,
             low_res_masks=mask_input,
             input_size=input_size,
             original_sizes=original_sizes,

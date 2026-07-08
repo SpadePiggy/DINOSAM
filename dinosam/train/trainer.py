@@ -217,11 +217,13 @@ def train_one_epoch_phase2(model, dataloader, optimizer, device, epoch, writer, 
             n_batches += 1
         else:
             # Standard (non-iterative) depth training
-            image_embeddings, input_size = model.encode_images(images)
+            # Dual encode for fusion mode
+            mask_embeddings, input_size = model.encode_images(images, branch="mask")
+            depth_embeddings, _ = model.encode_images(images, branch="depth")
 
             # Skip full-res postprocessing on non-log batches (mask branch frozen)
             low_res_masks, iou_pred, masks_fullres = model.forward_mask(
-                image_embeddings=image_embeddings,
+                image_embeddings=mask_embeddings,
                 point_coords=point_coords,
                 point_labels=point_labels,
                 original_sizes=original_sizes,
@@ -232,7 +234,7 @@ def train_one_epoch_phase2(model, dataloader, optimizer, device, epoch, writer, 
             # Pass point coords in original image space (forward_depth does
             # per-sample apply_coords_torch internally — fixes original_sizes[0] bug)
             depth_pred, decoder_masks = model.forward_depth(
-                image_embeddings=image_embeddings,
+                image_embeddings=depth_embeddings,
                 low_res_masks=low_res_masks,
                 input_size=input_size,
                 original_sizes=original_sizes,
@@ -301,9 +303,12 @@ def validate_phase2(model, dataloader, device, epoch, writer, args):
         gt_masks = batch["gt_mask"].to(device)
         original_sizes = batch["original_size"].to(device)
 
-        image_embeddings, input_size = model.encode_images(images)
+        # Dual encode for fusion mode
+        mask_embeddings, input_size = model.encode_images(images, branch="mask")
+        depth_embeddings, _ = model.encode_images(images, branch="depth")
+
         low_res_masks, iou_pred, _ = model.forward_mask(
-            image_embeddings=image_embeddings,
+            image_embeddings=mask_embeddings,
             point_coords=point_coords,
             point_labels=point_labels,
             original_sizes=original_sizes,
@@ -314,7 +319,7 @@ def validate_phase2(model, dataloader, device, epoch, writer, args):
         # Pass point coords in original image space (forward_depth does
         # per-sample apply_coords_torch internally — fixes original_sizes[0] bug)
         depth_pred, _ = model.forward_depth(
-            image_embeddings=image_embeddings,
+            image_embeddings=depth_embeddings,
             low_res_masks=low_res_masks.detach(),
             input_size=input_size,
             original_sizes=original_sizes,
