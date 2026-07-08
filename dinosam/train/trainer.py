@@ -17,6 +17,39 @@ from dinosam.prompt import DepthIterativePromptGenerator
 from dinosam.train.iterative import iterative_train_step, iterative_mask_step, iterative_depth_step
 
 
+def log_layer_weights(model, epoch, writer=None):
+    """Log layer fusion weights for analysis."""
+    if not hasattr(model, 'dinov3_encoder') or model.dinov3_encoder is None:
+        return
+
+    encoder = model.dinov3_encoder
+    if not hasattr(encoder, 'mask_fusion') or encoder.mask_fusion is None:
+        return
+
+    # Log mask fusion weights
+    mask_weights = encoder.mask_fusion.get_weights().detach().cpu().numpy()
+    mask_topk = encoder.mask_fusion.get_topk_indices().detach().cpu().numpy()
+
+    print(f"Epoch {epoch} mask fusion weights: {mask_weights}")
+    print(f"Epoch {epoch} mask top-k indices: {mask_topk}")
+
+    if writer:
+        for i, w in enumerate(mask_weights):
+            writer.add_scalar(f"mask_fusion/layer_{i}_weight", w, epoch)
+
+    # Log depth fusion weights if available
+    if hasattr(encoder, 'depth_fusion') and encoder.depth_fusion is not None:
+        depth_weights = encoder.depth_fusion.get_weights().detach().cpu().numpy()
+        depth_topk = encoder.depth_fusion.get_topk_indices().detach().cpu().numpy()
+
+        print(f"Epoch {epoch} depth fusion weights: {depth_weights}")
+        print(f"Epoch {epoch} depth top-k indices: {depth_topk}")
+
+        if writer:
+            for i, w in enumerate(depth_weights):
+                writer.add_scalar(f"depth_fusion/layer_{i}_weight", w, epoch)
+
+
 # ---------------------------------------------------------------------------
 # Phase 1: Mask-only training (dice + iou loss, iterative)
 # ---------------------------------------------------------------------------
@@ -457,6 +490,7 @@ def run_phase1(model, train_loader, val_loader, device, args):
               f"iou={metrics['iou_loss']:.4f}{bd_str} time={elapsed:.1f}s")
 
         val_loss = validate_phase1(model, val_loader, device, epoch, writer, args)
+        log_layer_weights(model, epoch, writer)
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
@@ -556,6 +590,7 @@ def run_phase2(model, train_loader, val_loader, device, args, phase1_checkpoint=
               f"depth={metrics['depth_loss']:.4f} time={elapsed:.1f}s")
 
         val_loss = validate_phase2(model, val_loader, device, epoch, writer, args)
+        log_layer_weights(model, epoch, writer)
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
