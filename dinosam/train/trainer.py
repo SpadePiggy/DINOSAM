@@ -349,16 +349,17 @@ def _build_model_and_data(args, device):
     # Parse dpt_layers (only for dpt_simple)
     dpt_layers = (
         [int(x.strip()) for x in args.dpt_layers.split(",")]
-        if args.adapter_type == "dpt_simple" else None
+        if hasattr(args, 'dpt_layers') and args.adapter_type == "dpt_simple" else None
     )
 
     model = DepthSam(
         sam,
         encoder_type=args.encoder,
-        dinov3_checkpoint=args.dinov3_checkpoint,
-        adapter_type=args.adapter_type,
-        depth_transformer_type=args.depth_transformer_type,
+        dinov3_checkpoint=args.dinov3_checkpoint if args.encoder == "dinov3" else None,
+        adapter_type=getattr(args, 'adapter_type', 'mona'),
+        depth_transformer_type=getattr(args, 'depth_transformer_type', 'twoway'),
         dpt_layers=dpt_layers,
+        fusion_k=getattr(args, 'fusion_k', 4),
     )
     model.freeze_image_encoder()
     model.init_depth_from_sam()
@@ -492,6 +493,13 @@ def run_phase2(model, train_loader, val_loader, device, args, phase1_checkpoint=
         for param in model.depth_decoder.parameters():
             param.requires_grad = True
 
+    # 【fusion mode】解冻 depth fusion head
+    if hasattr(model, 'dinov3_encoder') and model.dinov3_encoder is not None \
+            and hasattr(model.dinov3_encoder, 'depth_fusion') \
+            and model.dinov3_encoder.depth_fusion is not None:
+        for param in model.dinov3_encoder.depth_fusion.parameters():
+            param.requires_grad = True
+
     optimizer = torch.optim.AdamW(
         filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr,
     )
@@ -605,15 +613,17 @@ def main():
     parser.add_argument("--dinov3_checkpoint", type=str, default=None,
                         help="Path to DINOv3 ViT-B/16 checkpoint (required when --encoder dinov3)")
     parser.add_argument("--adapter_type", type=str, default="mona",
-                        choices=["mona", "fc", "dual_attn", "dpt_simple"],
+                        choices=["mona", "fc", "dual_attn", "dpt_simple", "dpt_fusion"],
                         help="Adapter type: mona/fc/dual_attn (single-layer) or "
-                             "dpt_simple (multi-level DPT fusion)")
+                             "dpt_simple (multi-level DPT fusion) or dpt_fusion (learned layer fusion)")
     parser.add_argument("--dpt_layers", type=str, default="2,5,8,11",
                         help="Comma-separated intermediate layer indices for DPT "
                              "(e.g., '2,5,8,11'). Only used with --adapter_type dpt_simple")
     parser.add_argument("--depth_transformer_type", type=str, default="twoway",
                         choices=["twoway", "dual_attn", "simple"],
                         help="Depth decoder transformer type. dual_attn requires training from scratch.")
+    parser.add_argument("--fusion_k", type=int, default=4,
+                        help="Top-k layers for fusion inference (only used with dpt_fusion)")
     args = parser.parse_args()
 
     if args.encoder == "sam" and args.adapter_type != "mona":
