@@ -63,6 +63,7 @@ def train_one_epoch_phase1(model, dataloader, optimizer, device, epoch, writer, 
     n_batches = 0
 
     use_bl = getattr(args, "boundary_loss", False)
+    variance_weight = getattr(args, 'variance_weight', 0.01)
     prompt_generator = DepthIterativePromptGenerator() if args.n_sub_iterations > 1 else None
 
     for batch_idx, batch in enumerate(dataloader):
@@ -109,6 +110,11 @@ def train_one_epoch_phase1(model, dataloader, optimizer, device, epoch, writer, 
                 bd_val = 0.0
 
             loss = mask_loss + iou_loss
+
+            # Variance penalty: reward peaked weight distributions
+            if variance_weight != 0:
+                var_loss = _compute_variance_loss(model)
+                loss = loss + variance_weight * var_loss
 
             optimizer.zero_grad()
             loss.backward()
@@ -277,6 +283,12 @@ def train_one_epoch_phase2(model, dataloader, optimizer, device, epoch, writer, 
 
             depth_loss = depth_mse_loss(depth_pred, depth_labels)
             loss = args.depth_loss_weight * depth_loss
+
+            # Variance penalty: reward peaked depth fusion weights
+            variance_weight = getattr(args, 'variance_weight', 0.01)
+            if variance_weight != 0:
+                var_loss = _compute_variance_loss(model)
+                loss = loss + variance_weight * var_loss
 
             optimizer.zero_grad()
             loss.backward()
@@ -450,6 +462,43 @@ def _load_checkpoint(path, model, optimizer, scheduler, device):
     return start_epoch, best_val_loss
 
 
+def _build_optimizer(model, args):
+    """Build AdamW optimizer with separate LR for layer_weights.
+
+    layer_weights (12 scalars) compete with millions of other params;
+    giving them a higher LR prevents them from being stuck at init.
+    """
+    layer_weight_params = []
+    other_params = []
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            if 'layer_weights' in name:
+                layer_weight_params.append(param)
+            else:
+                other_params.append(param)
+
+    groups = [{'params': other_params, 'lr': args.lr}]
+    if layer_weight_params:
+        lr_mult = getattr(args, 'layer_weight_lr_mult', 10.0)
+        groups.append({'params': layer_weight_params, 'lr': args.lr * lr_mult})
+        print(f"  layer_weights LR: {args.lr * lr_mult:.1e} ({lr_mult:.0f}×)")
+
+    return torch.optim.AdamW(groups)
+
+
+def _compute_variance_loss(model):
+    """Sum variance_loss of all active fusion modules (mask + depth)."""
+    loss = 0.0
+    if not hasattr(model, 'dinov3_encoder') or model.dinov3_encoder is None:
+        return loss
+    encoder = model.dinov3_encoder
+    if hasattr(encoder, 'mask_fusion') and encoder.mask_fusion is not None:
+        loss = loss + encoder.mask_fusion.variance_loss()
+    if hasattr(encoder, 'depth_fusion') and encoder.depth_fusion is not None:
+        loss = loss + encoder.depth_fusion.variance_loss()
+    return loss
+
+
 def run_phase1(model, train_loader, val_loader, device, args):
     """Phase 1: mask-only iterative training (dice + iou)."""
     print("\n" + "=" * 60)
@@ -460,9 +509,7 @@ def run_phase1(model, train_loader, val_loader, device, args):
     model.freeze_depth_branch()
     _log_trainable_params(model, "Phase 1: ")
 
-    optimizer = torch.optim.AdamW(
-        filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr,
-    )
+    optimizer = _build_optimizer(model, args)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
 
     start_epoch = 0
@@ -539,9 +586,7 @@ def run_phase2(model, train_loader, val_loader, device, args, phase1_checkpoint=
         for param in model.dinov3_encoder.depth_fusion.parameters():
             param.requires_grad = True
 
-    optimizer = torch.optim.AdamW(
-        filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr,
-    )
+    optimizer = _build_optimizer(model, args)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
 
     # Resume from checkpoint
@@ -664,6 +709,12 @@ def main():
                         help="Depth decoder transformer type. dual_attn requires training from scratch.")
     parser.add_argument("--fusion_k", type=int, default=4,
                         help="Top-k layers for fusion inference (only used with dpt_fusion)")
+    parser.add_argument("--variance_weight", type=float, default=0.01,
+                        help="Weight of variance regularization on fusion weights "
+                             "(positive = penalize uniform distribution, 0 = disable)")
+    parser.add_argument("--layer_weight_lr_mult", type=float, default=50.0,
+                        help="Multiplier for layer_weights learning rate vs. other params "
+                             "(default: 50.0)")
     args = parser.parse_args()
 
     if args.encoder == "sam" and args.adapter_type != "mona":

@@ -26,12 +26,13 @@ def test_output_shape_eval():
     assert fused.shape == (2, 768, 64, 64)
 
 
-def test_zero_init_uniform():
-    """Zero-init weights → softmax = uniform 1/12 each."""
+def test_random_init_non_uniform():
+    """Random init → softmax weights are NOT uniform (symmetry broken)."""
     fusion = LearnedLayerFusion(embed_dim=768, num_layers=12, k=4)
     weights = fusion.get_weights()
     expected = torch.ones(12) / 12
-    assert torch.allclose(weights, expected, atol=1e-6)
+    assert not torch.allclose(weights, expected, atol=1e-6), \
+        "Random init should produce non-uniform weights"
 
 
 def test_get_topk_indices():
@@ -82,19 +83,18 @@ def test_training_assert_wrong_feature_count():
 
 
 def test_parameter_count():
-    """Verify parameter count: 12 weights + 12 × (Conv1x1 + GroupNorm)."""
+    """Verify parameter count: 12 weights + 12 × Conv1x1 + GELU."""
     fusion = LearnedLayerFusion(embed_dim=768, num_layers=12, k=4)
     # layer_weights: 12
     # per projection: Conv2d(768,768,1) = 768*768+768 = 590592
-    #                 GroupNorm(32,768) = 2*768 = 1536
-    #                 per layer = 592128, × 12 = 7105536
-    # total = 7105548
+    #                 per layer = 590592, × 12 = 7087104
+    # total = 7087116
     total = sum(p.numel() for p in fusion.parameters())
-    assert total == 7105548
+    assert total == 7087116
 
 
 def test_batch_size_one():
-    """GroupNorm must work with B=1 (InstanceNorm would NaN)."""
+    """Conv1x1 + GELU — safe at B=1 (no batch-dependent normalization)."""
     fusion = LearnedLayerFusion(embed_dim=768, num_layers=12, k=4)
     fusion.train()
     features = [torch.randn(1, 4096, 768) for _ in range(12)]

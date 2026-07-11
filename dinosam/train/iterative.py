@@ -193,6 +193,13 @@ def iterative_mask_step(
 
     loss = avg_mask_loss + avg_iou_loss
 
+    # Variance penalty: reward peaked layer weight distributions
+    variance_weight = getattr(args, 'variance_weight', 0.01)
+    if variance_weight != 0:
+        from dinosam.train.trainer import _compute_variance_loss
+        var_loss = _compute_variance_loss(model)
+        loss = loss + variance_weight * var_loss
+
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
@@ -298,6 +305,13 @@ def iterative_depth_step(
     avg_decoder_mask_loss = total_mask_loss / n_sub
 
     loss = args.depth_loss_weight * avg_depth_loss
+
+    # Variance penalty: reward peaked depth fusion weights
+    variance_weight = getattr(args, 'variance_weight', 0.01)
+    if variance_weight != 0:
+        from dinosam.train.trainer import _compute_variance_loss
+        var_loss = _compute_variance_loss(model)
+        loss = loss + variance_weight * var_loss
 
     optimizer.zero_grad()
     loss.backward()
