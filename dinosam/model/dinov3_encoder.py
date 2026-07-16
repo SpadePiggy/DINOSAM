@@ -21,7 +21,7 @@ class DINOv3MonaEncoder(nn.Module):
     """
 
     def __init__(self, checkpoint_path, img_size=1024, embed_dim=768, out_dim=256,
-                 adapter_type="mona", dpt_layers=None, fusion_k=4):
+                 adapter_type="mona", dpt_layers=None):
         super().__init__()
         self.img_size = img_size
         self.embed_dim = embed_dim
@@ -29,11 +29,11 @@ class DINOv3MonaEncoder(nn.Module):
         self.adapter_type = adapter_type
 
         # Validate dpt_layers usage
-        if dpt_layers is not None and adapter_type not in ("dpt_simple", "dpt_fusion"):
+        if dpt_layers is not None and adapter_type != "dpt_simple":
             raise ValueError(
-                f"dpt_layers parameter is only valid when adapter_type='dpt_simple' or 'dpt_fusion'. "
+                f"dpt_layers parameter is only valid when adapter_type='dpt_simple'. "
                 f"Got adapter_type='{adapter_type}', dpt_layers={dpt_layers}. "
-                f"Either set adapter_type='dpt_simple'/'dpt_fusion' or remove dpt_layers."
+                f"Either set adapter_type='dpt_simple' or remove dpt_layers."
             )
 
         from dinov3.models.vision_transformer import DinoVisionTransformer
@@ -69,30 +69,14 @@ class DINOv3MonaEncoder(nn.Module):
             param.requires_grad = False
 
         # DPT head + adapters
-        if adapter_type == "dpt_fusion":
-            from .layer_fusion import LearnedLayerFusion
-            self.dpt_layers = list(range(12))  # 全部 12 层
-            self.dpt_head = None
-            self.mask_fusion = LearnedLayerFusion(
-                embed_dim=embed_dim, num_layers=12, k=fusion_k,
-            )
-            self.depth_fusion = LearnedLayerFusion(
-                embed_dim=embed_dim, num_layers=12, k=fusion_k,
-            )
-            self.adapter1 = get_adapter("mona", embed_dim, factor=8)
-            self.adapter2 = get_adapter("mona", embed_dim, factor=8)
-        elif adapter_type == "dpt_simple":
+        if adapter_type == "dpt_simple":
             from .dpt_heads import DPTHead
             self.dpt_layers = dpt_layers or [2, 5, 8, 11]
             self.dpt_head = DPTHead(embed_dim=embed_dim, n_layers=len(self.dpt_layers))
-            self.mask_fusion = None
-            self.depth_fusion = None
             self.adapter1 = get_adapter("mona", embed_dim, factor=8)
             self.adapter2 = get_adapter("mona", embed_dim, factor=8)
         else:
             self.dpt_head = None
-            self.mask_fusion = None
-            self.depth_fusion = None
             self.adapter1 = get_adapter(adapter_type, embed_dim, factor=8)
             self.adapter2 = get_adapter(adapter_type, embed_dim, factor=8)
 
@@ -111,12 +95,11 @@ class DINOv3MonaEncoder(nn.Module):
         for param in self.backbone.parameters():
             param.requires_grad = False
 
-    def forward(self, images, branch="mask"):
+    def forward(self, images):
         """Encode images to (B, 256, 64, 64) embeddings.
 
         Args:
             images: (B, 3, H, W) raw [0, 255] range
-            branch: "mask" or "depth" — selects which fusion head to use
 
         Returns:
             image_embeddings: (B, 256, 64, 64)
@@ -130,29 +113,12 @@ class DINOv3MonaEncoder(nn.Module):
 
         x = (x - self.pixel_mean) / self.pixel_std
 
+        # Critical: define all variables before if/else branch
         B = x.shape[0]
         patch_h = patch_w = self.img_size // 16
         H, W = patch_h, patch_w
 
-        if self.mask_fusion is not None:
-            # Fusion mode: use LearnedLayerFusion
-            fusion = self.mask_fusion if branch == "mask" else self.depth_fusion
-
-            if self.training:
-                # Training: extract all 12 layers
-                features = self.backbone.get_intermediate_layers(x, n=self.dpt_layers)
-                x_2d = fusion(features, patch_h, patch_w)
-            else:
-                # Inference: extract only top-k layers
-                topk_indices = fusion.get_topk_indices().tolist()
-                features = self.backbone.get_intermediate_layers(
-                    x, n=topk_indices
-                )
-                x_2d = fusion(features, patch_h, patch_w)
-
-            x = x_2d.flatten(2).transpose(1, 2)  # (B, N, C)
-
-        elif self.dpt_head is not None:
+        if self.dpt_head is not None:
             # DPT path: multi-level features, all at 64×64
             features = self.backbone.get_intermediate_layers(
                 x, n=self.dpt_layers

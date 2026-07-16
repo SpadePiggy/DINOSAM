@@ -65,9 +65,7 @@ def evaluate(model, dataset, device, batch_size=4, n_sub_iterations=1, mask_prob
         gt_masks = batch["gt_mask"].to(device)
         original_sizes = batch["original_size"].to(device)
 
-        # Dual encode for fusion mode
-        mask_embeddings, input_size = model.encode_images(images, branch="mask")
-        depth_embeddings, _ = model.encode_images(images, branch="depth")
+        image_embeddings, input_size = model.encode_images(images)
         B = images.shape[0]
 
         # ---- Mask branch (iterative) ----
@@ -77,7 +75,7 @@ def evaluate(model, dataset, device, batch_size=4, n_sub_iterations=1, mask_prob
             cur_mask_input = None
             for sub_iter in range(n_sub_iterations):
                 low_res_masks, iou_pred, masks_fullres = model.forward_mask(
-                    image_embeddings=mask_embeddings,
+                    image_embeddings=image_embeddings,
                     point_coords=cur_point_coords,
                     point_labels=cur_point_labels,
                     original_sizes=original_sizes,
@@ -104,7 +102,7 @@ def evaluate(model, dataset, device, batch_size=4, n_sub_iterations=1, mask_prob
                         cur_mask_input = None
         else:
             low_res_masks, iou_pred, masks_fullres = model.forward_mask(
-                image_embeddings=mask_embeddings,
+                image_embeddings=image_embeddings,
                 point_coords=point_coords,
                 point_labels=point_labels,
                 original_sizes=original_sizes,
@@ -113,7 +111,7 @@ def evaluate(model, dataset, device, batch_size=4, n_sub_iterations=1, mask_prob
 
         # ---- Depth branch ----
         depth_pred, _ = model.forward_depth(
-            image_embeddings=depth_embeddings,
+            image_embeddings=image_embeddings,
             low_res_masks=low_res_masks.detach(),
             input_size=input_size,
             original_sizes=original_sizes,
@@ -315,10 +313,8 @@ def main():
     parser.add_argument("--encoder", type=str, default="sam", choices=["sam", "dinov3"],
                         help="Image encoder type: 'sam' (default) or 'dinov3' (DINOv3+Mona)")
     parser.add_argument("--adapter_type", type=str, default="mona",
-                        choices=["mona", "fc", "dual_attn", "dpt_simple", "dpt_fusion"],
+                        choices=["mona", "fc", "dual_attn", "dpt_simple"],
                         help="Feature adapter type for DINOv3 encoder (default: mona)")
-    parser.add_argument("--fusion_k", type=int, default=4,
-                        help="Top-k layers for fusion inference (only used with dpt_fusion)")
     parser.add_argument("--dpt_layers", type=str, default="2,5,8,11",
                         help="Comma-separated intermediate layer indices for DPT "
                              "(e.g., '2,5,8,11'). Only used with --adapter_type dpt_simple")
@@ -350,15 +346,10 @@ def main():
             if args.adapter_type == "dpt_simple" else None
         )
 
-        model = DepthSam(
-            sam,
-            encoder_type=args.encoder,
-            dinov3_checkpoint=args.dinov3_checkpoint if args.encoder == "dinov3" else None,
-            adapter_type=args.adapter_type,
-            depth_transformer_type=args.depth_transformer_type,
-            dpt_layers=dpt_layers,
-            fusion_k=args.fusion_k,
-        )
+        model = DepthSam(sam, encoder_type=args.encoder, dinov3_checkpoint=args.dinov3_checkpoint,
+                         adapter_type=args.adapter_type,
+                         depth_transformer_type=args.depth_transformer_type,
+                         dpt_layers=dpt_layers)
         _load_model_state_dict(model, args.phase1_checkpoint, device)
         model.freeze_image_encoder()
         model.to(device)
@@ -392,15 +383,10 @@ def main():
             if args.adapter_type == "dpt_simple" else None
         )
 
-        model = DepthSam(
-            sam,
-            encoder_type=args.encoder,
-            dinov3_checkpoint=args.dinov3_checkpoint if args.encoder == "dinov3" else None,
-            adapter_type=args.adapter_type,
-            depth_transformer_type=args.depth_transformer_type,
-            dpt_layers=dpt_layers,
-            fusion_k=args.fusion_k,
-        )
+        model = DepthSam(sam, encoder_type=args.encoder, dinov3_checkpoint=args.dinov3_checkpoint,
+                         adapter_type=args.adapter_type,
+                         depth_transformer_type=args.depth_transformer_type,
+                         dpt_layers=dpt_layers)
         _load_model_state_dict(model, args.phase2_checkpoint, device)
         model.freeze_image_encoder()
         model.to(device)

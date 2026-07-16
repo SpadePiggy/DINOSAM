@@ -22,7 +22,7 @@ class DepthSam(nn.Module):
 
     def __init__(self, sam: Sam, encoder_type: str = "sam", dinov3_checkpoint: str = None,
                  adapter_type: str = "mona", depth_transformer_type: str = "twoway",
-                 dpt_layers: list[int] = None, fusion_k: int = 4):
+                 dpt_layers: list[int] = None):
         super().__init__()
         self.sam = sam
         self.encoder_type = encoder_type
@@ -45,7 +45,6 @@ class DepthSam(nn.Module):
                 out_dim=256,
                 adapter_type=adapter_type,
                 dpt_layers=dpt_layers,
-                fusion_k=fusion_k,
             )
         else:
             self.dinov3_encoder = None
@@ -159,10 +158,6 @@ class DepthSam(nn.Module):
             param.requires_grad = False
         for param in self.depth_decoder.parameters():
             param.requires_grad = False
-        # 冻结 depth fusion head
-        if self.dinov3_encoder and self.dinov3_encoder.depth_fusion is not None:
-            for param in self.dinov3_encoder.depth_fusion.parameters():
-                param.requires_grad = False
 
     def freeze_mask_branch(self):
         """Freeze SAM prompt_encoder + mask_decoder (for phase 2: depth-only training)."""
@@ -170,10 +165,6 @@ class DepthSam(nn.Module):
             param.requires_grad = False
         for param in self.sam.mask_decoder.parameters():
             param.requires_grad = False
-        # 冻结 mask fusion head
-        if self.dinov3_encoder and self.dinov3_encoder.mask_fusion is not None:
-            for param in self.dinov3_encoder.mask_fusion.parameters():
-                param.requires_grad = False
 
     def preprocess(self, x: torch.Tensor) -> Tuple[torch.Tensor, Tuple[int, int]]:
         # Bypass SAM's apply_image_torch which uses shape[0],[1] (B,C) instead of
@@ -189,18 +180,15 @@ class DepthSam(nn.Module):
         x = F.pad(x, (0, padw, 0, padh))
         return x, input_size
 
-    def encode_images(self, images: torch.Tensor, branch: str = "mask") -> Tuple[torch.Tensor, Tuple[int, int]]:
-        """Preprocess and encode images.
-
-        Args:
-            branch: "mask" or "depth" — selects which fusion head to use
+    def encode_images(self, images: torch.Tensor) -> Tuple[torch.Tensor, Tuple[int, int]]:
+        """Preprocess and encode images. Called once per training step.
 
         Returns:
             image_embeddings: (B, 256, 64, 64)
             input_size: (H, W) of preprocessed images before padding
         """
         if self.encoder_type == "dinov3":
-            return self.dinov3_encoder(images, branch=branch)
+            return self.dinov3_encoder(images)
         else:
             input_images, input_size = self.preprocess(images)
             image_embeddings = self.sam.image_encoder(input_images)
@@ -365,22 +353,18 @@ class DepthSam(nn.Module):
         gt_masks: torch.Tensor,
     ) -> Dict[str, Any]:
         """Full forward: mask branch + depth branch (non-iterative path)."""
-        # Mask 分支
-        mask_embeddings, input_size = self.encode_images(images, branch="mask")
+        image_embeddings, input_size = self.encode_images(images)
 
         low_res_masks, iou_pred, masks = self.forward_mask(
-            image_embeddings=mask_embeddings,
+            image_embeddings=image_embeddings,
             point_coords=point_coords,
             point_labels=point_labels,
             original_sizes=original_sizes,
             input_size=input_size,
         )
 
-        # Depth 分支
-        depth_embeddings, _ = self.encode_images(images, branch="depth")
-
         depth_pred, _ = self.forward_depth(
-            image_embeddings=depth_embeddings,
+            image_embeddings=image_embeddings,
             low_res_masks=low_res_masks.detach(),
             input_size=input_size,
             original_sizes=original_sizes,

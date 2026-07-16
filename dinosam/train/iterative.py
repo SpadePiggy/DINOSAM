@@ -28,9 +28,7 @@ def iterative_train_step(
     model.train()
     B = images.shape[0]
 
-    # Dual encode for fusion mode
-    mask_embeddings, input_size = model.encode_images(images, branch="mask")
-    depth_embeddings, _ = model.encode_images(images, branch="depth")
+    image_embeddings, input_size = model.encode_images(images)
 
     n_sub = args.n_sub_iterations
     total_mask_loss = 0.0
@@ -44,7 +42,7 @@ def iterative_train_step(
 
     for sub_iter in range(n_sub):
         low_res_masks, iou_pred, masks_fullres = model.forward_mask(
-            image_embeddings=mask_embeddings,
+            image_embeddings=image_embeddings,
             point_coords=cur_point_coords,
             point_labels=cur_point_labels,
             original_sizes=original_sizes,
@@ -92,7 +90,7 @@ def iterative_train_step(
     # by iterative_mask_step logic at the top of the loop). forward_depth does
     # per-sample apply_coords_torch internally — fixes original_sizes[0] bug.
     depth_pred, decoder_masks_fullres = model.forward_depth(
-        image_embeddings=depth_embeddings,
+        image_embeddings=image_embeddings,
         low_res_masks=final_low_res_masks.detach(),
         input_size=input_size,
         original_sizes=original_sizes,
@@ -193,13 +191,6 @@ def iterative_mask_step(
 
     loss = avg_mask_loss + avg_iou_loss
 
-    # Variance penalty: reward peaked layer weight distributions
-    variance_weight = getattr(args, 'variance_weight', 0.01)
-    if variance_weight != 0:
-        from dinosam.train.trainer import _compute_variance_loss
-        var_loss = _compute_variance_loss(model)
-        loss = loss + variance_weight * var_loss
-
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
@@ -231,12 +222,10 @@ def iterative_depth_step(
     model.train()
     B = images.shape[0]
 
-    # Dual encode for fusion mode
-    mask_embeddings, input_size = model.encode_images(images, branch="mask")
-    depth_embeddings, _ = model.encode_images(images, branch="depth")
-
+    # Mask branch: get low_res_masks
+    image_embeddings, input_size = model.encode_images(images)
     low_res_masks, _, masks_fullres = model.forward_mask(
-        image_embeddings=mask_embeddings,
+        image_embeddings=image_embeddings,
         point_coords=point_coords,
         point_labels=point_labels,
         original_sizes=original_sizes,
@@ -255,7 +244,7 @@ def iterative_depth_step(
 
     for sub_iter in range(n_sub):
         depth_pred, decoder_masks_fullres = model.forward_depth(
-            image_embeddings=depth_embeddings,
+            image_embeddings=image_embeddings,
             low_res_masks=mask_input,
             input_size=input_size,
             original_sizes=original_sizes,
@@ -305,13 +294,6 @@ def iterative_depth_step(
     avg_decoder_mask_loss = total_mask_loss / n_sub
 
     loss = args.depth_loss_weight * avg_depth_loss
-
-    # Variance penalty: reward peaked depth fusion weights
-    variance_weight = getattr(args, 'variance_weight', 0.01)
-    if variance_weight != 0:
-        from dinosam.train.trainer import _compute_variance_loss
-        var_loss = _compute_variance_loss(model)
-        loss = loss + variance_weight * var_loss
 
     optimizer.zero_grad()
     loss.backward()
