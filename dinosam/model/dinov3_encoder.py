@@ -13,6 +13,41 @@ if _dinov3_path not in sys.path:
 from .adapters import get_adapter
 
 
+def parse_layers_arg(s):
+    """解析 '2,5,8,11' 为升序去重的层索引列表。
+
+    backbone get_intermediate_layers 恒按块索引升序返回特征，
+    归一化使配置顺序与实际特征顺序一致。
+    """
+    return sorted({int(x.strip()) for x in s.split(",")})
+
+
+def split_union_features(features, union, layers_a, layers_b):
+    """按 union 中的索引把一次性提取的 features 分发给两组层配置。
+
+    Args:
+        features: 张量序列，features[i] 对应 union[i] 层
+        union: 升序层索引列表（与 features 一一对应）
+        layers_a, layers_b: 两组层配置（union 的子集）
+
+    Returns:
+        (features_a, features_b)
+    """
+    index = {layer: i for i, layer in enumerate(union)}
+    features_a = [features[index[l]] for l in layers_a]
+    features_b = [features[index[l]] for l in layers_b]
+    return features_a, features_b
+
+
+def has_depth_branch_keys(keys):
+    """检查 state_dict 键列表中是否含双头 depth 分支键。
+
+    双条件缺一不可：simple_depth_head 等键含 '_depth' 子串但无
+    dinov3_encoder. 前缀；dpt_head 等键有前缀但无 '_depth.'。
+    """
+    return any(k.startswith("dinov3_encoder.") and "_depth." in k for k in keys)
+
+
 class DINOv3MonaEncoder(nn.Module):
     """DINOv3 ViT-B/16 with Mona adapters, outputting 256-dim embeddings.
 
