@@ -22,7 +22,7 @@ class DepthSam(nn.Module):
 
     def __init__(self, sam: Sam, encoder_type: str = "sam", dinov3_checkpoint: str = None,
                  adapter_type: str = "mona", depth_transformer_type: str = "twoway",
-                 dpt_layers: list[int] = None):
+                 dpt_layers: list[int] = None, dpt_layers_depth: list[int] = None):
         super().__init__()
         self.sam = sam
         self.encoder_type = encoder_type
@@ -45,6 +45,7 @@ class DepthSam(nn.Module):
                 out_dim=256,
                 adapter_type=adapter_type,
                 dpt_layers=dpt_layers,
+                dpt_layers_depth=dpt_layers_depth,
             )
         else:
             self.dinov3_encoder = None
@@ -80,6 +81,12 @@ class DepthSam(nn.Module):
             self.depth_decoder = DepthMaskDecoder(
                 transformer_dim=prompt_embed_dim, transformer=transformer,
             )
+
+    @property
+    def dual_dpt(self):
+        """双头 DPT 模式是否启用。"""
+        return (self.dinov3_encoder is not None
+                and self.dinov3_encoder.dpt_layers_depth is not None)
 
     def init_depth_from_sam(self):
         """Initialize depth branch weights from SAM's inner prompt_encoder + mask_decoder.
@@ -149,6 +156,13 @@ class DepthSam(nn.Module):
 
     def freeze_depth_branch(self):
         """Freeze outer_prompt_encoder + depth_decoder (for phase 1: mask-only training)."""
+        # 双头模式：phase1 冻结 depth 编码分支（放在 simple 早退之前）
+        if self.dual_dpt:
+            enc = self.dinov3_encoder
+            for module in (enc.dpt_head_depth, enc.adapter1_depth,
+                           enc.adapter2_depth, enc.projection_depth):
+                for param in module.parameters():
+                    param.requires_grad = False
         if self.outer_prompt_encoder is None:
             # simple 模式：冻结 simple_depth_head
             for param in self.simple_depth_head.parameters():
@@ -219,6 +233,8 @@ class DepthSam(nn.Module):
             iou_pred: (B, 1)
             masks: (B, 1, H, W) or None if return_fullres=False
         """
+        if isinstance(image_embeddings, dict):
+            image_embeddings = image_embeddings["mask"]
         B = image_embeddings.shape[0]
         inner_pe = self.sam.prompt_encoder.get_dense_pe()
 
@@ -296,6 +312,8 @@ class DepthSam(nn.Module):
             depth_pred: (B,)
             decoder_masks: (B, 1, H, W) postprocessed to original resolution
         """
+        if isinstance(image_embeddings, dict):
+            image_embeddings = image_embeddings["depth"]
         # simple 模式：全局池化 + MLP，跳过 decoder
         if self.depth_transformer_type == "simple":
             depth = self.simple_depth_head(image_embeddings)
