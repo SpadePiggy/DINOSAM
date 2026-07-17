@@ -346,10 +346,17 @@ def _log_trainable_params(model, label=""):
 def _build_model_and_data(args, device):
     sam = sam_model_registry["vit_b"](checkpoint=args.sam_checkpoint)
 
+    from dinosam.model.dinov3_encoder import parse_layers_arg
+
     # Parse dpt_layers (only for dpt_simple)
     dpt_layers = (
-        [int(x.strip()) for x in args.dpt_layers.split(",")]
+        parse_layers_arg(args.dpt_layers)
         if args.adapter_type == "dpt_simple" else None
+    )
+    # Dual DPT: unconditional parse (combination validated at CLI layer)
+    dpt_layers_depth = (
+        parse_layers_arg(args.dpt_layers_depth)
+        if args.dpt_layers_depth is not None else None
     )
 
     model = DepthSam(
@@ -359,6 +366,7 @@ def _build_model_and_data(args, device):
         adapter_type=args.adapter_type,
         depth_transformer_type=args.depth_transformer_type,
         dpt_layers=dpt_layers,
+        dpt_layers_depth=dpt_layers_depth,
     )
     model.freeze_image_encoder()
     model.init_depth_from_sam()
@@ -390,7 +398,7 @@ def _save_checkpoint(path, model, optimizer, scheduler, epoch, best_val_loss, ad
     }, path)
 
 
-def _load_checkpoint(path, model, optimizer, scheduler, device):
+def _load_checkpoint(path, model, optimizer, scheduler, device, check_dual_depth=False):
     ckpt = torch.load(path, map_location=device)
     # Remap legacy mona1/mona2 -> adapter1/adapter2 keys
     from dinosam.model.adapters import _remap_legacy_state_dict
@@ -398,6 +406,21 @@ def _load_checkpoint(path, model, optimizer, scheduler, device):
 
     # Use strict=False to allow cross-adapter_type loading
     result = model.load_state_dict(ckpt["model_state_dict"], strict=False)
+
+    from dinosam.model.dinov3_encoder import has_depth_branch_keys
+    if has_depth_branch_keys(result.unexpected_keys):
+        raise RuntimeError(
+            f"Checkpoint {path} contains dual-DPT depth branch weights but the "
+            "current config is single-head. Re-run with --encoder dinov3 "
+            "--adapter_type dpt_simple --dpt_layers_depth <layers>."
+        )
+    if check_dual_depth and has_depth_branch_keys(result.missing_keys):
+        raise RuntimeError(
+            f"Cannot resume phase2 in dual-DPT mode from single-head checkpoint "
+            f"{path}: optimizer param groups will not match. Delete/rename this "
+            "last.pt and restart phase2 from a phase1 checkpoint (warm-start)."
+        )
+
     if result.missing_keys:
         print(f"Checkpoint missing keys (expected when switching adapter_type): {result.missing_keys}")
     if result.unexpected_keys:
@@ -492,6 +515,14 @@ def run_phase2(model, train_loader, val_loader, device, args, phase1_checkpoint=
         for param in model.depth_decoder.parameters():
             param.requires_grad = True
 
+    # 双头模式：解冻 depth 编码分支（独立于 simple/非 simple 分支）
+    if model.dual_dpt:
+        enc = model.dinov3_encoder
+        for module in (enc.dpt_head_depth, enc.adapter1_depth,
+                       enc.adapter2_depth, enc.projection_depth):
+            for param in module.parameters():
+                param.requires_grad = True
+
     optimizer = torch.optim.AdamW(
         filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr,
     )
@@ -502,6 +533,7 @@ def run_phase2(model, train_loader, val_loader, device, args, phase1_checkpoint=
     if args.resume and os.path.exists(resume_path):
         start_epoch, best_val_loss = _load_checkpoint(
             resume_path, model, optimizer, scheduler, device,
+            check_dual_depth=model.dual_dpt,
         )
     elif phase1_checkpoint and os.path.exists(phase1_checkpoint):
         print(f"Loading phase 1 checkpoint: {phase1_checkpoint}")
@@ -520,6 +552,16 @@ def run_phase2(model, train_loader, val_loader, device, args, phase1_checkpoint=
 
         # Use strict=False for cross-adapter compatibility
         result = model.load_state_dict(ckpt["model_state_dict"], strict=False)
+
+        from dinosam.model.dinov3_encoder import has_depth_branch_keys
+        if has_depth_branch_keys(result.unexpected_keys):
+            raise RuntimeError(
+                f"Phase1 checkpoint {phase1_checkpoint} contains dual-DPT depth "
+                "branch weights but the current config is single-head. Re-run "
+                "with --encoder dinov3 --adapter_type dpt_simple "
+                "--dpt_layers_depth <layers>."
+            )
+
         if result.missing_keys:
             print(f"Missing keys: {result.missing_keys}")
         if result.unexpected_keys:
@@ -527,6 +569,12 @@ def run_phase2(model, train_loader, val_loader, device, args, phase1_checkpoint=
 
         # Re-init depth branch from SAM (phase1 checkpoint has random depth weights)
         model.init_depth_from_sam()
+
+        # 双头模式：从 mask 分支 warm-start depth 编码分支。
+        # 无条件执行：phase1 从不训练 *_depth，即使双头 phase1 checkpoint
+        # 存了这些键也只是随机初始值，覆盖拷贝恒正确。
+        if model.dual_dpt:
+            model.dinov3_encoder.warm_start_depth_branch()
 
     _log_trainable_params(model, "Phase 2: ")
 
@@ -611,10 +659,20 @@ def main():
     parser.add_argument("--dpt_layers", type=str, default="2,5,8,11",
                         help="Comma-separated intermediate layer indices for DPT "
                              "(e.g., '2,5,8,11'). Only used with --adapter_type dpt_simple")
+    parser.add_argument("--dpt_layers_depth", type=str, default=None,
+                        help="Comma-separated intermediate layer indices for the depth "
+                             "branch (e.g., '5,8,11'). Enables dual DPT heads: mask "
+                             "branch uses --dpt_layers, depth branch uses these. "
+                             "Requires --encoder dinov3 --adapter_type dpt_simple")
     parser.add_argument("--depth_transformer_type", type=str, default="twoway",
                         choices=["twoway", "dual_attn", "simple"],
                         help="Depth decoder transformer type. dual_attn requires training from scratch.")
     args = parser.parse_args()
+
+    if args.dpt_layers_depth is not None and (
+            args.encoder != "dinov3" or args.adapter_type != "dpt_simple"):
+        parser.error("--dpt_layers_depth requires --encoder dinov3 "
+                     "and --adapter_type dpt_simple")
 
     if args.encoder == "sam" and args.adapter_type != "mona":
         print(f"Warning: --adapter_type '{args.adapter_type}' is ignored when --encoder sam")
