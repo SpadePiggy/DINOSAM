@@ -276,7 +276,8 @@ def plot_depth_scatter(metrics, save_dir, prefix=""):
     print(f"  Saved: {path2}")
 
 
-def _load_model_state_dict(model, checkpoint_path, device):
+def _load_model_state_dict(model, checkpoint_path, device, dual_dpt=False):
+    """加载 checkpoint。返回 True 表示可评估，False 表示单/双头不匹配应跳过该 phase。"""
     ckpt = torch.load(checkpoint_path, map_location=device)
     from dinosam.model.adapters import _remap_legacy_state_dict
 
@@ -287,10 +288,24 @@ def _load_model_state_dict(model, checkpoint_path, device):
         ckpt = _remap_legacy_state_dict(ckpt)
         result = model.load_state_dict(ckpt, strict=False)
 
+    from dinosam.model.dinov3_encoder import has_depth_branch_keys
+    if dual_dpt and has_depth_branch_keys(result.missing_keys):
+        print(f"ERROR: {checkpoint_path} is a single-head checkpoint but "
+              "--dpt_layers_depth was given. Skipping this phase; re-run "
+              "without --dpt_layers_depth to evaluate it.")
+        return False
+    if not dual_dpt and has_depth_branch_keys(result.unexpected_keys):
+        print(f"ERROR: {checkpoint_path} is a dual-DPT checkpoint but "
+              "--dpt_layers_depth was not given. Skipping this phase; re-run "
+              "with --encoder dinov3 --adapter_type dpt_simple "
+              "--dpt_layers_depth <layers> to evaluate it.")
+        return False
+
     if result.missing_keys:
         print(f"Missing keys: {result.missing_keys}")
     if result.unexpected_keys:
         print(f"Unexpected keys: {result.unexpected_keys}")
+    return True
 
 
 def main():
@@ -318,12 +333,22 @@ def main():
     parser.add_argument("--dpt_layers", type=str, default="2,5,8,11",
                         help="Comma-separated intermediate layer indices for DPT "
                              "(e.g., '2,5,8,11'). Only used with --adapter_type dpt_simple")
+    parser.add_argument("--dpt_layers_depth", type=str, default=None,
+                        help="Comma-separated intermediate layer indices for the depth "
+                             "branch (e.g., '5,8,11'). Enables dual DPT heads: mask "
+                             "branch uses --dpt_layers, depth branch uses these. "
+                             "Requires --encoder dinov3 --adapter_type dpt_simple")
     parser.add_argument("--depth_transformer_type", type=str, default="twoway",
                         choices=["twoway", "dual_attn", "simple"],
                         help="Depth decoder transformer type. dual_attn requires training from scratch.")
     parser.add_argument("--dinov3_checkpoint", type=str, default=None,
                         help="Path to DINOv3 ViT-B/16 checkpoint (required when --encoder dinov3)")
     args = parser.parse_args()
+
+    if args.dpt_layers_depth is not None and (
+            args.encoder != "dinov3" or args.adapter_type != "dpt_simple"):
+        parser.error("--dpt_layers_depth requires --encoder dinov3 "
+                     "and --adapter_type dpt_simple")
 
     if args.encoder == "sam" and args.adapter_type != "mona":
         print(f"Warning: --adapter_type '{args.adapter_type}' is ignored when --encoder sam")
@@ -335,36 +360,43 @@ def main():
     print(f"Test samples: {len(dataset)}")
     print(f"Iterative eval: n_sub={args.n_sub_iterations}, mask_prob={args.mask_prob}")
 
+    from dinosam.model.dinov3_encoder import parse_layers_arg
+    dpt_layers = (
+        parse_layers_arg(args.dpt_layers)
+        if args.adapter_type == "dpt_simple" else None
+    )
+    dpt_layers_depth = (
+        parse_layers_arg(args.dpt_layers_depth)
+        if args.dpt_layers_depth is not None else None
+    )
+    dual_dpt = dpt_layers_depth is not None
+    metrics_p1 = None
+
     # ---- Phase 1 ----
     if os.path.exists(args.phase1_checkpoint):
         print(f"\nLoading Phase 1 model: {args.phase1_checkpoint}")
         sam = sam_model_registry["vit_b"](checkpoint=args.sam_checkpoint)
 
-        # Parse dpt_layers (only for dpt_simple)
-        dpt_layers = (
-            [int(x.strip()) for x in args.dpt_layers.split(",")]
-            if args.adapter_type == "dpt_simple" else None
-        )
-
         model = DepthSam(sam, encoder_type=args.encoder, dinov3_checkpoint=args.dinov3_checkpoint,
                          adapter_type=args.adapter_type,
                          depth_transformer_type=args.depth_transformer_type,
-                         dpt_layers=dpt_layers)
-        _load_model_state_dict(model, args.phase1_checkpoint, device)
-        model.freeze_image_encoder()
-        model.to(device)
+                         dpt_layers=dpt_layers,
+                         dpt_layers_depth=dpt_layers_depth)
+        if _load_model_state_dict(model, args.phase1_checkpoint, device, dual_dpt=dual_dpt):
+            model.freeze_image_encoder()
+            model.to(device)
 
-        mask_dir_p1 = os.path.join(args.save_masks_dir, "phase1") if args.save_masks_dir else None
-        metrics_p1 = evaluate(model, dataset, device,
-                              batch_size=args.batch_size,
-                              n_sub_iterations=args.n_sub_iterations,
-                              mask_prob=args.mask_prob,
-                              save_masks_dir=mask_dir_p1)
-        print_metrics("Phase 1 Model (mask-only trained)", metrics_p1)
-        print_depth_by_class(metrics_p1, dataset)
-        if mask_dir_p1:
-            plot_depth_scatter(metrics_p1, mask_dir_p1, prefix="phase1_")
-            print(f"\n  Masks + plots saved to: {mask_dir_p1}")
+            mask_dir_p1 = os.path.join(args.save_masks_dir, "phase1") if args.save_masks_dir else None
+            metrics_p1 = evaluate(model, dataset, device,
+                                  batch_size=args.batch_size,
+                                  n_sub_iterations=args.n_sub_iterations,
+                                  mask_prob=args.mask_prob,
+                                  save_masks_dir=mask_dir_p1)
+            print_metrics("Phase 1 Model (mask-only trained)", metrics_p1)
+            print_depth_by_class(metrics_p1, dataset)
+            if mask_dir_p1:
+                plot_depth_scatter(metrics_p1, mask_dir_p1, prefix="phase1_")
+                print(f"\n  Masks + plots saved to: {mask_dir_p1}")
     else:
         print(f"\nPhase 1 checkpoint not found: {args.phase1_checkpoint}")
 
@@ -377,49 +409,44 @@ def main():
         print(f"\nLoading Phase 2 model: {args.phase2_checkpoint}")
         sam = sam_model_registry["vit_b"](checkpoint=args.sam_checkpoint)
 
-        # Parse dpt_layers (only for dpt_simple)
-        dpt_layers = (
-            [int(x.strip()) for x in args.dpt_layers.split(",")]
-            if args.adapter_type == "dpt_simple" else None
-        )
-
         model = DepthSam(sam, encoder_type=args.encoder, dinov3_checkpoint=args.dinov3_checkpoint,
                          adapter_type=args.adapter_type,
                          depth_transformer_type=args.depth_transformer_type,
-                         dpt_layers=dpt_layers)
-        _load_model_state_dict(model, args.phase2_checkpoint, device)
-        model.freeze_image_encoder()
-        model.to(device)
+                         dpt_layers=dpt_layers,
+                         dpt_layers_depth=dpt_layers_depth)
+        if _load_model_state_dict(model, args.phase2_checkpoint, device, dual_dpt=dual_dpt):
+            model.freeze_image_encoder()
+            model.to(device)
 
-        mask_dir_p2 = os.path.join(args.save_masks_dir, "phase2") if args.save_masks_dir else None
-        metrics_p2 = evaluate(model, dataset, device,
-                              batch_size=args.batch_size,
-                              n_sub_iterations=args.n_sub_iterations,
-                              mask_prob=args.mask_prob,
-                              save_masks_dir=mask_dir_p2)
-        print_metrics("Phase 2 Model (depth trained)", metrics_p2)
-        print_depth_by_class(metrics_p2, dataset)
-        if mask_dir_p2:
-            plot_depth_scatter(metrics_p2, mask_dir_p2, prefix="phase2_")
-            print(f"\n  Masks + plots saved to: {mask_dir_p2}")
+            mask_dir_p2 = os.path.join(args.save_masks_dir, "phase2") if args.save_masks_dir else None
+            metrics_p2 = evaluate(model, dataset, device,
+                                  batch_size=args.batch_size,
+                                  n_sub_iterations=args.n_sub_iterations,
+                                  mask_prob=args.mask_prob,
+                                  save_masks_dir=mask_dir_p2)
+            print_metrics("Phase 2 Model (depth trained)", metrics_p2)
+            print_depth_by_class(metrics_p2, dataset)
+            if mask_dir_p2:
+                plot_depth_scatter(metrics_p2, mask_dir_p2, prefix="phase2_")
+                print(f"\n  Masks + plots saved to: {mask_dir_p2}")
 
-        # Comparison
-        if os.path.exists(args.phase1_checkpoint):
-            print(f"\n{'=' * 60}")
-            print(f"  Phase 1 vs Phase 2 Comparison")
-            print(f"{'=' * 60}")
-            d_dice = metrics_p2['dice'].mean() - metrics_p1['dice'].mean()
-            d_iou = metrics_p2['iou'].mean() - metrics_p1['iou'].mean()
-            d_depth = metrics_p2['depth_mae'].mean() - metrics_p1['depth_mae'].mean()
-            print(f"  Dice:       {metrics_p1['dice'].mean():.4f} -> {metrics_p2['dice'].mean():.4f}  ({d_dice:+.4f})")
-            print(f"  IoU:        {metrics_p1['iou'].mean():.4f} -> {metrics_p2['iou'].mean():.4f}  ({d_iou:+.4f})")
-            d_biou = metrics_p2['boundary_iou'].mean() - metrics_p1['boundary_iou'].mean()
-            d_prec = metrics_p2['precision'].mean() - metrics_p1['precision'].mean()
-            d_rec = metrics_p2['recall'].mean() - metrics_p1['recall'].mean()
-            print(f"  BoundIoU:   {metrics_p1['boundary_iou'].mean():.4f} -> {metrics_p2['boundary_iou'].mean():.4f}  ({d_biou:+.4f})")
-            print(f"  Precision:  {metrics_p1['precision'].mean():.4f} -> {metrics_p2['precision'].mean():.4f}  ({d_prec:+.4f})")
-            print(f"  Recall:     {metrics_p1['recall'].mean():.4f} -> {metrics_p2['recall'].mean():.4f}  ({d_rec:+.4f})")
-            print(f"  Depth MAE:  {metrics_p1['depth_mae'].mean():.4f} -> {metrics_p2['depth_mae'].mean():.4f}  ({d_depth:+.4f})")
+            # Comparison
+            if metrics_p1 is not None:
+                print(f"\n{'=' * 60}")
+                print(f"  Phase 1 vs Phase 2 Comparison")
+                print(f"{'=' * 60}")
+                d_dice = metrics_p2['dice'].mean() - metrics_p1['dice'].mean()
+                d_iou = metrics_p2['iou'].mean() - metrics_p1['iou'].mean()
+                d_depth = metrics_p2['depth_mae'].mean() - metrics_p1['depth_mae'].mean()
+                print(f"  Dice:       {metrics_p1['dice'].mean():.4f} -> {metrics_p2['dice'].mean():.4f}  ({d_dice:+.4f})")
+                print(f"  IoU:        {metrics_p1['iou'].mean():.4f} -> {metrics_p2['iou'].mean():.4f}  ({d_iou:+.4f})")
+                d_biou = metrics_p2['boundary_iou'].mean() - metrics_p1['boundary_iou'].mean()
+                d_prec = metrics_p2['precision'].mean() - metrics_p1['precision'].mean()
+                d_rec = metrics_p2['recall'].mean() - metrics_p1['recall'].mean()
+                print(f"  BoundIoU:   {metrics_p1['boundary_iou'].mean():.4f} -> {metrics_p2['boundary_iou'].mean():.4f}  ({d_biou:+.4f})")
+                print(f"  Precision:  {metrics_p1['precision'].mean():.4f} -> {metrics_p2['precision'].mean():.4f}  ({d_prec:+.4f})")
+                print(f"  Recall:     {metrics_p1['recall'].mean():.4f} -> {metrics_p2['recall'].mean():.4f}  ({d_rec:+.4f})")
+                print(f"  Depth MAE:  {metrics_p1['depth_mae'].mean():.4f} -> {metrics_p2['depth_mae'].mean():.4f}  ({d_depth:+.4f})")
     else:
         print(f"\nPhase 2 checkpoint not found: {args.phase2_checkpoint} (skip)")
 
