@@ -1,7 +1,7 @@
 # Dual DPT Layers Design — depth 头与 mask 头独立层配置
 
 **Date:** 2026-07-16
-**Status:** Approved (rev 3 — 吸收两轮三方 review)
+**Status:** Approved (rev 3.1 — 三轮三方 review 收敛)
 
 ## 目标
 
@@ -102,8 +102,8 @@ review 发现的关键缺口：不改冻结逻辑，`*_depth` 模块永远不会
 
 | 阶段 | `*_depth` 编码模块（dpt_head_depth / adapter1_depth / adapter2_depth / projection_depth） |
 |---|---|
-| phase1（纯 mask） | **冻结**——扩展 `DepthSam.freeze_depth_branch()`：双头模式下额外冻结这四个模块。注意扩展必须放在 `depth_transformer_type == "simple"` 早退分支**之前**，两种 transformer 类型都要覆盖 |
-| phase2（depth 训练） | **解冻**——`run_phase2` 现有"全冻结 → 解冻"逻辑中，双头模式下把这四个模块加入解冻集合。simple 与非 simple 两条解冻分支都要加 |
+| phase1（纯 mask） | **冻结**——扩展 `DepthSam.freeze_depth_branch()`：双头模式下额外冻结这四个模块。注意扩展必须放在 simple 早退分支（代码字面条件为 `self.outer_prompt_encoder is None`）**之前**，两种 transformer 类型都要覆盖 |
+| phase2（depth 训练） | **解冻**——`run_phase2` 现有"全冻结 → 解冻"逻辑之后，独立追加一段"双头则解冻四模块"（放在 simple/非 simple 的 if/else **之外**，与 phase1 冻结侧同构，避免两条分支重复写四个模块） |
 
 phase2 的 mask 分支编码模块（`dpt_head` / `adapter1` / `adapter2` / `projection`）
 维持现状（冻结），不受本设计影响。
@@ -119,12 +119,12 @@ missing_keys / unexpected_keys 中是否存在 `_depth` 分支键——判据为
 | 场景 | 行为 |
 |---|---|
 | 开关关闭 + 旧单头 checkpoint | state_dict 键一致，照常加载，零影响 |
-| 开关关闭 + 双头 checkpoint（trainer resume / phase2 加载 phase1） | **报错**：unexpected_keys 含 `_depth` 分支键 → 提示补 `--dpt_layers_depth`（若当前 `--encoder sam` 则同时提示 `--encoder dinov3`）。防止 depth_decoder 拿 mask embedding 安静地输出错误深度 |
+| 开关关闭 + 双头 checkpoint（trainer resume / phase2 加载 phase1） | **报错**：unexpected_keys 含 `_depth` 分支键 → 静态错误消息同时列出 `--dpt_layers_depth` 与 `--encoder dinov3`（不做条件分支）。防止 depth_decoder 拿 mask embedding 安静地输出错误深度。phase1 resume 方向亦有意报错——机械上可续训，但报错提示配置漂移，属保守选择 |
 | 双头模式 + phase2 加载 phase1 checkpoint（无论单头还是双头产物） | `strict=False` 加载后**无条件**执行 warm-start，不报错。理由：phase1 从不训练 `*_depth` 模块，即使双头 phase1 checkpoint 里存了这些键也只是随机初始值，覆盖拷贝恒正确。不依赖 missing_keys 判断（双头 phase1 产物 missing_keys 为空，条件触发会失效） |
 | 双头模式 + resume 双头 `*_last.pt` | 正常续训，不 warm-start |
 | 双头模式 + **phase2** resume 旧单头 `phase2_last.pt` | **明确报错，不支持**：missing_keys 含 `_depth` 分支键即报错（背后原因：phase2 optimizer 含 `*_depth` 参数，`optimizer.load_state_dict` 会因组内 param 个数不匹配抛错）。提示：删除/改名 last.pt，从 phase1 checkpoint warm-start 重新开始 phase2。**作用域仅 phase2**——`_load_checkpoint` 为两个 phase 共用，phase1 resume 不做此检查 |
 | 双头模式 + **phase1** resume 旧单头 `phase1_last.pt` | **安全，正常续训**：`*_depth` 在 phase1 冻结、不进 optimizer，param_groups 一致；`*_depth` 保持随机初始化，后续 phase2 会 warm-start 覆盖 |
-| evaluate 遇到任一方向不匹配（单头产物+传了 `--dpt_layers_depth`，或双头产物+没传） | **打印明确错误并跳过该 phase，继续评下一个 checkpoint，不硬退出**。理由：evaluate 一次运行依次评 phase1/phase2 且共用 CLI 参数，推荐工作流产物是"单头 phase1 + 双头 phase2"混合对，必有一个不匹配；跳过策略保证任何 checkpoint × 参数组合都有定义好的行为，旧模型（不传新参数）完全不受影响。evaluate **不做** warm-start（eval 不训练，随机 depth 分支的深度输出无意义） |
+| evaluate 遇到任一方向不匹配（单头产物+传了 `--dpt_layers_depth`，或双头产物+没传） | **打印明确错误并跳过该 phase，继续评下一个 checkpoint，不硬退出**。理由：evaluate 一次运行依次评 phase1/phase2 且共用 CLI 参数，推荐工作流产物是"单头 phase1 + 双头 phase2"混合对，必有一个不匹配；跳过策略保证任何 checkpoint × 参数组合都有定义好的行为，旧模型（不传新参数）完全不受影响。evaluate **不做** warm-start（eval 不训练，随机 depth 分支的深度输出无意义）。**配套改动**：脚本尾部 Phase1/Phase2 对比与绘图逻辑的门槛须从"checkpoint 文件存在"改为"该 phase 实际产出 metrics"，否则被跳过的 phase 会让 `metrics_p1`/`metrics_p2` 未定义而 NameError |
 
 **warm-start**（新方法 `DINOv3MonaEncoder.warm_start_depth_branch()`）：
 - `adapter1_depth ← adapter1`、`adapter2_depth ← adapter2`、
