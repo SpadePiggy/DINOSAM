@@ -1,7 +1,7 @@
 # Dual DPT Layers Design — depth 头与 mask 头独立层配置
 
 **Date:** 2026-07-16
-**Status:** Approved (rev 2 — 吸收三方 review 发现)
+**Status:** Approved (rev 3 — 吸收两轮三方 review)
 
 ## 目标
 
@@ -23,18 +23,17 @@ trainer.py 与 evaluate.py 各新增一个参数：
 --dpt_layers_depth  "5,8,11"     # 新增；提供即开启双头模式
 ```
 
-**校验（落在 CLI/build 层，不得静默忽略）：**
+**解析与校验（落在 CLI/build 层，不得静默忽略）：**
 - `--dpt_layers_depth` 必须**无条件解析并透传**——不得沿用现有
   `... if args.adapter_type == "dpt_simple" else None` 的条件解析模式
-  （那会让校验永不触发）
+  （那会让校验永不触发）。evaluate.py 有两处模型构建点，共用一次解析+校验
 - 解析后立即校验组合：提供了 `--dpt_layers_depth` 但
   `encoder != "dinov3"` 或 `adapter_type != "dpt_simple"` → 直接报错退出
   （`--encoder sam` 时 DINOv3MonaEncoder 不会被构造，encoder 侧校验够不到，
-  所以必须在 CLI 层拦截）
-- encoder 侧保留防御性 ValueError（扩展 `dinov3_encoder.py` 现有 dpt_layers 校验）
-- `dpt_layers` 与 `dpt_layers_depth` 各自必须严格升序且无重复，否则报错。
-  背景：backbone `get_intermediate_layers` 恒按块索引升序返回特征，乱序/重复
-  配置会造成新旧路径行为不一致。这是新增校验；以往的合法配置（升序）不受影响。
+  所以必须在 CLI 层拦截）。encoder 侧现有 dpt_layers 校验原样不动，不扩展
+- 两组层配置解析后各自做 `sorted(set(...))` 归一化（一行）。背景：backbone
+  `get_intermediate_layers` 恒按块索引升序返回特征，归一化使配置顺序与实际
+  特征顺序一致；对以往的合法（升序）配置无行为变化
 
 ## 架构
 
@@ -89,8 +88,9 @@ if isinstance(image_embeddings, dict):
   `encode_images` 调用点零改动——调用点把 dict 原样传给两个分支函数，
   分支函数自取所需 embedding。核实：8 个调用点在 encode 与分支函数之间
   均不触碰 embeddings。
-- 第 9 个调用点 `dinosam/scripts/pca_viz.py` 永远走单头路径，不受影响
-  （加载双头 checkpoint 时会命中下述 `_depth` 键不匹配报错，行为明确）
+- 第 9 个调用点 `dinosam/scripts/pca_viz.py` 永远走单头路径，不改动。
+  它用裸 `load_state_dict(strict=False)` 加载：遇到双头 checkpoint 时
+  `*_depth` 键被静默忽略，mask 分支权重正常装入——行为无害，接受现状
 
 **代价（已接受）：** phase1（纯 mask 训练）双头模式下会多计算一份 depth 分支的
 head + adapter + projection 前向，相对 12 层 ViT backbone 开销 <5%。
@@ -102,35 +102,35 @@ review 发现的关键缺口：不改冻结逻辑，`*_depth` 模块永远不会
 
 | 阶段 | `*_depth` 编码模块（dpt_head_depth / adapter1_depth / adapter2_depth / projection_depth） |
 |---|---|
-| phase1（纯 mask） | **冻结**——扩展 `DepthSam.freeze_depth_branch()`：双头模式下额外冻结这四个模块 |
-| phase2（depth 训练） | **解冻**——`run_phase2` 现有"全冻结 → 解冻 outer_prompt_encoder + depth_decoder"逻辑中，双头模式下把这四个模块加入解冻集合 |
+| phase1（纯 mask） | **冻结**——扩展 `DepthSam.freeze_depth_branch()`：双头模式下额外冻结这四个模块。注意扩展必须放在 `depth_transformer_type == "simple"` 早退分支**之前**，两种 transformer 类型都要覆盖 |
+| phase2（depth 训练） | **解冻**——`run_phase2` 现有"全冻结 → 解冻"逻辑中，双头模式下把这四个模块加入解冻集合。simple 与非 simple 两条解冻分支都要加 |
 
 phase2 的 mask 分支编码模块（`dpt_head` / `adapter1` / `adapter2` / `projection`）
 维持现状（冻结），不受本设计影响。
 
 ## checkpoint 兼容与 warm-start
 
-**checkpoint 元数据：** `_save_checkpoint` 新增保存 `dpt_layers` 与
-`dpt_layers_depth`（沿用现有 `adapter_type` 字段的先例），便于加载时诊断。
+**统一检测 helper：** 加载 state_dict 后，用一个 helper 检查
+missing_keys / unexpected_keys 中是否存在 `_depth` 分支键——判据为
+`key.startswith("dinov3_encoder.") and "_depth." in key`（`simple_depth_head`
+挂在 DepthSam 顶层，无 `dinov3_encoder.` 前缀，不会误伤）。三处报错场景
+共用该 helper，动作因调用点而异（见下表）。
 
 | 场景 | 行为 |
 |---|---|
 | 开关关闭 + 旧单头 checkpoint | state_dict 键一致，照常加载，零影响 |
-| 开关关闭 + 双头 checkpoint | **报错**：检测到 unexpected_keys 中含 `dinov3_encoder.` 前缀的 `*_depth` 模块键 → 提示补 `--dpt_layers_depth`（防止 depth_decoder 拿 mask embedding 安静地输出错误深度） |
-| 双头模式 + phase2 加载 phase1 checkpoint（无论单头还是双头产物） | `strict=False` 加载后**无条件**执行 warm-start。理由：phase1 从不训练 `*_depth` 模块，即使双头 phase1 checkpoint 里存了这些键也只是随机初始值，覆盖拷贝恒正确。不依赖 missing_keys 判断（双头 phase1 产物 missing_keys 为空，条件触发会失效） |
+| 开关关闭 + 双头 checkpoint（trainer resume / phase2 加载 phase1） | **报错**：unexpected_keys 含 `_depth` 分支键 → 提示补 `--dpt_layers_depth`（若当前 `--encoder sam` 则同时提示 `--encoder dinov3`）。防止 depth_decoder 拿 mask embedding 安静地输出错误深度 |
+| 双头模式 + phase2 加载 phase1 checkpoint（无论单头还是双头产物） | `strict=False` 加载后**无条件**执行 warm-start，不报错。理由：phase1 从不训练 `*_depth` 模块，即使双头 phase1 checkpoint 里存了这些键也只是随机初始值，覆盖拷贝恒正确。不依赖 missing_keys 判断（双头 phase1 产物 missing_keys 为空，条件触发会失效） |
 | 双头模式 + resume 双头 `*_last.pt` | 正常续训，不 warm-start |
-| 双头模式 + resume 旧单头 `*_last.pt` | **明确报错，不支持**：模型 state_dict 缺 `*_depth` 键且 optimizer param_groups 数量不匹配（`optimizer.load_state_dict` 会崩溃）。检测到该情形直接报错并提示：删除/改名 last.pt，从 phase1 checkpoint warm-start 重新开始 phase2 |
-| 双头模式 + evaluate 加载单头 checkpoint | **报错**：missing_keys 含 `*_depth` 模块键 → 提示该 checkpoint 为单头产物，去掉 `--dpt_layers_depth` 评估，或改用双头 checkpoint。evaluate **不做** warm-start（eval 不训练，随机 depth 分支的深度输出无意义） |
-
-`_depth` 键的检测按 `dinov3_encoder.` 前缀 + 四个模块名精确匹配，
-不用子串包含（`simple_depth_head.*` 也含 `_depth`，子串匹配会误伤）。
+| 双头模式 + **phase2** resume 旧单头 `phase2_last.pt` | **明确报错，不支持**：missing_keys 含 `_depth` 分支键即报错（背后原因：phase2 optimizer 含 `*_depth` 参数，`optimizer.load_state_dict` 会因组内 param 个数不匹配抛错）。提示：删除/改名 last.pt，从 phase1 checkpoint warm-start 重新开始 phase2。**作用域仅 phase2**——`_load_checkpoint` 为两个 phase 共用，phase1 resume 不做此检查 |
+| 双头模式 + **phase1** resume 旧单头 `phase1_last.pt` | **安全，正常续训**：`*_depth` 在 phase1 冻结、不进 optimizer，param_groups 一致；`*_depth` 保持随机初始化，后续 phase2 会 warm-start 覆盖 |
+| evaluate 遇到任一方向不匹配（单头产物+传了 `--dpt_layers_depth`，或双头产物+没传） | **打印明确错误并跳过该 phase，继续评下一个 checkpoint，不硬退出**。理由：evaluate 一次运行依次评 phase1/phase2 且共用 CLI 参数，推荐工作流产物是"单头 phase1 + 双头 phase2"混合对，必有一个不匹配；跳过策略保证任何 checkpoint × 参数组合都有定义好的行为，旧模型（不传新参数）完全不受影响。evaluate **不做** warm-start（eval 不训练，随机 depth 分支的深度输出无意义） |
 
 **warm-start**（新方法 `DINOv3MonaEncoder.warm_start_depth_branch()`）：
 - `adapter1_depth ← adapter1`、`adapter2_depth ← adapter2`、
   `projection_depth ← projection` 复制
 - `dpt_head_depth` **恒保持随机初始化**，不复制。理由：本特性的动机场景
-  就是两组层数不同，同层数复制分支在真实用法中几乎不触发（review 采纳的
-  YAGNI 砍法）
+  就是两组层数不同，同层数复制分支在真实用法中几乎不触发
 - 调用时机：仅 trainer `run_phase2` 加载 phase1 checkpoint 之后（双头模式下
   无条件调用），evaluate 不调用
 
@@ -152,4 +152,8 @@ phase2 的 mask 分支编码模块（`dpt_head` / `adapter1` / `adapter2` / `pro
 - 单头 → 双头 checkpoint 的离线迁移脚本（warm-start 在加载时完成）
 - phase1 下跳过 depth 分支前向计算的按需编码（冻结已消除梯度开销）
 - `dpt_head_depth` 的同层数 warm-start 复制
-- evaluate 侧 warm-start（以双向 `_depth` 键不匹配报错代替）
+- evaluate 侧 warm-start（以 `_depth` 键不匹配"报错跳过"代替）
+- checkpoint 元数据记录 `dpt_layers` / `dpt_layers_depth`（用户裁决：删掉。
+  接受"同层数、不同索引"配置错配时键名/shape 全一致、无法检测、静默按错误
+  层语义运行的风险——mask 分支现状亦如此，两边保持一致）
+- encoder 侧防御性 ValueError 扩展（CLI/build 层已拦截全部到达路径）
