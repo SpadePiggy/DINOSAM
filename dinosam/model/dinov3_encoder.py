@@ -56,7 +56,7 @@ class DINOv3MonaEncoder(nn.Module):
     """
 
     def __init__(self, checkpoint_path, img_size=1024, embed_dim=768, out_dim=256,
-                 adapter_type="mona", dpt_layers=None):
+                 adapter_type="mona", dpt_layers=None, dpt_layers_depth=None):
         super().__init__()
         self.img_size = img_size
         self.embed_dim = embed_dim
@@ -104,12 +104,21 @@ class DINOv3MonaEncoder(nn.Module):
             param.requires_grad = False
 
         # DPT head + adapters
+        self.dpt_layers_depth = None
         if adapter_type == "dpt_simple":
             from .dpt_heads import DPTHead
             self.dpt_layers = dpt_layers or [2, 5, 8, 11]
             self.dpt_head = DPTHead(embed_dim=embed_dim, n_layers=len(self.dpt_layers))
             self.adapter1 = get_adapter("mona", embed_dim, factor=8)
             self.adapter2 = get_adapter("mona", embed_dim, factor=8)
+            # 双头模式：depth 分支独立的 head + adapters + projection
+            if dpt_layers_depth is not None:
+                self.dpt_layers_depth = dpt_layers_depth
+                self.dpt_head_depth = DPTHead(embed_dim=embed_dim,
+                                              n_layers=len(dpt_layers_depth))
+                self.adapter1_depth = get_adapter("mona", embed_dim, factor=8)
+                self.adapter2_depth = get_adapter("mona", embed_dim, factor=8)
+                self.projection_depth = nn.Linear(embed_dim, out_dim)
         else:
             self.dpt_head = None
             self.adapter1 = get_adapter(adapter_type, embed_dim, factor=8)
@@ -129,6 +138,30 @@ class DINOv3MonaEncoder(nn.Module):
     def freeze_backbone(self):
         for param in self.backbone.parameters():
             param.requires_grad = False
+
+    def _run_branch(self, features, head, adapter1, adapter2, projection,
+                    B, H, W, patch_h, patch_w):
+        """双头模式下单个分支的 head → adapters → projection 链。"""
+        x = head(features, patch_h, patch_w)          # (B, 768, 64, 64)
+        x = x.flatten(2).transpose(1, 2)              # (B, N, 768)
+        x = adapter1(x, (H, W))
+        x = adapter2(x, (H, W))
+        x = projection(x)                              # (B, H*W, 256)
+        return x.view(B, H, W, -1).permute(0, 3, 1, 2)  # (B, 256, H, W)
+
+    def warm_start_depth_branch(self):
+        """双头模式：把 mask 分支 adapter/projection 权重复制到 depth 分支。
+
+        dpt_head_depth 保持随机初始化（本特性的动机场景就是两组层数不同）。
+        调用时机：仅 trainer run_phase2 加载 phase1 checkpoint 之后。
+        """
+        if self.dpt_layers_depth is None:
+            return
+        self.adapter1_depth.load_state_dict(self.adapter1.state_dict())
+        self.adapter2_depth.load_state_dict(self.adapter2.state_dict())
+        self.projection_depth.load_state_dict(self.projection.state_dict())
+        print("Warm-started depth branch adapters/projection from mask branch "
+              "(dpt_head_depth stays random)")
 
     def forward(self, images):
         """Encode images to (B, 256, 64, 64) embeddings.
@@ -154,6 +187,23 @@ class DINOv3MonaEncoder(nn.Module):
         H, W = patch_h, patch_w
 
         if self.dpt_head is not None:
+            if self.dpt_layers_depth is not None:
+                # 双头路径：backbone 只跑一次，取两组层的并集再分发
+                union = sorted(set(self.dpt_layers) | set(self.dpt_layers_depth))
+                features = self.backbone.get_intermediate_layers(x, n=union)
+                features_mask, features_depth = split_union_features(
+                    features, union, self.dpt_layers, self.dpt_layers_depth,
+                )
+                emb_mask = self._run_branch(
+                    features_mask, self.dpt_head, self.adapter1, self.adapter2,
+                    self.projection, B, H, W, patch_h, patch_w,
+                )
+                emb_depth = self._run_branch(
+                    features_depth, self.dpt_head_depth, self.adapter1_depth,
+                    self.adapter2_depth, self.projection_depth,
+                    B, H, W, patch_h, patch_w,
+                )
+                return {"mask": emb_mask, "depth": emb_depth}, input_size
             # DPT path: multi-level features, all at 64×64
             features = self.backbone.get_intermediate_layers(
                 x, n=self.dpt_layers
