@@ -14,4 +14,5 @@ docs/**/*.docx
 docs/superpowers/plans/
 
 # Claude Code local state
-.claude/
+.claude/*
+!.claude/skills/
