@@ -4,7 +4,7 @@
 **Status:** approved (reviewed — 3-agent fanout, 2026-07-25)
 **Goal:** 使用 Pytorch-UNet 在两个数据集上训练分割模型，作为 DINOSAM 方法的对比基线。
 
-**Comparison type:** Best-method comparison — U-Net uses its own optimal config (RMSprop, ReduceLROnPlateau, gradient clipping) while DINOSAM uses its own. This conflates architecture with optimizer/scheduler choices. Results must be interpreted accordingly: differences are not attributable to architecture alone.
+**Comparison type:** Best-method comparison — U-Net uses its own optimal config (RMSprop, ReduceLROnPlateau, gradient clipping) while DINOSAM uses its own. This conflates architecture with optimizer/scheduler choices. Results must be interpreted accordingly: differences are not attributable to architecture alone. Additional known differences: U-Net normalizes inputs via `/255`, while DINOSAM uses SAM's `pixel_mean`/`pixel_std` normalization — another confound inherent to each method's standard pipeline.
 
 ---
 
@@ -73,7 +73,7 @@ After grayscale+threshold preprocessing, U-Net's `multiclass_dice_coeff(mask_pre
 | File | Changes |
 |------|---------|
 | `Pytorch-UNet/utils/data_loading.py` | Add `RecursiveDataset` class: recursive subdirectory walk, .jpg/.png pairing, grayscale+threshold mask loading |
-| `Pytorch-UNet/train.py` | Add `--train_dir`, `--val_dir`, `--output_dir` CLI args; replace internal train/val split with external val set; change loss from BCE+Dice to pure Dice; **remove wandb** (replace with local logging); fix num_workers to 4 |
+| `Pytorch-UNet/train.py` | Add `--train_dir`, `--val_dir`, `--output_dir` CLI args; replace internal train/val split with external val set; change loss from BCE+Dice to pure Dice; **remove wandb** (replace with CSV logging to `<output_dir>/metrics.csv`: epoch, step, train_loss, val_dice, lr); fix num_workers to 4 |
 
 ### Files NOT modified
 - `unet/unet_model.py` — model unchanged
@@ -103,7 +103,7 @@ After grayscale+threshold preprocessing, U-Net's `multiclass_dice_coeff(mask_pre
 Each experiment launched via `run_train.sh` with `nohup`, matching the DINOSAM project's `dino-launch` convention. GPU allocation per experiment.
 
 ### Checkpoint resume
-Checkpoint saved at `save_interval` epochs (every 10). Last checkpoint always saved for resume. Support `--resume` flag to load latest checkpoint and continue training. No warm-start from other models needed.
+Support `--resume` flag to load latest checkpoint and continue training. Resume restores model weights, optimizer state (RMSprop momentum buffers), scheduler state (ReduceLROnPlateau patience counter + best), and epoch counter from the checkpoint.
 
 ### Reproducibility
 - DataLoader shuffle seed: `torch.Generator().manual_seed(0)` — consistent with existing U-Net code
