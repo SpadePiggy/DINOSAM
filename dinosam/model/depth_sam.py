@@ -8,6 +8,7 @@ from segment_anything.utils.transforms import ResizeLongestSide
 
 from .depth_decoder import DepthMaskDecoder
 from .dinov3_encoder import DINOv3MonaEncoder
+from .resnet_encoder import ResNetEncoder
 
 
 class DepthSam(nn.Module):
@@ -35,6 +36,7 @@ class DepthSam(nn.Module):
         image_size = self.img_size
         image_embedding_size = image_size // 16
 
+        self.dinov3_encoder = None
         if encoder_type == "dinov3":
             if dinov3_checkpoint is None:
                 raise ValueError("dinov3_checkpoint is required when encoder_type='dinov3'")
@@ -47,8 +49,10 @@ class DepthSam(nn.Module):
                 dpt_layers=dpt_layers,
                 dpt_layers_depth=dpt_layers_depth,
             )
-        else:
-            self.dinov3_encoder = None
+        elif encoder_type.startswith("resnet"):
+            self.resnet_encoder = ResNetEncoder(
+                model_name=encoder_type, img_size=image_size,
+            )
 
         # simple 模式：仅用全局池化 + MLP 预测深度，不需要 decoder
         if depth_transformer_type == "simple":
@@ -203,6 +207,8 @@ class DepthSam(nn.Module):
         """
         if self.encoder_type == "dinov3":
             return self.dinov3_encoder(images)
+        elif self.encoder_type.startswith("resnet"):
+            return self.resnet_encoder(images)
         else:
             input_images, input_size = self.preprocess(images)
             image_embeddings = self.sam.image_encoder(input_images)
