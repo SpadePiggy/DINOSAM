@@ -26,7 +26,8 @@ def main():
                         help="Comma-separated DPT layer indices (default: 2,5,8,11)")
     parser.add_argument("--mask", action="store_true",
                         help="Use model-predicted mask for foreground-only PCA fitting")
-    parser.add_argument("--encoder", type=str, default="sam", choices=["sam", "dinov3"],
+    parser.add_argument("--encoder", type=str, default="sam",
+                        choices=["sam", "dinov3", "resnet50", "resnet101"],
                         help="Image encoder type (default: sam)")
     parser.add_argument("--dinov3_checkpoint", type=str, default=None,
                         help="DINOv3 ViT-B/16 checkpoint (required when --encoder dinov3)")
