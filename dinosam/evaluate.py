@@ -29,12 +29,12 @@ def _boundary(m, w=BOUNDARY_WIDTH):
 
 @torch.no_grad()
 def evaluate(model, dataset, device, batch_size=4, n_sub_iterations=1, mask_prob=0.0,
-             save_masks_dir=None, no_gt_prompts=False):
+             save_masks_dir=None, no_prompt=False):
     """Evaluate model: iterative mask refinement + depth prediction.
 
     Args:
         save_masks_dir: if set, save per-depth-class first sample's pred/gt mask as images
-        no_gt_prompts: if True, replace GT-derived point prompts with image center point
+        no_prompt: if True, run mask branch without any point prompt (SAM no-prompt mode)
     """
     model.eval()
     prompt_generator = DepthIterativePromptGenerator() if n_sub_iterations > 1 else None
@@ -70,17 +70,15 @@ def evaluate(model, dataset, device, batch_size=4, n_sub_iterations=1, mask_prob
         image_embeddings, input_size = model.encode_images(images)
         B = images.shape[0]
 
-        # Replace GT-derived prompts with image center point (SAM default when no prompt)
-        if no_gt_prompts:
-            orig_h = original_sizes[:, 0].float()
-            orig_w = original_sizes[:, 1].float()
-            point_coords = torch.stack([orig_w / 2, orig_h / 2], dim=1).unsqueeze(1)  # (B, 1, 2)
-            point_labels = torch.ones(B, 1, dtype=torch.int64, device=device)
+        # No-prompt mode: run mask branch without any point prompt
+        if no_prompt:
+            point_coords = None
+            point_labels = None
 
         # ---- Mask branch (iterative) ----
         if n_sub_iterations > 1:
-            cur_point_coords = point_coords.clone()
-            cur_point_labels = point_labels.clone()
+            cur_point_coords = point_coords.clone() if point_coords is not None else None
+            cur_point_labels = point_labels.clone() if point_labels is not None else None
             cur_mask_input = None
             for sub_iter in range(n_sub_iterations):
                 low_res_masks, iou_pred, masks_fullres = model.forward_mask(
@@ -103,8 +101,12 @@ def evaluate(model, dataset, device, batch_size=4, n_sub_iterations=1, mask_prob
                     new_coords_scaled = new_coords.clone()
                     new_coords_scaled[:, :, 0] = new_coords[:, :, 0] * scale_x.squeeze(-1)
                     new_coords_scaled[:, :, 1] = new_coords[:, :, 1] * scale_y.squeeze(-1)
-                    cur_point_coords = torch.cat([cur_point_coords, new_coords_scaled], dim=1)
-                    cur_point_labels = torch.cat([cur_point_labels, new_labels], dim=1)
+                    if cur_point_coords is None:
+                        cur_point_coords = new_coords_scaled
+                        cur_point_labels = new_labels
+                    else:
+                        cur_point_coords = torch.cat([cur_point_coords, new_coords_scaled], dim=1)
+                        cur_point_labels = torch.cat([cur_point_labels, new_labels], dim=1)
                     if mask_prob > 0 and random.random() < mask_prob:
                         cur_mask_input = low_res_masks.detach()
                     else:
@@ -334,9 +336,8 @@ def main():
                         help="Mask input probability for iterative evaluation")
     parser.add_argument("--save_masks_dir", type=str, default=None,
                         help="Directory to save per-depth-class first sample pred/gt masks and scatter plots")
-    parser.add_argument("--no_gt_prompts", action="store_true", default=False,
-                        help="Replace GT-derived point prompts with image center point "
-                             "(SAM default when no prompt is given)")
+    parser.add_argument("--no_prompt", action="store_true", default=False,
+                        help="Run mask branch without any point prompt (SAM no-prompt mode)")
     parser.add_argument("--encoder", type=str, default="sam",
                         choices=["sam", "dinov3", "resnet50", "resnet101"],
                         help="Image encoder type: 'sam' (default), 'dinov3' (DINOv3+Mona), "
@@ -406,7 +407,7 @@ def main():
                                   n_sub_iterations=args.n_sub_iterations,
                                   mask_prob=args.mask_prob,
                                   save_masks_dir=mask_dir_p1,
-                                  no_gt_prompts=args.no_gt_prompts)
+                                  no_prompt=args.no_prompt)
             print_metrics("Phase 1 Model (mask-only trained)", metrics_p1)
             print_depth_by_class(metrics_p1, dataset)
             if mask_dir_p1:
@@ -439,7 +440,7 @@ def main():
                                   n_sub_iterations=args.n_sub_iterations,
                                   mask_prob=args.mask_prob,
                                   save_masks_dir=mask_dir_p2,
-                                  no_gt_prompts=args.no_gt_prompts)
+                                  no_prompt=args.no_prompt)
             print_metrics("Phase 2 Model (depth trained)", metrics_p2)
             print_depth_by_class(metrics_p2, dataset)
             if mask_dir_p2:

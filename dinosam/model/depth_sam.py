@@ -217,10 +217,10 @@ class DepthSam(nn.Module):
     def forward_mask(
         self,
         image_embeddings: torch.Tensor,
-        point_coords: torch.Tensor,
-        point_labels: torch.Tensor,
-        original_sizes: torch.Tensor,
-        input_size: Tuple[int, int],
+        point_coords: torch.Tensor = None,
+        point_labels: torch.Tensor = None,
+        original_sizes: torch.Tensor = None,
+        input_size: Tuple[int, int] = None,
         mask_input: torch.Tensor = None,
         return_fullres: bool = True,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -228,8 +228,8 @@ class DepthSam(nn.Module):
 
         Args:
             image_embeddings: (B, 256, 64, 64)
-            point_coords: (B, N, 2) in original image space
-            point_labels: (B, N)
+            point_coords: (B, N, 2) in original image space; None for no prompt
+            point_labels: (B, N); None for no prompt
             original_sizes: (B, 2)
             mask_input: (B, 1, 256, 256) optional low-res mask from previous iteration
             return_fullres: if False, skip postprocess_masks and return None for masks
@@ -244,20 +244,24 @@ class DepthSam(nn.Module):
         B = image_embeddings.shape[0]
         inner_pe = self.sam.prompt_encoder.get_dense_pe()
 
-        # Per-sample coord transform, then batch
-        pc_list = []
-        for i in range(B):
-            orig_h, orig_w = original_sizes[i].tolist()
-            pc = self.transform.apply_coords_torch(
-                point_coords[i:i+1], (orig_h, orig_w)
-            )
-            pc_list.append(pc)
-        pc_batched = torch.cat(pc_list, dim=0)  # (B, N, 2)
+        # Encode point prompts (if any) with per-sample coord transform
+        if point_coords is not None:
+            pc_list = []
+            for i in range(B):
+                orig_h, orig_w = original_sizes[i].tolist()
+                pc = self.transform.apply_coords_torch(
+                    point_coords[i:i+1], (orig_h, orig_w)
+                )
+                pc_list.append(pc)
+            pc_batched = torch.cat(pc_list, dim=0)  # (B, N, 2)
+            points = (pc_batched, point_labels)
+        else:
+            points = None
 
         # Batched prompt_encoder (1 call instead of B — PromptEncoder has no
         # repeat_interleave issue unlike MaskDecoder)
         sparse_emb, dense_emb = self.sam.prompt_encoder(
-            points=(pc_batched, point_labels), boxes=None, masks=mask_input,
+            points=points, boxes=None, masks=mask_input,
         )
 
         # Per-sample mask_decoder (MaskDecoder.predict_masks uses repeat_interleave
