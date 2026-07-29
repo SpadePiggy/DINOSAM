@@ -29,12 +29,12 @@ def _boundary(m, w=BOUNDARY_WIDTH):
 
 @torch.no_grad()
 def evaluate(model, dataset, device, batch_size=4, n_sub_iterations=1, mask_prob=0.0,
-             save_masks_dir=None, no_prompt=False):
+             save_masks_dir=None, prompt_mode="gt_centroid"):
     """Evaluate model: iterative mask refinement + depth prediction.
 
     Args:
         save_masks_dir: if set, save per-depth-class first sample's pred/gt mask as images
-        no_prompt: if True, run mask branch without any point prompt (SAM no-prompt mode)
+        prompt_mode: "gt_centroid" | "random_circle" | "center" | "no_prompt"
     """
     model.eval()
     prompt_generator = DepthIterativePromptGenerator() if n_sub_iterations > 1 else None
@@ -71,7 +71,7 @@ def evaluate(model, dataset, device, batch_size=4, n_sub_iterations=1, mask_prob
         B = images.shape[0]
 
         # No-prompt mode: run mask branch without any point prompt
-        if no_prompt:
+        if prompt_mode == "no_prompt":
             point_coords = None
             point_labels = None
 
@@ -336,8 +336,10 @@ def main():
                         help="Mask input probability for iterative evaluation")
     parser.add_argument("--save_masks_dir", type=str, default=None,
                         help="Directory to save per-depth-class first sample pred/gt masks and scatter plots")
-    parser.add_argument("--no_prompt", action="store_true", default=False,
-                        help="Run mask branch without any point prompt (SAM no-prompt mode)")
+    parser.add_argument("--prompt_mode", type=str, default="gt_centroid",
+                        choices=["gt_centroid", "random_circle", "center", "no_prompt"],
+                        help="Point prompt generation mode: gt_centroid (default), "
+                             "random_circle, center, no_prompt")
     parser.add_argument("--encoder", type=str, default="sam",
                         choices=["sam", "dinov3", "resnet50", "resnet101"],
                         help="Image encoder type: 'sam' (default), 'dinov3' (DINOv3+Mona), "
@@ -370,10 +372,12 @@ def main():
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    dataset = DepthDataset(args.test_dir, max_points=args.max_points)
+    dataset = DepthDataset(args.test_dir, max_points=args.max_points,
+                          prompt_mode=args.prompt_mode)
     print(f"Test dataset: {args.test_dir}")
     print(f"Test samples: {len(dataset)}")
     print(f"Iterative eval: n_sub={args.n_sub_iterations}, mask_prob={args.mask_prob}")
+    print(f"Prompt mode: {args.prompt_mode}")
 
     from dinosam.model.dinov3_encoder import parse_layers_arg
     dpt_layers = (
@@ -407,7 +411,7 @@ def main():
                                   n_sub_iterations=args.n_sub_iterations,
                                   mask_prob=args.mask_prob,
                                   save_masks_dir=mask_dir_p1,
-                                  no_prompt=args.no_prompt)
+                                  prompt_mode=args.prompt_mode)
             print_metrics("Phase 1 Model (mask-only trained)", metrics_p1)
             print_depth_by_class(metrics_p1, dataset)
             if mask_dir_p1:
@@ -440,7 +444,7 @@ def main():
                                   n_sub_iterations=args.n_sub_iterations,
                                   mask_prob=args.mask_prob,
                                   save_masks_dir=mask_dir_p2,
-                                  no_prompt=args.no_prompt)
+                                  prompt_mode=args.prompt_mode)
             print_metrics("Phase 2 Model (depth trained)", metrics_p2)
             print_depth_by_class(metrics_p2, dataset)
             if mask_dir_p2:

@@ -258,11 +258,16 @@ class DepthSam(nn.Module):
         else:
             points = None
 
-        # Batched prompt_encoder (1 call instead of B — PromptEncoder has no
-        # repeat_interleave issue unlike MaskDecoder)
-        sparse_emb, dense_emb = self.sam.prompt_encoder(
-            points=points, boxes=None, masks=mask_input,
-        )
+        # When no points and no mask, bypass prompt_encoder to avoid _get_batch_size
+        # returning 1 regardless of actual batch size (upstream SAM issue)
+        if points is None and mask_input is None:
+            no_mask = self.sam.prompt_encoder.no_mask_embed.weight
+            sparse_emb = torch.empty(B, 0, 256, device=image_embeddings.device)
+            dense_emb = no_mask.reshape(1, -1, 1, 1).expand(B, -1, 64, 64)
+        else:
+            sparse_emb, dense_emb = self.sam.prompt_encoder(
+                points=points, boxes=None, masks=mask_input,
+            )
 
         # Per-sample mask_decoder (MaskDecoder.predict_masks uses repeat_interleave
         # which produces B²-shaped tensors when inputs are batched)

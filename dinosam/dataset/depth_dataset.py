@@ -24,9 +24,10 @@ class DepthDataset(Dataset):
         Each folder contains paired .jpg images and .png masks with matching names.
     """
 
-    def __init__(self, root: str, max_points: int = 3):
+    def __init__(self, root: str, max_points: int = 3, prompt_mode: str = "gt_centroid"):
         self.root = root
         self.max_points = max_points
+        self.prompt_mode = prompt_mode
         self.samples = []
         self._scan_folders()
 
@@ -52,23 +53,15 @@ class DepthDataset(Dataset):
     def __len__(self):
         return len(self.samples)
 
-    def _get_point_prompts(self, mask_arr: np.ndarray):
-        """Extract centroids of the largest connected components as point prompts.
+    # ---- Prompt generators ----
 
-        Returns:
-            point_coords: (N, 2) array of (x, y) coordinates
-            point_labels: (N,) array of 1s
-        """
+    def _gt_centroid_prompts(self, mask_arr: np.ndarray):
+        """Centroids of top-3 connected components (by area)."""
         binary = mask_arr > 0
         labeled, num_features = ndimage.label(binary)
         if num_features == 0:
-            # Fallback: use image center
-            h, w = mask_arr.shape
-            point_coords = np.array([[w / 2, h / 2]], dtype=np.float32)
-            point_labels = np.array([1], dtype=np.int64)
-            return point_coords, point_labels
+            return self._center_prompts(mask_arr)
 
-        # Compute area per component and sort descending
         component_ids = np.arange(1, num_features + 1)
         areas = ndimage.sum(binary, labeled, component_ids)
         sorted_ids = component_ids[np.argsort(areas)[::-1]]
@@ -77,13 +70,82 @@ class DepthDataset(Dataset):
         coords = []
         for cid in selected:
             ys, xs = np.where(labeled == cid)
-            cx = xs.mean()
-            cy = ys.mean()
-            coords.append([cx, cy])
+            coords.append([xs.mean(), ys.mean()])
 
         point_coords = np.array(coords, dtype=np.float32)
         point_labels = np.ones(len(coords), dtype=np.int64)
         return point_coords, point_labels
+
+    def _random_circle_prompts(self, mask_arr: np.ndarray):
+        """Random point within concentric half-radius circle of minEnclosingCircle.
+
+        For each connected component >20px (top-3 by area), fits a minimum
+        enclosing circle, then uniformly samples a point within a concentric
+        circle of half the radius.
+        """
+        import cv2
+
+        binary = (mask_arr > 0).astype(np.uint8)
+        labeled, num_features = ndimage.label(binary)
+        if num_features == 0:
+            return self._center_prompts(mask_arr)
+
+        component_ids = np.arange(1, num_features + 1)
+        areas = ndimage.sum(binary, labeled, component_ids)
+        # Filter: >20 pixels and sort by area descending
+        mask_gt20 = areas > 20
+        if not mask_gt20.any():
+            return self._center_prompts(mask_arr)
+
+        valid_ids = component_ids[mask_gt20]
+        valid_areas = areas[mask_gt20]
+        sorted_ids = valid_ids[np.argsort(valid_areas)[::-1]]
+        selected = sorted_ids[:min(self.max_points, len(sorted_ids))]
+
+        coords = []
+        for cid in selected:
+            ys, xs = np.where(labeled == cid)
+            if len(xs) < 5:
+                # Too few points for a meaningful circle; use centroid
+                coords.append([xs.mean(), ys.mean()])
+                continue
+
+            pts = np.column_stack([xs.astype(np.float32), ys.astype(np.float32)])
+            (cx, cy), radius = cv2.minEnclosingCircle(pts)
+
+            # Uniform random sample within concentric circle of half radius
+            half_r = radius / 2.0
+            r = half_r * np.sqrt(np.random.uniform(0, 1))
+            theta = np.random.uniform(0, 2 * np.pi)
+            px = cx + r * np.cos(theta)
+            py = cy + r * np.sin(theta)
+            # Clamp to image bounds
+            h, w = mask_arr.shape
+            px = np.clip(px, 0, w - 1)
+            py = np.clip(py, 0, h - 1)
+            coords.append([px, py])
+
+        point_coords = np.array(coords, dtype=np.float32)
+        point_labels = np.ones(len(coords), dtype=np.int64)
+        return point_coords, point_labels
+
+    def _center_prompts(self, mask_arr: np.ndarray):
+        """Single point at image center."""
+        h, w = mask_arr.shape
+        point_coords = np.array([[w / 2, h / 2]], dtype=np.float32)
+        point_labels = np.array([1], dtype=np.int64)
+        return point_coords, point_labels
+
+    def _get_point_prompts(self, mask_arr: np.ndarray):
+        """Dispatch to prompt generator based on prompt_mode."""
+        if self.prompt_mode in ("gt_centroid", "no_prompt"):
+            return self._gt_centroid_prompts(mask_arr)
+        elif self.prompt_mode == "random_circle":
+            return self._random_circle_prompts(mask_arr)
+        elif self.prompt_mode == "center":
+            return self._center_prompts(mask_arr)
+        else:
+            raise ValueError(f"Unknown prompt_mode: {self.prompt_mode}")
 
     def __getitem__(self, idx):
         sample = self.samples[idx]
