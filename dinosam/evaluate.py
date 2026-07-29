@@ -28,11 +28,13 @@ def _boundary(m, w=BOUNDARY_WIDTH):
 
 
 @torch.no_grad()
-def evaluate(model, dataset, device, batch_size=4, n_sub_iterations=1, mask_prob=0.0, save_masks_dir=None):
+def evaluate(model, dataset, device, batch_size=4, n_sub_iterations=1, mask_prob=0.0,
+             save_masks_dir=None, no_gt_prompts=False):
     """Evaluate model: iterative mask refinement + depth prediction.
 
     Args:
         save_masks_dir: if set, save per-depth-class first sample's pred/gt mask as images
+        no_gt_prompts: if True, replace GT-derived point prompts with image center point
     """
     model.eval()
     prompt_generator = DepthIterativePromptGenerator() if n_sub_iterations > 1 else None
@@ -64,6 +66,13 @@ def evaluate(model, dataset, device, batch_size=4, n_sub_iterations=1, mask_prob
         depth_labels = batch["depth"].to(device)
         gt_masks = batch["gt_mask"].to(device)
         original_sizes = batch["original_size"].to(device)
+
+        # Replace GT-derived prompts with image center point (SAM default when no prompt)
+        if no_gt_prompts:
+            orig_h = original_sizes[:, 0].float()
+            orig_w = original_sizes[:, 1].float()
+            point_coords = torch.stack([orig_w / 2, orig_h / 2], dim=1).unsqueeze(1)  # (B, 1, 2)
+            point_labels = torch.ones(B, 1, dtype=torch.int64, device=device)
 
         image_embeddings, input_size = model.encode_images(images)
         B = images.shape[0]
@@ -325,6 +334,9 @@ def main():
                         help="Mask input probability for iterative evaluation")
     parser.add_argument("--save_masks_dir", type=str, default=None,
                         help="Directory to save per-depth-class first sample pred/gt masks and scatter plots")
+    parser.add_argument("--no_gt_prompts", action="store_true", default=False,
+                        help="Replace GT-derived point prompts with image center point "
+                             "(SAM default when no prompt is given)")
     parser.add_argument("--encoder", type=str, default="sam",
                         choices=["sam", "dinov3", "resnet50", "resnet101"],
                         help="Image encoder type: 'sam' (default), 'dinov3' (DINOv3+Mona), "
@@ -393,7 +405,8 @@ def main():
                                   batch_size=args.batch_size,
                                   n_sub_iterations=args.n_sub_iterations,
                                   mask_prob=args.mask_prob,
-                                  save_masks_dir=mask_dir_p1)
+                                  save_masks_dir=mask_dir_p1,
+                                  no_gt_prompts=args.no_gt_prompts)
             print_metrics("Phase 1 Model (mask-only trained)", metrics_p1)
             print_depth_by_class(metrics_p1, dataset)
             if mask_dir_p1:
@@ -425,7 +438,8 @@ def main():
                                   batch_size=args.batch_size,
                                   n_sub_iterations=args.n_sub_iterations,
                                   mask_prob=args.mask_prob,
-                                  save_masks_dir=mask_dir_p2)
+                                  save_masks_dir=mask_dir_p2,
+                                  no_gt_prompts=args.no_gt_prompts)
             print_metrics("Phase 2 Model (depth trained)", metrics_p2)
             print_depth_by_class(metrics_p2, dataset)
             if mask_dir_p2:
