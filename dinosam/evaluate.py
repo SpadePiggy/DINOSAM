@@ -67,15 +67,15 @@ def evaluate(model, dataset, device, batch_size=4, n_sub_iterations=1, mask_prob
         gt_masks = batch["gt_mask"].to(device)
         original_sizes = batch["original_size"].to(device)
 
+        image_embeddings, input_size = model.encode_images(images)
+        B = images.shape[0]
+
         # Replace GT-derived prompts with image center point (SAM default when no prompt)
         if no_gt_prompts:
             orig_h = original_sizes[:, 0].float()
             orig_w = original_sizes[:, 1].float()
             point_coords = torch.stack([orig_w / 2, orig_h / 2], dim=1).unsqueeze(1)  # (B, 1, 2)
             point_labels = torch.ones(B, 1, dtype=torch.int64, device=device)
-
-        image_embeddings, input_size = model.encode_images(images)
-        B = images.shape[0]
 
         # ---- Mask branch (iterative) ----
         if n_sub_iterations > 1:
