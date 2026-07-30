@@ -43,7 +43,7 @@ for dir in "$MODEL_BASE"/DPT_*/; do
     # Skip if already done (unless --force)
     if [[ "$FORCE" != "true" ]] && [[ -f "$dir/eval_random_circle/eval.log" ]]; then
         echo "[SKIP] $name — already evaluated"
-        ((SKIPPED++))
+        ((SKIPPED++)) || true
         continue
     fi
 
@@ -83,7 +83,7 @@ for dir in "$MODEL_BASE"/DPT_*/; do
         > "$dir/eval_random_circle/eval.log" 2>&1 &
 
     echo "[RUN] $name (GPU $gpu, PID $!) — layers=$dpt_layers${dpt_layers_depth:+ depth=$dpt_layers_depth} test=$test_dir"
-    ((TOTAL++))
+    ((TOTAL++)) || true
 done
 
 echo ""
