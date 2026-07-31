@@ -341,8 +341,8 @@ def main():
                         help="Point prompt generation mode: gt_centroid (default), "
                              "random_circle, center, no_prompt")
     parser.add_argument("--encoder", type=str, default="sam",
-                        choices=["sam", "dinov3", "resnet50", "resnet101"],
-                        help="Image encoder type: 'sam' (default), 'dinov3' (DINOv3+Mona), "
+                        choices=["sam", "dinov3", "resnet50", "resnet101", "swin_b"],
+                        help="Image encoder type: 'sam' (default), 'dinov3' (DINOv3+Mona),"
                              "'resnet50', or 'resnet101'")
     parser.add_argument("--adapter_type", type=str, default="mona",
                         choices=["mona", "fc", "dual_attn", "dpt_simple"],
@@ -367,7 +367,7 @@ def main():
         parser.error("--dpt_layers_depth requires --encoder dinov3 "
                      "and --adapter_type dpt_simple")
 
-    if args.encoder in ("sam", "resnet50", "resnet101") and args.adapter_type != "mona":
+    if args.encoder in ("sam", "resnet50", "resnet101", "swin_b") and args.adapter_type != "mona":
         print(f"Warning: --adapter_type '{args.adapter_type}' is ignored when --encoder {args.encoder}")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

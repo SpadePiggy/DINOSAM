@@ -649,9 +649,9 @@ def main():
     parser.add_argument("--phase1_checkpoint", type=str, default=None,
                         help="Path to phase1 checkpoint (required when --train_phase 2 without --resume)")
     parser.add_argument("--encoder", type=str, default="sam",
-                        choices=["sam", "dinov3", "resnet50", "resnet101"],
+                        choices=["sam", "dinov3", "resnet50", "resnet101", "swin_b"],
                         help="Image encoder type: 'sam' (default), 'dinov3' (DINOv3+Mona), "
-                             "'resnet50', or 'resnet101' (ImageNet pretrained, frozen)")
+                             "'resnet50', 'resnet101', or 'swin_b' (ImageNet pretrained, frozen)")
     parser.add_argument("--dinov3_checkpoint", type=str, default=None,
                         help="Path to DINOv3 ViT-B/16 checkpoint (required when --encoder dinov3)")
     parser.add_argument("--adapter_type", type=str, default="mona",
@@ -676,7 +676,7 @@ def main():
         parser.error("--dpt_layers_depth requires --encoder dinov3 "
                      "and --adapter_type dpt_simple")
 
-    if args.encoder in ("sam", "resnet50", "resnet101") and args.adapter_type != "mona":
+    if args.encoder in ("sam", "resnet50", "resnet101", "swin_b") and args.adapter_type != "mona":
         print(f"Warning: --adapter_type '{args.adapter_type}' is ignored when --encoder {args.encoder}")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
