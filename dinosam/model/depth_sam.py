@@ -24,7 +24,8 @@ class DepthSam(nn.Module):
 
     def __init__(self, sam: Sam, encoder_type: str = "sam", dinov3_checkpoint: str = None,
                  adapter_type: str = "mona", depth_transformer_type: str = "twoway",
-                 dpt_layers: list[int] = None, dpt_layers_depth: list[int] = None):
+                 dpt_layers: list[int] = None, dpt_layers_depth: list[int] = None,
+                 cellpose_model: str = "cyto3"):
         super().__init__()
         self.sam = sam
         self.encoder_type = encoder_type
@@ -39,6 +40,7 @@ class DepthSam(nn.Module):
 
         self.dinov3_encoder = None
         self.swin_encoder = None
+        self.cellpose_encoder = None
         if encoder_type == "dinov3":
             if dinov3_checkpoint is None:
                 raise ValueError("dinov3_checkpoint is required when encoder_type='dinov3'")
@@ -57,6 +59,13 @@ class DepthSam(nn.Module):
             )
         elif encoder_type == "swin_b":
             self.swin_encoder = SwinBEncoder(img_size=image_size)
+        elif encoder_type == "cellpose":
+            from .cellpose_encoder import CellposeEncoder
+            device = next(sam.image_encoder.parameters()).device
+            self.cellpose_encoder = CellposeEncoder(
+                model_type=cellpose_model,
+                device=device,
+            )
 
         # simple 模式：仅用全局池化 + MLP 预测深度，不需要 decoder
         if depth_transformer_type == "simple":
@@ -215,6 +224,8 @@ class DepthSam(nn.Module):
             return self.resnet_encoder(images)
         elif self.encoder_type == "swin_b":
             return self.swin_encoder(images)
+        elif self.encoder_type == "cellpose":
+            return self.cellpose_encoder(images)
         else:
             input_images, input_size = self.preprocess(images)
             image_embeddings = self.sam.image_encoder(input_images)
