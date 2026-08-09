@@ -367,6 +367,7 @@ def _build_model_and_data(args, device):
         depth_transformer_type=args.depth_transformer_type,
         dpt_layers=dpt_layers,
         dpt_layers_depth=dpt_layers_depth,
+        cellpose_model=args.cellpose_model,
     )
     model.freeze_image_encoder()
     model.init_depth_from_sam()
@@ -649,11 +650,14 @@ def main():
     parser.add_argument("--phase1_checkpoint", type=str, default=None,
                         help="Path to phase1 checkpoint (required when --train_phase 2 without --resume)")
     parser.add_argument("--encoder", type=str, default="sam",
-                        choices=["sam", "dinov3", "resnet50", "resnet101", "swin_b"],
+                        choices=["sam", "dinov3", "resnet50", "resnet101", "swin_b", "cellpose"],
                         help="Image encoder type: 'sam' (default), 'dinov3' (DINOv3+Mona), "
-                             "'resnet50', 'resnet101', or 'swin_b' (ImageNet pretrained, frozen)")
+                             "'resnet50', 'resnet101', 'swin_b', or 'cellpose' (cellpose flows)")
     parser.add_argument("--dinov3_checkpoint", type=str, default=None,
                         help="Path to DINOv3 ViT-B/16 checkpoint (required when --encoder dinov3)")
+    parser.add_argument("--cellpose_model", type=str, default="cyto3",
+                        help="Cellpose model type (default: cyto3). "
+                             "Only used with --encoder cellpose.")
     parser.add_argument("--adapter_type", type=str, default="mona",
                         choices=["mona", "fc", "dual_attn", "dpt_simple"],
                         help="Adapter type: mona/fc/dual_attn (single-layer) or "
@@ -676,7 +680,7 @@ def main():
         parser.error("--dpt_layers_depth requires --encoder dinov3 "
                      "and --adapter_type dpt_simple")
 
-    if args.encoder in ("sam", "resnet50", "resnet101", "swin_b") and args.adapter_type != "mona":
+    if args.encoder in ("sam", "resnet50", "resnet101", "swin_b", "cellpose") and args.adapter_type != "mona":
         print(f"Warning: --adapter_type '{args.adapter_type}' is ignored when --encoder {args.encoder}")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
