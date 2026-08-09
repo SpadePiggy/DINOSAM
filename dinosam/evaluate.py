@@ -341,9 +341,9 @@ def main():
                         help="Point prompt generation mode: gt_centroid (default), "
                              "random_circle, center, no_prompt")
     parser.add_argument("--encoder", type=str, default="sam",
-                        choices=["sam", "dinov3", "resnet50", "resnet101", "swin_b"],
+                        choices=["sam", "dinov3", "resnet50", "resnet101", "swin_b", "cellpose"],
                         help="Image encoder type: 'sam' (default), 'dinov3' (DINOv3+Mona),"
-                             "'resnet50', or 'resnet101'")
+                             "'resnet50', 'resnet101', 'swin_b', 'cellpose' (cellpose flows)")
     parser.add_argument("--adapter_type", type=str, default="mona",
                         choices=["mona", "fc", "dual_attn", "dpt_simple"],
                         help="Feature adapter type for DINOv3 encoder (default: mona)")
@@ -360,6 +360,9 @@ def main():
                         help="Depth decoder transformer type. dual_attn requires training from scratch.")
     parser.add_argument("--dinov3_checkpoint", type=str, default=None,
                         help="Path to DINOv3 ViT-B/16 checkpoint (required when --encoder dinov3)")
+    parser.add_argument("--cellpose_model", type=str, default="cyto3",
+                        help="Cellpose model type (default: cyto3). "
+                             "Only used with --encoder cellpose.")
     args = parser.parse_args()
 
     if args.dpt_layers_depth is not None and (
@@ -367,7 +370,7 @@ def main():
         parser.error("--dpt_layers_depth requires --encoder dinov3 "
                      "and --adapter_type dpt_simple")
 
-    if args.encoder in ("sam", "resnet50", "resnet101", "swin_b") and args.adapter_type != "mona":
+    if args.encoder in ("sam", "resnet50", "resnet101", "swin_b", "cellpose") and args.adapter_type != "mona":
         print(f"Warning: --adapter_type '{args.adapter_type}' is ignored when --encoder {args.encoder}")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -400,7 +403,8 @@ def main():
                          adapter_type=args.adapter_type,
                          depth_transformer_type=args.depth_transformer_type,
                          dpt_layers=dpt_layers,
-                         dpt_layers_depth=dpt_layers_depth)
+                         dpt_layers_depth=dpt_layers_depth,
+                         cellpose_model=args.cellpose_model)
         if _load_model_state_dict(model, args.phase1_checkpoint, device, dual_dpt=dual_dpt):
             model.freeze_image_encoder()
             model.to(device)
@@ -433,7 +437,8 @@ def main():
                          adapter_type=args.adapter_type,
                          depth_transformer_type=args.depth_transformer_type,
                          dpt_layers=dpt_layers,
-                         dpt_layers_depth=dpt_layers_depth)
+                         dpt_layers_depth=dpt_layers_depth,
+                         cellpose_model=args.cellpose_model)
         if _load_model_state_dict(model, args.phase2_checkpoint, device, dual_dpt=dual_dpt):
             model.freeze_image_encoder()
             model.to(device)
