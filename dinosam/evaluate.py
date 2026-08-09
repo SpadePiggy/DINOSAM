@@ -6,6 +6,8 @@ import torch
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from PIL import Image
+from scipy import ndimage
+from scipy.optimize import linear_sum_assignment
 from segment_anything.build_sam import sam_model_registry
 
 from dinosam.model import DepthSam
@@ -16,6 +18,70 @@ from dinosam.prompt import DepthIterativePromptGenerator
 
 
 DEPTH_SCALE = 100.0  # dataset normalizes depth by dividing by this
+CELL_MIN_AREA = 100
+IOU_MATCH_THRESH = 0.3
+
+# ---- 细胞检测与匹配辅助函数 ----
+
+def _find_cells(mask: np.ndarray, min_area: int = CELL_MIN_AREA):
+    """Extract connected components from binary mask.
+
+    Args:
+        mask: (H, W) binary numpy array
+        min_area: minimum pixel area to count as a cell
+
+    Returns:
+        list of dicts: [{"centroid": (x, y), "area": int, "mask": (H, W) bool}, ...]
+    """
+    binary = mask.astype(bool)
+    labeled, num_features = ndimage.label(binary)
+    if num_features == 0:
+        return []
+
+    cells = []
+    for cid in range(1, num_features + 1):
+        ys, xs = np.where(labeled == cid)
+        area = len(xs)
+        if area > min_area:
+            cells.append({
+                "centroid": (xs.mean(), ys.mean()),
+                "area": area,
+                "mask": labeled == cid,
+            })
+    return cells
+
+
+def _match_cells(pred_cells, gt_cells, iou_thresh=IOU_MATCH_THRESH):
+    """Match predicted cells to GT cells via Hungarian algorithm on IoU.
+
+    Args:
+        pred_cells: list from _find_cells
+        gt_cells: list from _find_cells
+        iou_thresh: minimum IoU for a valid match
+
+    Returns:
+        list of (pred_idx, gt_idx, iou) for matched pairs
+    """
+    n_pred, n_gt = len(pred_cells), len(gt_cells)
+    if n_pred == 0 or n_gt == 0:
+        return []
+
+    cost = np.ones((n_pred, n_gt))
+    for i, pc in enumerate(pred_cells):
+        for j, gc in enumerate(gt_cells):
+            inter = (pc["mask"] & gc["mask"]).sum()
+            union = (pc["mask"] | gc["mask"]).sum()
+            iou = inter / union if union > 0 else 0.0
+            cost[i, j] = 1.0 - iou
+
+    row_ind, col_ind = linear_sum_assignment(cost)
+    matches = []
+    for r, c in zip(row_ind, col_ind):
+        iou = 1.0 - cost[r, c]
+        if iou > iou_thresh:
+            matches.append((r, c, float(iou)))
+    return matches
+
 
 # ---- 评估专用指标函数 ----
 BOUNDARY_WIDTH = 2
@@ -29,12 +95,13 @@ def _boundary(m, w=BOUNDARY_WIDTH):
 
 @torch.no_grad()
 def evaluate(model, dataset, device, batch_size=4, n_sub_iterations=1, mask_prob=0.0,
-             save_masks_dir=None, prompt_mode="gt_centroid"):
+             save_masks_dir=None, prompt_mode="gt_centroid", pixel_size_um=None):
     """Evaluate model: iterative mask refinement + depth prediction.
 
     Args:
         save_masks_dir: if set, save per-depth-class first sample's pred/gt mask as images
         prompt_mode: "gt_centroid" | "random_circle" | "center" | "no_prompt"
+        pixel_size_um: optional microns-per-pixel calibration for XY→µm conversion
     """
     model.eval()
     prompt_generator = DepthIterativePromptGenerator() if n_sub_iterations > 1 else None
@@ -51,6 +118,14 @@ def evaluate(model, dataset, device, batch_size=4, n_sub_iterations=1, mask_prob
     all_boundary_iou = []
     all_precision = []
     all_recall = []
+
+    all_cell_xy_px = []
+    all_cell_xy_um = []
+    all_cell_z = []
+    all_cell_3d = []
+    total_matched = 0
+    total_gt_cells = 0
+    total_pred_cells = 0
 
     # Process one sample at a time for mask saving simplicity
     dataloader = DataLoader(
@@ -180,6 +255,28 @@ def evaluate(model, dataset, device, batch_size=4, n_sub_iterations=1, mask_prob
                     os.path.join(sub_dir, f"{img_name}_gt.png")
                 )
 
+            # ---- 3D cell-level localization metrics ----
+            pred_np = pred_i.cpu().numpy()
+            gt_np = gt_i.cpu().numpy()
+            pred_cells = _find_cells(pred_np)
+            gt_cells = _find_cells(gt_np)
+            matches = _match_cells(pred_cells, gt_cells)
+
+            total_pred_cells += len(pred_cells)
+            total_gt_cells += len(gt_cells)
+            total_matched += len(matches)
+
+            for pi, gi, _iou in matches:
+                px, py = pred_cells[pi]["centroid"]
+                gx, gy = gt_cells[gi]["centroid"]
+                err_px = np.sqrt((px - gx) ** 2 + (py - gy) ** 2)
+                all_cell_xy_px.append(err_px)
+                all_cell_z.append(depth_mae)
+                if pixel_size_um is not None:
+                    err_um = err_px * pixel_size_um
+                    all_cell_xy_um.append(err_um)
+                    all_cell_3d.append(np.sqrt(err_um ** 2 + depth_mae ** 2))
+
             sample_idx += 1
 
     return {
@@ -192,6 +289,13 @@ def evaluate(model, dataset, device, batch_size=4, n_sub_iterations=1, mask_prob
         "depth_mae": np.array(all_depth_mae),
         "depth_pred": np.array(all_depth_pred),
         "depth_gt": np.array(all_depth_gt),
+        "cell_xy_error_px": np.array(all_cell_xy_px),
+        "cell_xy_error_um": np.array(all_cell_xy_um),
+        "cell_z_error": np.array(all_cell_z),
+        "cell_3d_error": np.array(all_cell_3d),
+        "n_matched": total_matched,
+        "n_gt_cells": total_gt_cells,
+        "n_pred_cells": total_pred_cells,
     }
 
 
@@ -223,6 +327,30 @@ def print_metrics(name, metrics):
     print(f"  Depth Pred:         mean={depth_pred.mean():.2f}  std={depth_pred.std():.2f}")
     print(f"  Depth GT:           mean={depth_gt.mean():.2f}  std={depth_gt.std():.2f}")
     print(f"  Samples:            {len(metrics['dice'])}")
+
+    # ---- 3D localization metrics ----
+    xy_px = metrics.get("cell_xy_error_px")
+    if xy_px is not None and len(xy_px) > 0:
+        print(f"\n  --- 3D Localization (per cell) ---")
+        print(f"  XY Centroid Error (px):   mean={xy_px.mean():.4f}  "
+              f"median={np.median(xy_px):.4f}  std={xy_px.std():.4f}")
+        xy_um = metrics.get("cell_xy_error_um")
+        if xy_um is not None and len(xy_um) > 0:
+            print(f"  XY Centroid Error (µm):   mean={xy_um.mean():.4f}  "
+                  f"median={np.median(xy_um):.4f}  std={xy_um.std():.4f}")
+        z_err = metrics["cell_z_error"]
+        print(f"  Z Depth Error (µm):       mean={z_err.mean():.4f}  "
+              f"median={np.median(z_err):.4f}  std={z_err.std():.4f}")
+        e3d = metrics.get("cell_3d_error")
+        if e3d is not None and len(e3d) > 0:
+            print(f"  3D Euclidean Error (µm):  mean={e3d.mean():.4f}  "
+                  f"median={np.median(e3d):.4f}  std={e3d.std():.4f}")
+    n_matched = metrics.get("n_matched", 0)
+    n_gt = metrics.get("n_gt_cells", 0)
+    n_pred = metrics.get("n_pred_cells", 0)
+    match_pct = n_matched / n_gt * 100 if n_gt > 0 else 0.0
+    print(f"  Matched cells:            {n_matched} / {n_gt} GT ({match_pct:.1f}%)")
+    print(f"  (Predicted cells: {n_pred}, GT cells: {n_gt})")
 
 
 def print_depth_by_class(metrics, dataset):
@@ -363,6 +491,9 @@ def main():
     parser.add_argument("--cellpose_model", type=str, default="cyto3",
                         help="Cellpose model type (default: cyto3). "
                              "Only used with --encoder cellpose.")
+    parser.add_argument("--pixel_size_um", type=float, default=None,
+                        help="Microns per pixel calibration for XY → µm conversion. "
+                             "If not provided, XY µm and 3D Euclidean error are skipped.")
     args = parser.parse_args()
 
     if args.dpt_layers_depth is not None and (
@@ -415,7 +546,8 @@ def main():
                                   n_sub_iterations=args.n_sub_iterations,
                                   mask_prob=args.mask_prob,
                                   save_masks_dir=mask_dir_p1,
-                                  prompt_mode=args.prompt_mode)
+                                  prompt_mode=args.prompt_mode,
+                                  pixel_size_um=args.pixel_size_um)
             print_metrics("Phase 1 Model (mask-only trained)", metrics_p1)
             print_depth_by_class(metrics_p1, dataset)
             if mask_dir_p1:
@@ -449,7 +581,8 @@ def main():
                                   n_sub_iterations=args.n_sub_iterations,
                                   mask_prob=args.mask_prob,
                                   save_masks_dir=mask_dir_p2,
-                                  prompt_mode=args.prompt_mode)
+                                  prompt_mode=args.prompt_mode,
+                                  pixel_size_um=args.pixel_size_um)
             print_metrics("Phase 2 Model (depth trained)", metrics_p2)
             print_depth_by_class(metrics_p2, dataset)
             if mask_dir_p2:
