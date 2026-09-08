@@ -24,9 +24,12 @@ class DepthDataset(Dataset):
         Each folder contains paired .jpg images and .png masks with matching names.
     """
 
-    def __init__(self, root: str, max_points: int = 3):
+    def __init__(self, root: str, max_points: int = 3, manual_prompts: dict = None):
         self.root = root
         self.max_points = max_points
+        # manual_prompts: {image_name(str, 无后缀): (coords list[[x,y]], labels list)}
+        # 若某图在此字典中，则用手工点替代 GT 质心点
+        self.manual_prompts = manual_prompts or {}
         self.samples = []
         self._scan_folders()
 
@@ -95,7 +98,14 @@ class DepthDataset(Dataset):
         mask = Image.open(sample["mask"]).convert("L")
         mask_arr = np.array(mask)  # (H, W), uint8
 
-        point_coords, point_labels = self._get_point_prompts(mask_arr)
+        # 若该图在手工点字典中，用手工点替代 GT 质心点
+        img_name = os.path.splitext(os.path.basename(sample["image"]))[0]
+        if img_name in self.manual_prompts:
+            m_coords, m_labels = self.manual_prompts[img_name]
+            point_coords = np.array(m_coords, dtype=np.float32).reshape(-1, 2)
+            point_labels = np.array(m_labels, dtype=np.int64).reshape(-1)
+        else:
+            point_coords, point_labels = self._get_point_prompts(mask_arr)
         point_coords_tensor = torch.from_numpy(point_coords)  # (N, 2)
         point_labels_tensor = torch.from_numpy(point_labels)  # (N,)
 

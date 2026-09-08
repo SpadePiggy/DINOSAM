@@ -17,6 +17,30 @@ from dinosam.prompt import DepthIterativePromptGenerator
 
 DEPTH_SCALE = 100.0  # dataset normalizes depth by dividing by this
 
+
+def load_manual_prompts(csv_path: str) -> dict:
+    """读取手工点 prompt CSV，返回 {image_name: (coords list, labels list)}。
+
+    CSV 格式（无表头，每行一个点）：
+        image_name,x,y,label
+        seq20307,1200.5,800.3,1
+        seq20307,1500.0,900.0,0
+    label: 1=正点(前景), 0=负点(背景)
+    """
+    import csv
+    prompts = {}
+    with open(csv_path, newline="") as f:
+        for row in csv.reader(f):
+            if len(row) < 4:
+                continue
+            name, x, y, label = row[0], float(row[1]), float(row[2]), int(row[3])
+            if name not in prompts:
+                prompts[name] = ([], [])
+            prompts[name][0].append([x, y])
+            prompts[name][1].append(label)
+    print(f"Loaded manual prompts for {len(prompts)} images from {csv_path}")
+    return prompts
+
 # ---- 评估专用指标函数 ----
 BOUNDARY_WIDTH = 2
 
@@ -345,7 +369,19 @@ def main():
                         help="Depth decoder transformer type. dual_attn requires training from scratch.")
     parser.add_argument("--dinov3_checkpoint", type=str, default=None,
                         help="Path to DINOv3 ViT-B/16 checkpoint (required when --encoder dinov3)")
+    parser.add_argument("--manual_prompt_csv", type=str, default=None,
+                        help="CSV with manual point prompts (image_name,x,y,label). "
+                             "When set, uses manual points instead of GT centroids and "
+                             "disables iterative refinement (n_sub forced to 1).")
     args = parser.parse_args()
+
+    # 手工点模式：强制不迭代纠错，直接用 CSV 里的点出 mask
+    manual_prompts = None
+    n_sub = args.n_sub_iterations
+    if args.manual_prompt_csv:
+        manual_prompts = load_manual_prompts(args.manual_prompt_csv)
+        n_sub = 1
+        print(f"Manual prompt mode: n_sub forced to 1 (no iterative refinement)")
 
     if args.dpt_layers_depth is not None and (
             args.encoder != "dinov3" or args.adapter_type != "dpt_simple"):
@@ -357,10 +393,10 @@ def main():
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    dataset = DepthDataset(args.test_dir, max_points=args.max_points)
+    dataset = DepthDataset(args.test_dir, max_points=args.max_points, manual_prompts=manual_prompts)
     print(f"Test dataset: {args.test_dir}")
     print(f"Test samples: {len(dataset)}")
-    print(f"Iterative eval: n_sub={args.n_sub_iterations}, mask_prob={args.mask_prob}")
+    print(f"Iterative eval: n_sub={n_sub}, mask_prob={args.mask_prob}")
 
     from dinosam.model.dinov3_encoder import parse_layers_arg
     dpt_layers = (
@@ -391,7 +427,7 @@ def main():
             mask_dir_p1 = os.path.join(args.save_masks_dir, "phase1") if args.save_masks_dir else None
             metrics_p1 = evaluate(model, dataset, device,
                                   batch_size=args.batch_size,
-                                  n_sub_iterations=args.n_sub_iterations,
+                                  n_sub_iterations=n_sub,
                                   mask_prob=args.mask_prob,
                                   save_masks_dir=mask_dir_p1)
             print_metrics("Phase 1 Model (mask-only trained)", metrics_p1)
@@ -423,7 +459,7 @@ def main():
             mask_dir_p2 = os.path.join(args.save_masks_dir, "phase2") if args.save_masks_dir else None
             metrics_p2 = evaluate(model, dataset, device,
                                   batch_size=args.batch_size,
-                                  n_sub_iterations=args.n_sub_iterations,
+                                  n_sub_iterations=n_sub,
                                   mask_prob=args.mask_prob,
                                   save_masks_dir=mask_dir_p2)
             print_metrics("Phase 2 Model (depth trained)", metrics_p2)
